@@ -9,16 +9,26 @@
 #define _SEQUELJOE_TABLEVIEW_H_
 
 #include <QTableView>
-
+class QMenu;
+class QAction;
 class TableView : public QTableView
 {
-//    Q_OBJECT
+    Q_OBJECT
 public:
     explicit TableView(QWidget *parent = 0);
-
+private:
+    QMenu* ctxMenu_;
+    QAction* nullAction_;
+    QAction* deleteRowAction_;
+    QAction* addRowAction_;
 signals:
 
 public slots:
+
+    void openMenu(QPoint);
+    void handleSetNull();
+    void handleDeleteRow();
+    void handleAddRow();
 
 };
 
