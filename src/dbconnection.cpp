@@ -12,6 +12,7 @@
 #include <QStringList>
 #include "dbconnection.h"
 #include "sshdbconnection.h"
+#include "sqlschemamodel.h"
 
 DbConnection::DbConnection(const QSettings &settings)
 {
@@ -71,8 +72,8 @@ DbConnection* DbConnection::fromName(QString name) {
 
  QSqlQueryModel* DbConnection::getStructureModel(QString tableName) {
      if(!schemaModels_.contains(tableName)) {
-     QSqlQueryModel *model = new QSqlQueryModel;
-        model->setQuery("DESCRIBE " + tableName, *db_);
+        QSqlQueryModel *model = new SqlSchemaModel(db_, tableName);
+        //model->setQuery("DESCRIBE " + tableName, *db_);
         schemaModels_[tableName] = model;
      }
         //model->setHeaderData(0, Qt::Horizontal, tr("Name"));
