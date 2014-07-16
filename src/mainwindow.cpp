@@ -90,9 +90,16 @@ void MainWindow::handleTabClosed(int index)
 {
     MainPanel* panel = (MainPanel*) tabs_->widget(index);
     panel->disconnectDb();
-    if(tabs_->count() > 1)
-        delete panel;
+    if(tabs_->count() > 1) {
         //tabs_->removeTab(index);
+        // if this is the last real tab (not including the + tab), we have to select
+        // the previous tab first, so that the + tab is not auto-selected, creating
+        // a new tab
+        if(index + 2 == tabs_->count()) {
+            tabs_->setCurrentIndex(index-1);
+        }
+        delete panel;
+    }
 }
 
 void MainWindow::updateTabName(QWidget * tab, QString name)
