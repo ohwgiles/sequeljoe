@@ -23,6 +23,7 @@ class QLineEdit;
 class QSortFilterProxyModel;
 class QueryPanel;
 class QSplitter;
+class TableList;
 
 class MainPanel : public QWidget
 {
@@ -38,9 +39,8 @@ public slots:
     void firstConnectionMade();
 
     void openConnection(QString name);
-    void tableChanged(QModelIndex idx);
+    void tableChanged(QString name);
 
-    void filterTables(QString filter);
     void changeSort(int, Qt::SortOrder);
 
     void openPanel(ViewToolBar::Panel);
@@ -53,9 +53,7 @@ private:
     DbConnection* db_;
     ConnectionWidget* settings_;
     QSplitter* splitView_;
-    QListView* tables_;
-    QLineEdit* tableFilter_;
-    QSortFilterProxyModel* tableFilterProxy_;
+    TableList* tableChooser_;
     QTableView* content_;
     QTableView* structure_;
     ViewToolBar* toolbar_;

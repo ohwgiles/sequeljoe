@@ -23,6 +23,7 @@
 #include "viewtoolbar.h"
 #include "querypanel.h"
 #include "tableview.h"
+#include "tablelist.h"
 
 MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
     QWidget(parent),
@@ -44,31 +45,9 @@ MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
         splitView_->setOrientation(Qt::Horizontal);
         splitView_->setHandleWidth(2);
 
-        { // the list of tables
-            QWidget* w = new QWidget(this);
-            QBoxLayout* vlayout = new QVBoxLayout(w);
-
-            tableFilter_ = new QLineEdit(w);
-            vlayout->addWidget(tableFilter_);
-
-            QStringListModel* model = new QStringListModel(this);
-
-            tableFilterProxy_ = new QSortFilterProxyModel(this);
-            tableFilterProxy_->setSourceModel(model);
-            tables_ = new QListView(w);
-            tables_->setEditTriggers(QListView::NoEditTriggers);
-            tables_->setModel(tableFilterProxy_);
-
-            connect(tableFilter_, SIGNAL(textChanged(QString)), tableFilterProxy_, SLOT(setFilterFixedString(QString)));
-            connect(tables_->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(tableChanged(QModelIndex)));
-
-            vlayout->setContentsMargins(0,0,0,0);
-            vlayout->setSpacing(0);
-            vlayout->addWidget(tables_);
-
-            w->setLayout(vlayout);
-            splitView_->addWidget(w);
-        }
+        tableChooser_ = new TableList(this);
+        connect(tableChooser_, SIGNAL(tableSelected(QString)), this, SLOT(tableChanged(QString)));
+        splitView_->addWidget(tableChooser_);
 
         { // the contents and structure table views (sharing the table list)
             QWidget* w = new QWidget(this);
@@ -131,10 +110,7 @@ void MainPanel::openPanel(ViewToolBar::Panel p)
     }
 }
 
-void MainPanel::filterTables(QString filter)
-{
-    tableFilterProxy_->setFilterFixedString(filter);
-}
+
 #include <QDebug>
 void MainPanel::openConnection(QString name) {
     // todo close any existing connection, or prevent connection reuse
@@ -184,9 +160,8 @@ void MainPanel::firstConnectionMade()
 
 void MainPanel::connectionMade()
 {//if(!db_->isOpen()) return;
-    QStringListModel* model = static_cast<QStringListModel*>(tableFilterProxy_->sourceModel());
-    //qDebug() << "tables: " << db_->getTableNames();
-    model->setStringList(db_->getTableNames());
+
+    tableChooser_->setTableNames(db_->getTableNames());
 
 }
 
@@ -199,9 +174,8 @@ void MainPanel::dbChanged(QString name)
     db_->connect();
 }
 
-void MainPanel::tableChanged(QModelIndex idx)
+void MainPanel::tableChanged(QString name)
 {
-    QString name = tableFilterProxy_->data(idx).toString();
     QSqlTableModel* m = db_->getTableModel(name);
     structure_->setModel(db_->getStructureModel(name));
     content_->setModel(m);
@@ -227,9 +201,7 @@ void MainPanel::disconnectDb()
 {
     content_->setModel(0);
     structure_->setModel(0);
-    QStringListModel* model = static_cast<QStringListModel*>(tableFilterProxy_->sourceModel());
-    model->setStringList(QStringList());
-
+    tableChooser_->setTableNames(QStringList());
     toggleEditSettings(true);
     if(db_) {
     db_->close();
