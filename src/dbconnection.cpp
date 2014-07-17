@@ -32,7 +32,7 @@ DbConnection::~DbConnection()
 {
     for(QSqlTableModel* m : tableModels_)
         delete m;
-    for(QSqlQueryModel* m : schemaModels_)
+    for(QAbstractTableModel* m : schemaModels_)
         delete m;
     db_->close();
     QSqlDatabase::removeDatabase(db_->connectionName());
@@ -70,9 +70,9 @@ DbConnection* DbConnection::fromName(QString name) {
      return tableModels_[tableName];
  }
 
- QSqlQueryModel* DbConnection::getStructureModel(QString tableName) {
+ QAbstractTableModel* DbConnection::getStructureModel(QString tableName) {
      if(!schemaModels_.contains(tableName)) {
-        QSqlQueryModel *model = new SqlSchemaModel(db_, tableName);
+        QAbstractTableModel *model = new SqlSchemaModel(db_, tableName);
         //model->setQuery("DESCRIBE " + tableName, *db_);
         schemaModels_[tableName] = model;
      }

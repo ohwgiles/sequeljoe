@@ -15,6 +15,7 @@
 
 class QSqlDatabase;
 class QSettings;
+class QAbstractTableModel;
 class QSqlTableModel;
 class QSqlQueryModel;
 
@@ -30,7 +31,7 @@ public:
 
     virtual QStringList getTableNames();
     virtual QSqlTableModel* getTableModel(QString tableName);
-    virtual QSqlQueryModel* getStructureModel(QString tableName);
+    virtual QAbstractTableModel* getStructureModel(QString tableName);
     virtual QSqlQueryModel* query(QString q, QSqlQueryModel* update = 0);
     static constexpr const char* KEY_HOST = "Host";
     static constexpr const char* KEY_DBNM = "DbName";
@@ -58,7 +59,7 @@ protected:
     QSqlDatabase* db_;
 QStringList dbNames_;
     QHash<QString, QSqlTableModel*> tableModels_;
-    QHash<QString, QSqlQueryModel*> schemaModels_;
+    QHash<QString, QAbstractTableModel*> schemaModels_;
 };
 
 #endif // _SEQUELJOE_DBCONNECTION_H_
