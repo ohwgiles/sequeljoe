@@ -5,7 +5,7 @@
 
 class QSqlQuery;
 class QSqlDatabase;
-
+/*
 struct SqlColumn {
     QString name;
     QString type;
@@ -17,7 +17,9 @@ struct SqlColumn {
     QString extra;
     QString collation;
     QString comment;
-};
+};*/
+
+typedef QVector<QVariant> SqlColumn;
 
 class SqlSchemaModel : public QAbstractTableModel
 {
@@ -30,12 +32,15 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role);
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
+
+    bool insertRows(int row, int count, const QModelIndex &parent);
+    bool removeRows(int row, int count, const QModelIndex &parent);
 signals:
 
 public slots:
 private:
     QString getColumnChangeQuery(QString column, const SqlColumn& def) const;
-
+bool isAdding_;
     QSqlQuery* query_;
     QVector<SqlColumn> columns_;
     QString tableName_;

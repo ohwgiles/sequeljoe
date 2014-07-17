@@ -63,5 +63,7 @@ void TableView::handleDeleteRow() {
 }
 
 void TableView::handleAddRow() {
-    model()->insertRow(model()->rowCount());
+    int newRow = model()->rowCount();
+    model()->insertRow(newRow);
+    edit(model()->index(newRow, 0));
 }
