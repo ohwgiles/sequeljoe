@@ -63,10 +63,11 @@ qDebug() << "connect on " << port;
     db_->setPassword(pass_);
     bool ok = db_->open();
 qDebug() << ok;
+if(ok) {
     populateDatabases();
 
     emit connectionSuccess();
-
+}
 }
 
 

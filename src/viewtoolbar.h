@@ -24,6 +24,8 @@ public:
     };
 
     ViewToolBar(QWidget* parent = 0);
+    void setCurrentDatabase(QString);
+
 public slots:
     void enableAll(bool enabled = true);
     void populateDatabases(QStringList names);

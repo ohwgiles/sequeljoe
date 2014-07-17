@@ -66,6 +66,10 @@ void ViewToolBar::populateDatabases(QStringList names)
         dbSelect_->setCurrentText(current);
 }
 
+void ViewToolBar::setCurrentDatabase(QString name) {
+    dbSelect_->setCurrentText(name);
+}
+
 void ViewToolBar::dbComboModified(int indx) {
     if(indx > 0)
         emit dbChanged(dbSelect_->currentText());

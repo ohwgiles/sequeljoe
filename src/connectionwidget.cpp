@@ -70,6 +70,9 @@ connect(this, SIGNAL(nameChanged(QString)), listWidget_, SLOT(updateName(QString
     sqlType_->addItems(db.drivers());
     form->addRow("Connection Type", sqlType_);
 
+    dbName_ = new QLineEdit(boxSetup);
+    form->addRow("Database Name", dbName_);
+
     username_ = new QLineEdit(boxSetup);
     form->addRow("Username", username_);
 
@@ -99,7 +102,7 @@ connect(this, SIGNAL(nameChanged(QString)), listWidget_, SLOT(updateName(QString
         sshPassKey_ = new PassKeyWidget(boxSsh);
         sshForm->addRow("Password", sshPassKey_);
 
-        form->setWidget(7, QFormLayout::SpanningRole, boxSsh);
+        form->setWidget(8, QFormLayout::SpanningRole, boxSsh);
     }
     QPushButton* pushButton = new QPushButton("Connect", boxSetup);
     form->addWidget(pushButton);
@@ -117,6 +120,7 @@ panel->setLayout(layout);
     connect(host_, SIGNAL(textEdited(QString)), this, SLOT(setupHostChanged(QString)));
     connect(port_, SIGNAL(textEdited(QString)), this, SLOT(setupPortChanged(QString)));
     connect(sqlType_, SIGNAL(currentTextChanged(QString)), this, SLOT(setupSqlTypeChanged(QString)));
+    connect(dbName_, SIGNAL(textEdited(QString)), this, SLOT(setupDbChanged(QString)));
     connect(username_, SIGNAL(textEdited(QString)), this, SLOT(setupUserChanged(QString)));
     connect(password_, SIGNAL(textEdited(QString)), this, SLOT(setupPassChanged(QString)));
     connect(chkUseSsh_, SIGNAL(toggled(bool)), this, SLOT(setupUseSshChanged(bool)));
@@ -156,6 +160,13 @@ void ConnectionWidget::setupSqlTypeChanged(QString type) {
     QSettings s;
     s.beginGroup(group_);
     s.setValue(DbConnection::KEY_TYPE, type);
+    s.endGroup();
+}
+
+void ConnectionWidget::setupDbChanged(QString db) {
+    QSettings s;
+    s.beginGroup(group_);
+    s.setValue(DbConnection::KEY_DBNM, db);
     s.endGroup();
 }
 
@@ -216,6 +227,7 @@ void ConnectionWidget::loadSettings(QString name) {
     host_->setText(s.value(DbConnection::KEY_HOST).toString());
     sqlType_->setCurrentText(s.value(DbConnection::KEY_TYPE).toString());
     port_->setText(s.value(DbConnection::KEY_PORT).toString());
+    dbName_->setText(s.value(DbConnection::KEY_DBNM).toString());
     username_->setText(s.value(DbConnection::KEY_USER).toString());
     password_->setText(s.value(DbConnection::KEY_PASS).toString());
     chkUseSsh_->setChecked(s.value(SshDbConnection::KEY_USE_SSH).toBool());

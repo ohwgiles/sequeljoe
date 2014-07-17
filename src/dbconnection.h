@@ -44,6 +44,8 @@ public:
     void populateDatabases();
 QStringList getDatabaseNames() const { return dbNames_; }
 
+    QString getDatabaseName() const { return dbName_; }
+
 public slots:
     void setDbName(QString name);
 signals:

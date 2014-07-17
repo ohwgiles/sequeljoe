@@ -166,7 +166,11 @@ void MainPanel::firstConnectionMade()
 
     toolbar_->enableAll();
     queryWidget_->setDb(db_);
+
     toolbar_->populateDatabases(db_->getDatabaseNames());
+    if(!db_->getDatabaseName().isEmpty())
+        toolbar_->setCurrentDatabase(db_->getDatabaseName());
+
     connect(toolbar_, SIGNAL(dbChanged(QString)), this, SLOT(dbChanged(QString)));
 
 
@@ -174,13 +178,14 @@ void MainPanel::firstConnectionMade()
     connect(db_, SIGNAL(connectionSuccess()), this, SLOT(connectionMade()));
     // todo below should be done all times, above should only be done once
 
+
     connectionMade();
 }
 
 void MainPanel::connectionMade()
-{
+{//if(!db_->isOpen()) return;
     QStringListModel* model = static_cast<QStringListModel*>(tableFilterProxy_->sourceModel());
-    qDebug() << "tables: " << db_->getTableNames();
+    //qDebug() << "tables: " << db_->getTableNames();
     model->setStringList(db_->getTableNames());
 
 }

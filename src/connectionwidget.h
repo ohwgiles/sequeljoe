@@ -36,6 +36,7 @@ private:
     QLineEdit *host_;
     QLineEdit *port_;
     QComboBox* sqlType_;
+    QLineEdit *dbName_;
     QLineEdit *username_;
     QLineEdit *password_;
     QCheckBox *chkUseSsh_;
@@ -51,6 +52,7 @@ private slots:
     void setupHostChanged(QString);
     void setupPortChanged(QString);
     void setupSqlTypeChanged(QString);
+    void setupDbChanged(QString);
     void setupUserChanged(QString);
     void setupPassChanged(QString);
     void setupUseSshChanged(bool);
