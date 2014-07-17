@@ -36,7 +36,8 @@ SqlSchemaModel::SqlSchemaModel(QSqlDatabase* db, QString tableName, QObject *par
             c.type = typeRegexp.cap(1).toUpper();
             c.length = typeRegexp.cap(2);
             c.is_unsigned = (typeRegexp.cap(3) == "unsigned");
-        }
+        } else
+            c.type = query_->value(1).toString(); //e.g. TEXT has no length or unsigned
         c.allow_null = (query_->value(3).toString() == "YES");
         c.key = query_->value(4).toString();
         c.default_value = query_->value(5).toString();
@@ -62,7 +63,6 @@ Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
         case SCHEMA_NAME:
         case SCHEMA_TYPE:
         case SCHEMA_LENGTH:
-        case SCHEMA_KEY:
         case SCHEMA_DEFAULT:
         case SCHEMA_EXTRA:
         case SCHEMA_COLLATION:
@@ -124,10 +124,11 @@ QString SqlSchemaModel::getColumnChangeQuery(QString column, const SqlColumn& de
             (def.is_unsigned ? " UNSIGNED" : "") +
             (!def.allow_null ? " NOT NULL" : "") +
             (!def.default_value.isNull() ? " DEFAULT " + def.default_value : "") +
+            (!def.extra.isNull() ? def.extra : "") +
             (!def.collation.isNull() ? " COLLATE '" + def.collation + "'" : "") +
-            (!def.comment.isNull() ? " COMMENT '" + def.comment.replace("'","''") + "'" : "");
+            (!def.comment.isNull() ? " COMMENT '" + def.comment + "'" : "");
 }
-
+#include <QSqlError>
 bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, int role) {
     qDebug() << "setting " << index.column() << "," << index.row() << " to " << value;
     if(index.isValid() && role == Qt::EditRole) {
