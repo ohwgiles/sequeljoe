@@ -34,6 +34,8 @@ signals:
 
 public slots:
 private:
+    QString getColumnChangeQuery(QString column, const SqlColumn& def) const;
+
     QSqlQuery* query_;
     QVector<SqlColumn> columns_;
     QString tableName_;
