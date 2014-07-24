@@ -22,7 +22,7 @@
 #include "sshdbconnection.h"
 #include "viewtoolbar.h"
 #include "querypanel.h"
-#include "tableview.h"
+#include "filteredpagedtableview.h"
 #include "tablelist.h"
 
 MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
@@ -40,10 +40,13 @@ MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
         layout->addWidget(toolbar_);
     }
 
+    QWidget* mainWidget = new QWidget(this);
+    QBoxLayout* mainLayout = new QVBoxLayout(this);
+
     { // this separates the table list from the table content/structure
         splitView_ = new QSplitter(this);
         splitView_->setOrientation(Qt::Horizontal);
-        splitView_->setHandleWidth(2);
+        //splitView_->setHandleWidth(2);
 
         tableChooser_ = new TableList(this);
         connect(tableChooser_, SIGNAL(tableSelected(QString)), this, SLOT(tableChanged(QString)));
@@ -55,7 +58,7 @@ MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
             vlayout->setContentsMargins(0,0,0,0);
             vlayout->setSpacing(0);
 
-            content_ = new TableView(w);
+            content_ = new FilteredPagedTableView(w);
             vlayout->addWidget(content_);
 
             structure_ = new TableView(w);
@@ -66,20 +69,23 @@ MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
         }
         // end of splitter widget
         splitView_->setStretchFactor(1,4);
-        layout->addWidget(splitView_);
+        mainLayout->addWidget(splitView_);
     }
 
     { // there is no sense in showing the table list for the query view, so raise it a level
         queryWidget_ = new QueryPanel(this);
         queryWidget_->hide(); // it is of course still hidden by default
-        layout->addWidget(queryWidget_);
+        mainLayout->addWidget(queryWidget_);
     }
 
     {
         settings_ = new ConnectionWidget(this);
-        layout->addWidget(settings_);
+        mainLayout->addWidget(settings_);
         connect(settings_, SIGNAL(doConnect(QString)), this, SLOT(openConnection(QString)));
     }
+
+    mainWidget->setLayout(mainLayout);
+    layout->addWidget(mainWidget);
 
     this->setLayout(layout);
 

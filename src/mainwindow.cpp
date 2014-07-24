@@ -35,7 +35,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QWidget* w = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(w);
-    //layout->setSpacing(6);
     layout->setContentsMargins(0, 0, 0, 0);
 
     {   // tab bar
@@ -83,7 +82,7 @@ void MainWindow::handleTabChanged(int index)
 {
     //qDebug() << tabs_->indexOf(tabs_->previousInFocusChain());
 
-    setWindowTitle("SequelJoe - " + tabs_->tabText(index));
+    setWindowTitle(tabs_->tabText(index) + " - SequelJoe");
 }
 
 void MainWindow::handleTabClosed(int index)
@@ -106,7 +105,8 @@ void MainWindow::updateTabName(QWidget * tab, QString name)
 {
     qDebug() << "setting name to " << name;
     tabs_->setTabText(tabs_->indexOf(tab), name);
-    setWindowTitle("SequelJoe - " + name);
+    handleTabChanged(tabs_->indexOf(tab));
+    //setWindowTitle(name + " - SequelJoe");
 }
 
 MainWindow::~MainWindow()

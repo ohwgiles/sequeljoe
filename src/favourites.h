@@ -30,7 +30,7 @@ private slots:
     void deleteButtonClicked();
 private:
     QListWidget* list_;
-    QToolBar* bar_;
+    QLayout* bar_;
 };
 
 #endif // _SEQUELJOE_FAVOURITES_H_

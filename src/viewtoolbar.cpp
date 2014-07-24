@@ -17,6 +17,11 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
     group_ = new QActionGroup(this);
     setIconSize(QSize(20,20));
     setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+//this->setContentsMargins(20,20,20,20);
+
+    // adding a dummy space widget appears to even out the toolbar
+    addWidget(new QWidget(this));
+
 
     //addWidget(new QLabel("Database:"));
     dbSelect_ = new QComboBox(this);
@@ -35,6 +40,7 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
 
     addAction(":users", "Users", SLOT(showQuery()));
     addAction(":disconnect", "Disconnect", SIGNAL(disconnect()))->setCheckable(false);
+
 }
 
 QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot)

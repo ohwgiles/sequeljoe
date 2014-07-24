@@ -5,6 +5,7 @@
 #include <QStringListModel>
 #include <QSortFilterProxyModel>
 #include <QVBoxLayout>
+#include <QLabel>
 
 TableList::TableList(QWidget *parent) :
     QWidget(parent)
@@ -12,7 +13,11 @@ TableList::TableList(QWidget *parent) :
     QBoxLayout* vlayout = new QVBoxLayout(this);
 
     filterInput_ = new QLineEdit(this);
-    vlayout->addWidget(filterInput_);
+    QHBoxLayout* filterLayout = new QHBoxLayout();
+    filterLayout->setContentsMargins(0,0,0,0);
+    filterLayout->addWidget(new QLabel("Filter:", this));
+    filterLayout->addWidget(filterInput_);
+    vlayout->addLayout(filterLayout);
 
     tableItems_ = new QStringListModel(this);
 
@@ -26,7 +31,7 @@ TableList::TableList(QWidget *parent) :
     connect(tables_->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(selectionChanged(QModelIndex)));
 
     vlayout->setContentsMargins(0,0,0,0);
-    vlayout->setSpacing(0);
+    //vlayout->setSpacing(0);
     vlayout->addWidget(tables_);
 
     setLayout(vlayout);

@@ -10,7 +10,8 @@
 #include <QVBoxLayout>
 #include <QToolBar>
 #include <QDateTime>
-
+#include <QPushButton>
+#include <QMessageBox>
 #include "favourites.h"
 #include <QDebug>
 Favourites::Favourites(QWidget *parent) :
@@ -44,10 +45,19 @@ Favourites::Favourites(QWidget *parent) :
     }
 
     { // toolbar
-        bar_ = new QToolBar(this);
-        bar_->addAction("+", this, SLOT(addButtonClicked()));
-        bar_->addAction("-", this, SLOT(deleteButtonClicked()));
-        layout->addWidget(bar_);
+        bar_ = new QHBoxLayout(this);//QToolBar(this);
+        bar_->setContentsMargins(0,0,0,0);
+        //bar_->setSpacing(20);
+        QPushButton* addFavourite = new QPushButton("New Favourite", this);
+        connect(addFavourite, SIGNAL(clicked()), this, SLOT(addButtonClicked()));
+        bar_->addWidget(addFavourite);
+        QPushButton* delFavourite = new QPushButton("Delete Favourite", this);
+        connect(delFavourite, SIGNAL(clicked()), this, SLOT(deleteButtonClicked()));
+        bar_->addWidget(delFavourite);
+//        QWidget* spacer = new QWidget(this);
+//        spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        //bar_->addWidget(spacer);
+        layout->addLayout(bar_);
     }
 }
 
@@ -76,8 +86,10 @@ void Favourites::addButtonClicked()
 
 void Favourites::deleteButtonClicked()
 {
-    QSettings s;
-    QListWidgetItem* item = list_->currentItem();
-    s.remove(item->data(Qt::UserRole).toString());
-    delete item;
+    if(QMessageBox::warning(this, QString("Delete Favourite"), "Are you sure? This action cannot be undone", QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
+        QSettings s;
+        QListWidgetItem* item = list_->currentItem();
+        s.remove(item->data(Qt::UserRole).toString());
+        delete item;
+    }
 }

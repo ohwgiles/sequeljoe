@@ -16,7 +16,7 @@ endif()
 add_definitions("-std=c++11")
 qt5_add_resources(SRC_RESOURCES icons.qrc)
 
-set(QTTEST_SRCS main.cpp mainwindow.cpp sshdbconnection.cpp dbconnection.cpp sshthread.cpp mainpanel.cpp connectionwidget.cpp favourites.cpp viewtoolbar.cpp tablecell.cpp tableview.cpp tabwidget.cpp querypanel.cpp sqlhighlighter.cpp sqlschemamodel.cpp tablelist.cpp passkeywidget.cpp)
+set(QTTEST_SRCS main.cpp mainwindow.cpp sshdbconnection.cpp dbconnection.cpp sshthread.cpp mainpanel.cpp connectionwidget.cpp filteredpagedtableview.cpp favourites.cpp viewtoolbar.cpp tablecell.cpp tableview.cpp tabwidget.cpp querypanel.cpp sqlhighlighter.cpp sqlschemamodel.cpp tablelist.cpp passkeywidget.cpp)
 
 IF(APPLE)
   # set how it shows up in the Info.plist file

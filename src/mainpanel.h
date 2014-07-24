@@ -25,6 +25,8 @@ class QueryPanel;
 class QSplitter;
 class TableList;
 
+class FilteredPagedTableView;
+
 class MainPanel : public QWidget
 {
     Q_OBJECT
@@ -54,7 +56,7 @@ private:
     ConnectionWidget* settings_;
     QSplitter* splitView_;
     TableList* tableChooser_;
-    QTableView* content_;
+    FilteredPagedTableView* content_;
     QTableView* structure_;
     ViewToolBar* toolbar_;
     QueryPanel* queryWidget_;
