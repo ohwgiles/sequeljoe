@@ -39,14 +39,16 @@ table_ = new TableView(this);
 
 void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
     disconnect(this, SLOT(updatePagination(int,int,int)));
-    connect(m, SIGNAL(pagesChanged(int,int,int)), this, SLOT(updatePagination(int,int,int)));
     disconnect(prev_, SIGNAL(clicked()));
-    connect(prev_, SIGNAL(clicked()), m, SLOT(prevPage()));
     disconnect(next_, SIGNAL(clicked()));
+    if(m) {
+    connect(m, SIGNAL(pagesChanged(int,int,int)), this, SLOT(updatePagination(int,int,int)));
+    connect(prev_, SIGNAL(clicked()), m, SLOT(prevPage()));
     connect(next_, SIGNAL(clicked()), m, SLOT(nextPage()));
     SqlContentModel* sm = (SqlContentModel*) m;
-    table_->setModel(m);
     sm->select();
+    }
+    table_->setModel(m);
 }
 
 void FilteredPagedTableView::updatePagination(int firstRow, int rowsInPage, int totalRecords)

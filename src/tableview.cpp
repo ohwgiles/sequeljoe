@@ -10,6 +10,7 @@
 #include <QMenu>
 #include <QAction>
 #include "tablecell.h"
+#include "sqlcontentmodel.h"
 TableView::TableView(QWidget *parent) :
     QTableView(parent)
 {
@@ -59,7 +60,12 @@ void TableView::handleSetNull() {
 }
 
 void TableView::handleDeleteRow() {
-    model()->removeRow(currentIndex().row());
+    QSet<int> rows;
+    for(const QModelIndex& i : selectedIndexes())
+        rows << i.row();
+    for(int i : rows)
+        model()->removeRow(i);
+    ((SqlContentModel*) model())->select();
 }
 
 void TableView::handleAddRow() {

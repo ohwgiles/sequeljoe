@@ -4,6 +4,7 @@
 #include "tableview.h"
 class QPushButton;
 class QLabel;
+
 class FilteredPagedTableView : public QWidget
 {
     Q_OBJECT
