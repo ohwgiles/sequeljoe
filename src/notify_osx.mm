@@ -1,6 +1,6 @@
 #include "notify.h"
-#import <NSUserNotification.h>
-#import <NSString.h>
+#import <Foundation/NSUserNotification.h>
+#import <Foundation/NSString.h>
 
 @interface PopupEnabler : NSObject
 {

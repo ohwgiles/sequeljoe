@@ -15,6 +15,10 @@ public:
 private:
     QPushButton* b;
     QTableView* table_;
+
+    QPushButton* prev_;
+    QPushButton* next_;
+
 signals:
 
 public slots:

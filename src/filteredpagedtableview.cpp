@@ -14,11 +14,21 @@ FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
 table_ = new TableView(this);
     layout->addWidget(table_);
 
-    QToolBar* bar = new QToolBar(this);
+    QHBoxLayout* bar = new QHBoxLayout(this);
     //bar->addWidget(new QPushButton("hi"));
+    bar->setSpacing(4);
 
-    bar->addAction("<", this, SLOT(previousPage()));
-    layout->addWidget(bar);
+    prev_ = new QPushButton("<", this);
+    next_ = new QPushButton(">", this);
+
+    QWidget* spacer = new QWidget(this);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    bar->addWidget(spacer);
+    bar->addWidget(prev_);
+    bar->addWidget(next_);
+
+    layout->addLayout(bar);
 
     setLayout(layout);
 }

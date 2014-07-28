@@ -10,6 +10,7 @@
 #include <QProxyStyle>
 #include <QMenu>
 #include "notify.h"
+
 class MacFontStyle : public QProxyStyle {
 protected:
     void polish(QWidget *w) {
@@ -18,23 +19,19 @@ protected:
             w->setAttribute(Qt::WA_MacSmallSize);
     }
 };
+
 int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationDomain("sequeljoe.org");
-
     notify = new Notifier();
-#ifdef __APPLE__
-    //QApplication::setStyle("cocoa");
-#endif
+
     QApplication a(argc, argv);
-    // todo: get this from the environment/compile flags
-    //a.addLibraryPath("/Users/olivergiles/Qt/5.1.1/clang_64/plugins/sqldrivers");
 
 #ifdef __APPLE__
     // small hack to fix the weirdly large font size
     a.setStyle(new MacFontStyle);
 #endif
-notify->send("test", "test2");
+
     MainWindow w;
     w.show();    
 
