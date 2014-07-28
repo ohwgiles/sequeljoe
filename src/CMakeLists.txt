@@ -42,7 +42,7 @@ elseif(UNIX)
     set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBNOTIFY_LIBRARY})
 endif(APPLE)
 
-add_executable(${exe} MACOSX_BUNDLE WIN32 ${SOURCES})
+add_executable(${exe} MACOSX_BUNDLE WIN32 ${SOURCES} ${SRC_RESOURCES})
 target_link_libraries(${exe} ${LIBSSH_LIBRARY} ${FOUNDATION_LIBRARY})
 qt5_use_modules(${exe} Widgets Sql)
 

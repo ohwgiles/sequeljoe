@@ -13,6 +13,7 @@
 #include "dbconnection.h"
 #include "sshdbconnection.h"
 #include "sqlschemamodel.h"
+#include "sqlcontentmodel.h"
 
 DbConnection::DbConnection(const QSettings &settings)
 {
@@ -30,7 +31,7 @@ void DbConnection::close() { if(db_->isOpen()) db_->close(); }
 
 DbConnection::~DbConnection()
 {
-    for(QSqlTableModel* m : tableModels_)
+    for(QAbstractTableModel* m : tableModels_)
         delete m;
     for(QAbstractTableModel* m : schemaModels_)
         delete m;
@@ -59,12 +60,12 @@ DbConnection* DbConnection::fromName(QString name) {
      return db_->tables();
  }
 
- QSqlTableModel* DbConnection::getTableModel(QString tableName) {
+ QAbstractTableModel *DbConnection::getTableModel(QString tableName) {
      if(!tableModels_.contains(tableName)) {
-         QSqlTableModel* model = new QSqlTableModel(0, *db_);
-         model->setTable(tableName);
-         model->setEditStrategy(QSqlTableModel::OnFieldChange);
-         model->select();
+         QAbstractTableModel* model = new SqlContentModel(db_, tableName);
+//         model->setTable(tableName);
+//         model->setEditStrategy(QSqlTableModel::OnFieldChange);
+//         model->select();
          tableModels_[tableName] = model;
      }
      return tableModels_[tableName];

@@ -182,9 +182,8 @@ void MainPanel::dbChanged(QString name)
 
 void MainPanel::tableChanged(QString name)
 {
-    QSqlTableModel* m = db_->getTableModel(name);
     structure_->setModel(db_->getStructureModel(name));
-    content_->setModel(m);
+    content_->setModel(db_->getTableModel(name));
     // todo this shouldn't be set for every change of table, maybe it can be done just once? Or functionality bought into class
     connect(content_->horizontalHeader(), SIGNAL(sortIndicatorChanged(int,Qt::SortOrder)), this, SLOT(changeSort(int,Qt::SortOrder)));
 }

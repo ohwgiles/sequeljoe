@@ -30,7 +30,7 @@ public:
     static DbConnection* fromName(QString name);
 
     virtual QStringList getTableNames();
-    virtual QSqlTableModel* getTableModel(QString tableName);
+    virtual QAbstractTableModel* getTableModel(QString tableName);
     virtual QAbstractTableModel* getStructureModel(QString tableName);
     virtual QSqlQueryModel* query(QString q, QSqlQueryModel* update = 0);
     static constexpr const char* KEY_HOST = "Host";
@@ -60,7 +60,7 @@ protected:
     QByteArray dbName_;
     QSqlDatabase* db_;
 QStringList dbNames_;
-    QHash<QString, QSqlTableModel*> tableModels_;
+    QHash<QString, QAbstractTableModel*> tableModels_;
     QHash<QString, QAbstractTableModel*> schemaModels_;
 };
 
