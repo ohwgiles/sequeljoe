@@ -26,6 +26,7 @@ class SqlSchemaModel : public QAbstractTableModel
     Q_OBJECT
 public:
     explicit SqlSchemaModel(QSqlDatabase* db, QString tableName, QObject *parent = 0);
+    virtual ~SqlSchemaModel();
     int rowCount(const QModelIndex& parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &item, int role = Qt::DisplayRole) const;

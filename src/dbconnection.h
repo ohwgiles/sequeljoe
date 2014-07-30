@@ -13,13 +13,15 @@
 #include <QHash>
 #include <QStringList>
 
+#include <QSqlDatabase>
+
 class QSqlDatabase;
 class QSettings;
 class QAbstractTableModel;
 class QSqlTableModel;
 class QSqlQueryModel;
 
-class DbConnection : public QObject
+class DbConnection : public QObject, public QSqlDatabase
 {
     Q_OBJECT
 public:
@@ -40,7 +42,7 @@ public:
     static constexpr const char* KEY_USER = "Username";
     static constexpr const char* KEY_PASS = "Password";
 
-    void close();
+    //void close();
     void populateDatabases();
 QStringList getDatabaseNames() const { return dbNames_; }
 
@@ -58,7 +60,7 @@ protected:
     QByteArray pass_;
     QString type_;
     QByteArray dbName_;
-    QSqlDatabase* db_;
+    //QSqlDatabase* db_;
 QStringList dbNames_;
     QHash<QString, QAbstractTableModel*> tableModels_;
     QHash<QString, QAbstractTableModel*> schemaModels_;

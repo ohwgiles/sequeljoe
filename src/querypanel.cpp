@@ -18,7 +18,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QLabel>
-QueryPanel::QueryPanel(QWidget* parent) : QWidget(parent), model_(new QSqlQueryModel)
+QueryPanel::QueryPanel(QWidget* parent) : QWidget(parent), model_(0)
 {
     QBoxLayout* b = new QVBoxLayout(this);
     b->setContentsMargins(0,0,0,0);

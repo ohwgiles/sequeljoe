@@ -53,15 +53,16 @@ void SshDbConnection::beginDbConnect(int port)
     qDebug() << __PRETTY_FUNCTION__ << QThread::currentThreadId();
     // do we need to wait until accept()?
 
-    db_ = new QSqlDatabase(QSqlDatabase::addDatabase(type_, last_connect_name));
+    *((QSqlDatabase*)this) = QSqlDatabase::addDatabase(type_, last_connect_name);
+    //db_ = new QSqlDatabase(QSqlDatabase::addDatabase(type_, last_connect_name));
     last_connect_name[7]++;
 qDebug() << "connect on " << port;
-    db_->setHostName("127.0.0.1");
-    db_->setPort(port);
-    db_->setDatabaseName(dbName_);
-    db_->setUserName(user_);
-    db_->setPassword(pass_);
-    bool ok = db_->open();
+    this->setHostName("127.0.0.1");
+    this->setPort(port);
+    this->setDatabaseName(dbName_);
+    this->setUserName(user_);
+    this->setPassword(pass_);
+    bool ok = this->open();
 qDebug() << ok;
 if(ok) {
     populateDatabases();

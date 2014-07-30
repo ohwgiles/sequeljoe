@@ -49,6 +49,11 @@ SqlSchemaModel::SqlSchemaModel(QSqlDatabase* db, QString tableName, QObject *par
         columns_.append(c);
     }
 }
+
+SqlSchemaModel::~SqlSchemaModel() {
+    delete query_;
+}
+
 int SqlSchemaModel::columnCount(const QModelIndex &parent) const
 {
     return SCHEMA_NUM_FIELDS;

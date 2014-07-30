@@ -27,7 +27,7 @@ DbConnection::DbConnection(const QSettings &settings)
     dbName_ = settings.value(DbConnection::KEY_DBNM).toByteArray();
 }
 
-void DbConnection::close() { if(db_->isOpen()) db_->close(); }
+//void DbConnection::close() { if(db_->isOpen()) db_->close(); }
 
 DbConnection::~DbConnection()
 {
@@ -35,8 +35,12 @@ DbConnection::~DbConnection()
         delete m;
     for(QAbstractTableModel* m : schemaModels_)
         delete m;
-    db_->close();
-    QSqlDatabase::removeDatabase(db_->connectionName());
+    //db_->close();
+
+    close();
+    QString name = connectionName();
+    *((QSqlDatabase*)this) = QSqlDatabase();
+    QSqlDatabase::removeDatabase(name);
 }
 
 DbConnection* DbConnection::fromName(QString name) {
@@ -52,17 +56,18 @@ DbConnection* DbConnection::fromName(QString name) {
  QSqlQueryModel* DbConnection::query(QString q, QSqlQueryModel* update) {
      if(!update)
          update = new QSqlQueryModel;
-     update->setQuery(q, *db_);
+     update->setQuery(q, *this);
      return update;
  }
 #include <QDebug>
  QStringList DbConnection::getTableNames() {
-     return db_->tables();
+     return QStringList();
+     return this->tables();
  }
 
  QAbstractTableModel *DbConnection::getTableModel(QString tableName) {
      if(!tableModels_.contains(tableName)) {
-         QAbstractTableModel* model = new SqlContentModel(db_, tableName);
+         QAbstractTableModel* model = new SqlContentModel(this, tableName);
 //         model->setTable(tableName);
 //         model->setEditStrategy(QSqlTableModel::OnFieldChange);
 //         model->select();
@@ -73,7 +78,7 @@ DbConnection* DbConnection::fromName(QString name) {
 
  QAbstractTableModel* DbConnection::getStructureModel(QString tableName) {
      if(!schemaModels_.contains(tableName)) {
-        QAbstractTableModel *model = new SqlSchemaModel(db_, tableName);
+        QAbstractTableModel *model = new SqlSchemaModel(this, tableName);
         //model->setQuery("DESCRIBE " + tableName, *db_);
         schemaModels_[tableName] = model;
      }
@@ -86,7 +91,7 @@ DbConnection* DbConnection::fromName(QString name) {
  void DbConnection::populateDatabases()
  {
      dbNames_.clear();
-     QSqlQuery query(*db_);
+     QSqlQuery query(*this);
      query.exec("SHOW DATABASES");
      while(query.next())
          dbNames_ << query.value(0).toString();
@@ -95,8 +100,7 @@ DbConnection* DbConnection::fromName(QString name) {
 
 void DbConnection::setDbName(QString name) {
     dbName_ = name.toLocal8Bit();
-    return;
-    db_->setDatabaseName(name);
+    this->setDatabaseName(name);
 //db_->
-    db_->open();
+    this->open();
 }

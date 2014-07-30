@@ -22,7 +22,7 @@ class SqlContentModel : public QAbstractTableModel
     Q_OBJECT
 public:
     explicit SqlContentModel(QSqlDatabase* db, QString table, QObject *parent = 0);
-
+virtual ~SqlContentModel();
     static constexpr unsigned rowsPerPage() { return 1000; }
 
     void describe();

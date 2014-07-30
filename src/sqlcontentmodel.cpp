@@ -18,6 +18,10 @@ SqlContentModel::SqlContentModel(QSqlDatabase *db, QString table, QObject *paren
     describe();
     //select();
 }
+SqlContentModel::~SqlContentModel() {
+    delete query_;
+}
+
 int SqlContentModel::rowCount(const QModelIndex &parent) const {
     return query_->size() + (isAdding_?1:0);
 }
