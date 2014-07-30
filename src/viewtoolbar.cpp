@@ -60,7 +60,7 @@ void ViewToolBar::enableAll(bool enabled)
         a->setEnabled(enabled);
     populateDatabases(QStringList());
 }
-
+#include <QDebug>
 void ViewToolBar::populateDatabases(QStringList names)
 {
     QString current = dbSelect_->currentText();
@@ -68,6 +68,8 @@ void ViewToolBar::populateDatabases(QStringList names)
     dbSelect_->addItem("Choose Database...");
     dbSelect_->insertSeparator(1);
     dbSelect_->addItems(names);
+    qDebug() << "adding " << names;
+    //if(names.isEmpty()) *((char*)nullptr) = 4;
     if(!current.isEmpty())
         dbSelect_->setCurrentText(current);
 }

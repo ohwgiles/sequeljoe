@@ -49,7 +49,7 @@ DbConnection* DbConnection::fromName(QString name) {
     if(s.value(SshDbConnection::KEY_USE_SSH).toBool()) {
         return new SshDbConnection(s);
     }
-    return nullptr;
+    return new DbConnection(s);
 }
 
 
@@ -61,19 +61,18 @@ DbConnection* DbConnection::fromName(QString name) {
  }
 #include <QDebug>
  QStringList DbConnection::getTableNames() {
-     return QStringList();
      return this->tables();
  }
 
  QAbstractTableModel *DbConnection::getTableModel(QString tableName) {
-     if(!tableModels_.contains(tableName)) {
+     if(!tableModels_.contains(databaseName() + tableName)) {
          QAbstractTableModel* model = new SqlContentModel(this, tableName);
 //         model->setTable(tableName);
 //         model->setEditStrategy(QSqlTableModel::OnFieldChange);
 //         model->select();
-         tableModels_[tableName] = model;
+         tableModels_[databaseName()+tableName] = model;
      }
-     return tableModels_[tableName];
+     return tableModels_[databaseName()+tableName];
  }
 
  QAbstractTableModel* DbConnection::getStructureModel(QString tableName) {
@@ -93,10 +92,32 @@ DbConnection* DbConnection::fromName(QString name) {
      dbNames_.clear();
      QSqlQuery query(*this);
      query.exec("SHOW DATABASES");
-     while(query.next())
+     while(query.next()) {
          dbNames_ << query.value(0).toString();
+	 }
  }
+static char last_connect_name[] = "cs_name0";
 
+bool DbConnection::connect()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+        *((QSqlDatabase*)this) = QSqlDatabase::addDatabase(type_, last_connect_name);
+    //db_ = new QSqlDatabase(QSqlDatabase::addDatabase(type_, last_connect_name));
+    last_connect_name[7]++;
+    this->setHostName(host_);
+    this->setPort(port_);
+    this->setDatabaseName(dbName_);
+    this->setUserName(user_);
+    this->setPassword(pass_);
+    bool ok = this->open();
+qDebug() << ok;
+if(ok) {
+    populateDatabases();
+
+    emit connectionSuccess();
+
+}
+}
 
 void DbConnection::setDbName(QString name) {
     dbName_ = name.toLocal8Bit();

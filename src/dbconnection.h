@@ -28,7 +28,7 @@ public:
     static constexpr int DEFAULT_SQL_PORT = 3306;
     DbConnection(const QSettings& settings);
     virtual ~DbConnection();
-    virtual bool connect() = 0;
+    virtual bool connect();
     static DbConnection* fromName(QString name);
 
     virtual QStringList getTableNames();
@@ -61,6 +61,7 @@ protected:
     QString type_;
     QByteArray dbName_;
     //QSqlDatabase* db_;
+    void dropModelCache();
 QStringList dbNames_;
     QHash<QString, QAbstractTableModel*> tableModels_;
     QHash<QString, QAbstractTableModel*> schemaModels_;

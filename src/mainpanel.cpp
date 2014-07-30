@@ -127,9 +127,9 @@ void MainPanel::openConnection(QString name) {
     connect(db_, SIGNAL(connectionSuccess()), this, SLOT(firstConnectionMade()));
 
     // todo show loading progress
-    db_->connect();
     toggleEditSettings(false);
-    qDebug() << "setting name to " << name;
+    db_->connect();
+    qDebug() << "1setting name to " << name;
     QSettings s;
     s.beginGroup(name);
     QString label = s.value("Name").toString();
@@ -146,7 +146,7 @@ void MainPanel::firstConnectionMade()
 
     toolbar_->enableAll();
     queryWidget_->setDb(db_);
-
+qDebug() << __PRETTY_FUNCTION__;
     toolbar_->populateDatabases(db_->getDatabaseNames());
     if(!db_->getDatabaseName().isEmpty())
         toolbar_->setCurrentDatabase(db_->getDatabaseName());

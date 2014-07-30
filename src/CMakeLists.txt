@@ -10,7 +10,7 @@ find_library(LIBSSH_LIBRARY NAMES ssh2 libssh2)
 set(CMAKE_AUTOMOC TRUE)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions("-std=c++11")
+add_definitions("-g -std=c++11")
 qt5_add_resources(SRC_RESOURCES icons.qrc)
 
 set(SOURCES main.cpp mainwindow.cpp sshdbconnection.cpp dbconnection.cpp
