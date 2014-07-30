@@ -46,7 +46,7 @@ QueryPanel::QueryPanel(QWidget* parent) : QWidget(parent), model_(new QSqlQueryM
         error_->setContentsMargins(8,8,8,8);
         v->addWidget(error_);
         connect(editor_, SIGNAL(textChanged()), error_, SLOT(hide()));
-        QBoxLayout* h = new QHBoxLayout(this);
+        QBoxLayout* h = new QHBoxLayout();
 
         //h->addWidget(new QSpacerItem());
         QPushButton* run = new QPushButton("Run Query");

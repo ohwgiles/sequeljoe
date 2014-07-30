@@ -45,7 +45,7 @@ Favourites::Favourites(QWidget *parent) :
     }
 
     { // toolbar
-        bar_ = new QHBoxLayout(this);//QToolBar(this);
+        bar_ = new QHBoxLayout();//QToolBar(this);
         bar_->setContentsMargins(0,0,0,0);
         //bar_->setSpacing(20);
         QPushButton* addFavourite = new QPushButton("New Favourite", this);

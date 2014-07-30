@@ -9,14 +9,17 @@
 #include <QHeaderView>
 #include <QMenu>
 #include <QAction>
+#include <QLayout>
 #include "tablecell.h"
 #include "sqlcontentmodel.h"
 TableView::TableView(QWidget *parent) :
     QTableView(parent)
 {
+    setContentsMargins(0,0,0,0);
     // todo remove this, but resize columns to content on load complete (allowing manual column resize)
     //horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     horizontalHeader()->setSortIndicatorShown(true);
+    horizontalHeader()->setFixedHeight(verticalHeader()->minimumSectionSize());
 this->setAlternatingRowColors(true);
     //tableView->resizeRowsToContents();
     //horizontalHeader()->setStretchLastSection(true);

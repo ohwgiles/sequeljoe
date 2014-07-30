@@ -3,6 +3,16 @@
 
 #include <QAbstractTableModel>
 #include <QVector>
+#include <QEvent>
+enum {
+    RefreshEvent = QEvent::User
+};
+
+enum {
+    FilterColumnRole = Qt::UserRole,
+    FilterOperationRole,
+    FilterValueRole
+};
 
 class QSqlDatabase;
 class QSqlQuery;
@@ -18,18 +28,17 @@ public:
     void describe();
 void select();
 
-
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const;
-
 bool setData(const QModelIndex &index, const QVariant &value, int role);
 Qt::ItemFlags flags(const QModelIndex &index) const;
 
 bool insertRows(int row, int count, const QModelIndex &parent);
 bool removeRows(int row, int count, const QModelIndex &parent);
-
+protected:
+    bool event(QEvent *);
 private:
     QSqlDatabase& db_;
     QString tableName_;
@@ -46,6 +55,9 @@ private:
     };
     QVector<ColumnHeader> columns_;
     QSqlQuery* query_;
+    QString whereColumn_;
+    QString whereOperation_;
+    QString whereValue_;
     //QVector<QVector<QVariant>> data_;
 
 signals:

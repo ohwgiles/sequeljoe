@@ -12,6 +12,7 @@ TableList::TableList(QWidget *parent) :
 {
     QBoxLayout* vlayout = new QVBoxLayout(this);
 
+    vlayout->setContentsMargins(0,0,0,0);
     filterInput_ = new QLineEdit(this);
     QHBoxLayout* filterLayout = new QHBoxLayout();
     filterLayout->setContentsMargins(0,0,0,0);
@@ -30,7 +31,6 @@ TableList::TableList(QWidget *parent) :
     connect(filterInput_, SIGNAL(textChanged(QString)), this, SLOT(filterTextChanged(QString)));
     connect(tables_->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(selectionChanged(QModelIndex)));
 
-    vlayout->setContentsMargins(0,0,0,0);
     //vlayout->setSpacing(0);
     vlayout->addWidget(tables_);
 

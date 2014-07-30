@@ -25,6 +25,14 @@ int SqlContentModel::columnCount(const QModelIndex &parent) const {
     return columns_.count();
 }
 QVariant SqlContentModel::data(const QModelIndex &index, int role) const {
+    if(role == FilterColumnRole)
+        return whereColumn_;
+    if(role == FilterOperationRole)
+        return whereOperation_;
+    if(role == FilterValueRole)
+        return whereValue_;
+
+
     if(index.row() == query_->size())
         return QVariant(); // during editing only. isAdding_ should be true here
 
@@ -70,13 +78,20 @@ void SqlContentModel::describe()
 void SqlContentModel::select()
 {
     beginResetModel();
-    query_->prepare("SELECT * FROM " + tableName_ + " LIMIT ?,?");
-    query_->bindValue(0, rowsFrom_);
-    query_->bindValue(1, rowsLimit_);
+
+    QString where;
+    if(!whereValue_.isEmpty()) {
+        where = " WHERE `" + whereColumn_ + "` = :value";
+    }
+    query_->prepare("SELECT * FROM " + tableName_ + where + " LIMIT :top, :count");
+    query_->bindValue(":value", whereValue_);
+    query_->bindValue(":top", rowsFrom_);
+    query_->bindValue(":count", rowsLimit_);
     query_->exec();
     endResetModel();
     emit pagesChanged(rowsFrom_, rowsLimit_, totalRecords_);
 }
+
 
 void SqlContentModel::nextPage() {
     rowsFrom_ += rowsPerPage();
@@ -119,7 +134,20 @@ bool SqlContentModel::removeRows(int row, int count, const QModelIndex &parent) 
 }
 bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, int role) {
     qDebug() << "setting " << index.column() << "," << index.row() << " to " << value;
-    if(!index.isValid()) return false;
+    if(role == FilterColumnRole) {
+        whereColumn_ = value.toString();
+        return true;
+
+    } else if(role == FilterOperationRole) {
+        whereOperation_ = value.toString();
+        return true;
+
+    } else if(role == FilterValueRole) {
+        whereValue_ = value.toString();
+        return true;
+
+    } else
+    //if(!index.isValid()) return false;
     if(role == Qt::EditRole) {
         if(index.row() == query_->size()) {
             QSqlQuery q(db_);
@@ -143,4 +171,10 @@ bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, i
         }
     }
     return false;
+}
+
+bool SqlContentModel::event(QEvent * e) {
+    if(e->type() == RefreshEvent)
+        return select(), true;
+    return QAbstractTableModel::event(e);
 }

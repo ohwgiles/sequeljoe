@@ -41,7 +41,7 @@ MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
     }
 
     QWidget* mainWidget = new QWidget(this);
-    QBoxLayout* mainLayout = new QVBoxLayout(this);
+    QBoxLayout* mainLayout = new QVBoxLayout();
 
     { // this separates the table list from the table content/structure
         splitView_ = new QSplitter(this);
@@ -56,7 +56,7 @@ MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
             QWidget* w = new QWidget(this);
             QBoxLayout* vlayout = new QVBoxLayout(w);
             vlayout->setContentsMargins(0,0,0,0);
-            vlayout->setSpacing(0);
+            //vlayout->setSpacing(0);
 
             content_ = new FilteredPagedTableView(w);
             vlayout->addWidget(content_);
@@ -86,8 +86,6 @@ MainPanel::MainPanel(DbConnection *db, QWidget* parent) :
 
     mainWidget->setLayout(mainLayout);
     layout->addWidget(mainWidget);
-
-    this->setLayout(layout);
 
     emit nameChanged(this, "New Connection");
     toggleEditSettings(db_ == 0);

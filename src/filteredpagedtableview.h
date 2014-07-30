@@ -2,8 +2,10 @@
 #define FILTEREDPAGEDTABLEVIEW_H
 
 #include "tableview.h"
-class QPushButton;
+class QAbstractButton;
 class QLabel;
+class QComboBox;
+class QLineEdit;
 
 class FilteredPagedTableView : public QWidget
 {
@@ -16,11 +18,16 @@ public:
     QHeaderView* horizontalHeader() const { return table_->horizontalHeader(); }
 
 private:
-    QPushButton* b;
+    QAbstractButton* b;
     QTableView* table_;
 
-    QPushButton* prev_;
-    QPushButton* next_;
+    QComboBox* filterColumns_;
+    QComboBox* filterOperation_;
+    QLineEdit* filterText_;
+    QAbstractButton* filterRun_;
+    QAbstractButton* filterClear_;
+    QAbstractButton* prev_;
+    QAbstractButton* next_;
     QLabel* pageNum_;
 
 signals:
@@ -29,6 +36,9 @@ public slots:
 
 private slots:
     void updatePagination(int,int,int);
+    void clearFilter();
+    void runFilter();
+    void refreshModel();
 };
 
 #endif // FILTEREDPAGEDTABLEVIEW_H
