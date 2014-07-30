@@ -34,16 +34,21 @@ if(APPLE)
     find_library(FOUNDATION_LIBRARY Foundation)
     set(SOURCES ${SOURCES} notify_osx.mm)
     set_source_files_properties(notify_osx.mm PROPERTIES COMPILE_FLAGS "-ObjC++")
-    set(EXTRA_LIBS ${EXTRA_LIBS} ${FOUNDATION})
+    set(EXTRA_LIBS ${EXTRA_LIBS} ${FOUNDATION_LIBRARY})
 elseif(UNIX)
     # linux
-    find_library(LIBNOTIFY_LIBRARY NAMES libnotify)
+    # libnotify depends on glib
+    find_package(PkgConfig REQUIRED)
+	pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+	pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
+    include_directories(${GLIB2_INCLUDE_DIRS} ${LIBNOTIFY_INCLUDE_DIRS})
+    message(${LIBNOTIFY_LIBRARIES})
     set(SOURCES ${SOURCES} notify_libnotify.cpp)
-    set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBNOTIFY_LIBRARY})
+    set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBNOTIFY_LIBRARIES})
 endif(APPLE)
 
 add_executable(${exe} MACOSX_BUNDLE WIN32 ${SOURCES} ${SRC_RESOURCES})
-target_link_libraries(${exe} ${LIBSSH_LIBRARY} ${FOUNDATION_LIBRARY})
+target_link_libraries(${exe} ${LIBSSH_LIBRARY} ${EXTRA_LIBS})
 qt5_use_modules(${exe} Widgets Sql)
 
 install(TARGETS ${exe}

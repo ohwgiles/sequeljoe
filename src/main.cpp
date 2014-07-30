@@ -31,7 +31,6 @@ int main(int argc, char *argv[])
     // small hack to fix the weirdly large font size
     a.setStyle(new MacFontStyle);
 #endif
-
     MainWindow w;
     w.show();    
 
