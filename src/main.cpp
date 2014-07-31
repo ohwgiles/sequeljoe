@@ -5,11 +5,12 @@
  * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
  * for more information
  */
-#include <QApplication>
 #include "mainwindow.h"
+#include "notify.h"
+
+#include <QApplication>
 #include <QProxyStyle>
 #include <QMenu>
-#include "notify.h"
 
 class MacFontStyle : public QProxyStyle {
 protected:
@@ -20,17 +21,17 @@ protected:
     }
 };
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain("sequeljoe.org");
     notify = new Notifier();
 
     QApplication a(argc, argv);
 
 #ifdef __APPLE__
-    // small hack to fix the weirdly large font size
+    // prevents the font size from appearing overly large on OSX
     a.setStyle(new MacFontStyle);
 #endif
+
     MainWindow w;
     w.show();    
 

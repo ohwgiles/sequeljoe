@@ -6,7 +6,11 @@
  * for more information
  */
 #include "tabwidget.h"
+
 #include <QTabBar>
+#include <QApplication>
+#include <QStyle>
+#include <QDebug>
 
 TabWidget::TabWidget(QWidget *parent) :
     QTabWidget(parent)
@@ -21,11 +25,8 @@ TabWidget::TabWidget(QWidget *parent) :
 
     QWidget* empty = new QWidget(this);
     empty->setMaximumSize(QSize(0,0));
-#if __APPLE__ // should really be by style
-    tabBar()->setTabButton(0, QTabBar::LeftSide, empty);
-#else
-    tabBar()->setTabButton(0, QTabBar::RightSide, empty);
-#endif
+    tabBar()->setTabButton(0, QTabBar::ButtonPosition(QApplication::style()->styleHint(QStyle::SH_TabBar_CloseButtonPosition)), empty);
+
     connect(tabBar(), SIGNAL(tabMoved(int,int)), this, SLOT(plusToEnd()));
     connect(this, SIGNAL(currentChanged(int)), this, SLOT(checkNewTab(int)));
 }

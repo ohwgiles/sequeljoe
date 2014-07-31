@@ -8,13 +8,15 @@
 #ifndef _SEQUELJOE_MAINPANEL_H_
 #define _SEQUELJOE_MAINPANEL_H_
 
-#include <QtWidgets/QWidget>
+#include "viewtoolbar.h"
+#include <QWidget>
 #include <QModelIndex>
 
-#include "viewtoolbar.h"
-
 class ConnectionWidget;
+class FilteredPagedTableView;
 class DbConnection;
+class TableList;
+
 class QTableView;
 class QSqlTableModel;
 class QListWidgetItem;
@@ -23,20 +25,19 @@ class QLineEdit;
 class QSortFilterProxyModel;
 class QueryPanel;
 class QSplitter;
-class TableList;
-
-class FilteredPagedTableView;
 
 class MainPanel : public QWidget
 {
     Q_OBJECT
 public:
-    MainPanel(DbConnection* db = 0, QWidget *parent = 0);
+    explicit MainPanel(QWidget *parent = 0);
     void loadSettings(QListWidgetItem* item);
+
 signals:
     void nameChanged(QWidget*,QString);
+
 public slots:
-    void toggleEditSettings(bool);
+    void toggleEditSettings(bool showSettings = true);
     void connectionMade();
     void firstConnectionMade();
 
@@ -54,7 +55,8 @@ public slots:
 private:
     DbConnection* db_;
     ConnectionWidget* settings_;
-    QSplitter* splitView_;
+    QSplitter* contentSchemaSplit_;
+    QSplitter* logSplit_;
     TableList* tableChooser_;
     FilteredPagedTableView* content_;
     QTableView* structure_;

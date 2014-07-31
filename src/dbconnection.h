@@ -12,7 +12,6 @@
 #include <QObject>
 #include <QHash>
 #include <QStringList>
-
 #include <QSqlDatabase>
 
 class QSqlDatabase;
@@ -21,20 +20,10 @@ class QAbstractTableModel;
 class QSqlTableModel;
 class QSqlQueryModel;
 
-class DbConnection : public QObject, public QSqlDatabase
-{
+class DbConnection : public QObject, public QSqlDatabase {
     Q_OBJECT
 public:
     static constexpr int DEFAULT_SQL_PORT = 3306;
-    DbConnection(const QSettings& settings);
-    virtual ~DbConnection();
-    virtual bool connect();
-    static DbConnection* fromName(QString name);
-
-    virtual QStringList getTableNames();
-    virtual QAbstractTableModel* getTableModel(QString tableName);
-    virtual QAbstractTableModel* getStructureModel(QString tableName);
-    virtual QSqlQueryModel* query(QString q, QSqlQueryModel* update = 0);
     static constexpr const char* KEY_HOST = "Host";
     static constexpr const char* KEY_DBNM = "DbName";
     static constexpr const char* KEY_PORT = "Port";
@@ -42,27 +31,37 @@ public:
     static constexpr const char* KEY_USER = "Username";
     static constexpr const char* KEY_PASS = "Password";
 
-    //void close();
-    void populateDatabases();
-QStringList getDatabaseNames() const { return dbNames_; }
+    static DbConnection* fromName(QString name);
 
+    explicit DbConnection(const QSettings& settings);
+    virtual ~DbConnection();
+
+    virtual bool connect();
+    virtual QAbstractTableModel* getTableModel(QString tableName);
+    virtual QAbstractTableModel* getStructureModel(QString tableName);
+    virtual QSqlQueryModel* query(QString q, QSqlQueryModel* update = 0);
+
+    void populateDatabases();
+    QStringList getDatabaseNames() const { return dbNames_; }
     QString getDatabaseName() const { return dbName_; }
 
 public slots:
     void setDbName(QString name);
+
 signals:
     void connectionSuccess();
 
 protected:
+    static int nConnections_;
+    void newConnection();
+
     QByteArray host_;
     short port_;
     QByteArray user_;
     QByteArray pass_;
     QString type_;
     QByteArray dbName_;
-    //QSqlDatabase* db_;
-    void dropModelCache();
-QStringList dbNames_;
+    QStringList dbNames_;
     QHash<QString, QAbstractTableModel*> tableModels_;
     QHash<QString, QAbstractTableModel*> schemaModels_;
 };

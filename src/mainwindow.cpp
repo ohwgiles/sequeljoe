@@ -7,58 +7,44 @@
  */
 #include "mainwindow.h"
 
-#include <libssh2.h>
+
 #include "sshdbconnection.h"
-#include <QtSql/QSqlTableModel>
+#include "tabwidget.h"
 #include "mainpanel.h"
-#include <QDebug>
+
+#include <libssh2.h>
+#include <QSqlTableModel>
 #include <QSettings>
 #include <QMenuBar>
 #include <QVBoxLayout>
-
-#include "tabwidget.h"
-
-
 #include <QPushButton>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
-    this->setWindowIcon(QIcon(":icon"));
+    setWindowIcon(QIcon(":icon"));
 
     { // menu bar
         QMenuBar* menuBar = new QMenuBar(this);
-        menuBar->setNativeMenuBar(true);
-        menuBar->addAction("test", this, "");
+        QMenu* db = menuBar->addMenu("Database");
+        //db->addAction("test", this, );
         setMenuBar(menuBar);
     }
 
-    QWidget* w = new QWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(w);
+    QWidget* centralWidget = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(centralWidget);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    {   // tab bar
-        tabs_ = new TabWidget(w);
-        //QPushButton* newTab = new QPushButton("+", this);
-        //QStyle* s = newTab->style();
-//newTab->setPalette();
-        //newTab->setStyle();
-        //tabs_->setCornerWidget(newTab);
-//tabs_->setTabBar(new TabBarPlus(tabs_));
-        //tabWidget->setTabShape(QTabWidget::Triangular);
-        tabs_->setDocumentMode(true);
-        tabs_->setMovable(true);
-        tabs_->setTabsClosable(true);
+    { // tab bar
+        tabs_ = new TabWidget(centralWidget);
         connect(tabs_, SIGNAL(currentChanged(int)), this, SLOT(handleTabChanged(int)));
         tabs_->setCurrentIndex(0);
         layout->addWidget(tabs_);
         connect(tabs_, SIGNAL(tabCloseRequested(int)), this, SLOT(handleTabClosed(int)));
         connect(tabs_, SIGNAL(newTab()), this, SLOT(newTab()));
-        //newTab->setStyle(tabs_->style());
     }
 
-    setCentralWidget(w);
-
+    setCentralWidget(centralWidget);
     newTab();
 
     QSettings s;
@@ -70,27 +56,21 @@ void MainWindow::closeEvent(QCloseEvent *) {
     s.setValue("geometry", saveGeometry());
 }
 
-void MainWindow::newTab()
-{
-    MainPanel* w = new MainPanel(nullptr, this);
+void MainWindow::newTab() {
+    MainPanel* w = new MainPanel(this);
     connect(w, SIGNAL(nameChanged(QWidget*,QString)), this, SLOT(updateTabName(QWidget*,QString)));
     tabs_->insertTab(tabs_->lastActiveIndex()+1, w, QString("New Connection"));
     tabs_->setCurrentWidget(w);
 }
 
-void MainWindow::handleTabChanged(int index)
-{
-    //qDebug() << tabs_->indexOf(tabs_->previousInFocusChain());
-
+void MainWindow::handleTabChanged(int index) {
     setWindowTitle(tabs_->tabText(index) + " - SequelJoe");
 }
 
-void MainWindow::handleTabClosed(int index)
-{
+void MainWindow::handleTabClosed(int index) {
     MainPanel* panel = (MainPanel*) tabs_->widget(index);
     panel->disconnectDb();
     if(tabs_->count() > 1) {
-        //tabs_->removeTab(index);
         // if this is the last real tab (not including the + tab), we have to select
         // the previous tab first, so that the + tab is not auto-selected, creating
         // a new tab
@@ -101,15 +81,7 @@ void MainWindow::handleTabClosed(int index)
     }
 }
 
-void MainWindow::updateTabName(QWidget * tab, QString name)
-{
-    qDebug() << "setting name to " << name;
+void MainWindow::updateTabName(QWidget * tab, QString name) {
     tabs_->setTabText(tabs_->indexOf(tab), name);
     handleTabChanged(tabs_->indexOf(tab));
-    //setWindowTitle(name + " - SequelJoe");
-}
-
-MainWindow::~MainWindow()
-{
-    QSqlDatabase::removeDatabase("dbname");
 }

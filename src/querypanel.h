@@ -22,6 +22,7 @@ class QueryPanel: public QWidget
 public:
     QueryPanel(QWidget* parent = 0);
     void setDb(DbConnection* db) { db_ = db; }
+
 private slots:
     void executeQuery();
 

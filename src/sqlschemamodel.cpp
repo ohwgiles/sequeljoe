@@ -1,10 +1,19 @@
+/*
+ * Copyright 2014 Oliver Giles
+ *
+ * This file is part of SequelJoe. SequelJoe is licensed under the
+ * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
+ * for more information
+ */
 #include "sqlschemamodel.h"
+#include "notify.h"
+
 #include <QColor>
 #include <QSqlQuery>
 #include <QVector>
-
 #include <QDebug>
-#include "notify.h"
+#include <QSqlError>
+
 enum {
     SCHEMA_NAME = 0,
     SCHEMA_TYPE,
@@ -33,7 +42,6 @@ SqlSchemaModel::SqlSchemaModel(QSqlDatabase* db, QString tableName, QObject *par
         SqlColumn c;
         c.resize(SCHEMA_NUM_FIELDS);
         c[SCHEMA_NAME] = query_->value(0).toString();
-        qDebug() << query_->value(1).toString();
         if(typeRegexp.exactMatch(query_->value(1).toString())) {
             c[SCHEMA_TYPE] = typeRegexp.cap(1).toUpper();
             c[SCHEMA_LENGTH] = typeRegexp.cap(2);
@@ -54,8 +62,7 @@ SqlSchemaModel::~SqlSchemaModel() {
     delete query_;
 }
 
-int SqlSchemaModel::columnCount(const QModelIndex &parent) const
-{
+int SqlSchemaModel::columnCount(const QModelIndex &parent) const {
     return SCHEMA_NUM_FIELDS;
 }
 
@@ -85,6 +92,7 @@ Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
     }
     return flags;
 }
+
 QVariant SqlSchemaModel::data(const QModelIndex &item, int role) const {
     if(!item.isValid()) return QVariant();
     if(item.row() < columns_.count()) {
@@ -130,9 +138,8 @@ QString SqlSchemaModel::getColumnChangeQuery(QString column, const SqlColumn& de
             (!def[SCHEMA_COLLATION].isNull() ? " COLLATE '" + def[SCHEMA_COLLATION].toString() + "'" : "") +
             (!def[SCHEMA_COMMENT].isNull() ? " COMMENT '" + def[SCHEMA_COMMENT].toString() + "'" : "");
 }
-#include <QSqlError>
+
 bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, int role) {
-    qDebug() << "setting " << index.column() << "," << index.row() << " to " << value;
     if(!index.isValid()) return false;
     if(role == Qt::EditRole) {
         // make a copy
@@ -141,7 +148,6 @@ bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, in
             if(index.column() == SCHEMA_NAME) {
                 QSqlQuery q(db_);
                 if(q.exec("ALTER TABLE `" + tableName_ + "` ADD COLUMN `" + value.toString() + "` TEXT")) {
-                    qDebug() << "created...";
                     SqlColumn c;
                     c.resize(SCHEMA_NUM_FIELDS);
                     c[SCHEMA_NAME] = value.toString();
@@ -214,6 +220,7 @@ bool SqlSchemaModel::insertRows(int row, int count, const QModelIndex &parent) {
     endInsertRows();
     return true;
 }
+
 bool SqlSchemaModel::removeRows(int row, int count, const QModelIndex &parent) {
     if(count != 1) return false;
     QString columnName = columns_.at(row).at(SCHEMA_NAME).toString();

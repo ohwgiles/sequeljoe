@@ -6,30 +6,33 @@
  * for more information
  */
 #include "tableview.h"
+
+#include "tablecell.h"
+#include "sqlcontentmodel.h"
+
 #include <QHeaderView>
 #include <QMenu>
 #include <QAction>
 #include <QLayout>
-#include "tablecell.h"
-#include "sqlcontentmodel.h"
+
 TableView::TableView(QWidget *parent) :
     QTableView(parent)
 {
     setContentsMargins(0,0,0,0);
-    // todo remove this, but resize columns to content on load complete (allowing manual column resize)
-    //horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    setAlternatingRowColors(true);
+    setSelectionBehavior(QAbstractItemView::SelectRows);
+    setShowGrid(false);
+    setItemDelegate(new TableCell());
+
     horizontalHeader()->setSortIndicatorShown(true);
     horizontalHeader()->setFixedHeight(verticalHeader()->minimumSectionSize());
-this->setAlternatingRowColors(true);
-    //tableView->resizeRowsToContents();
-    //horizontalHeader()->setStretchLastSection(true);
     verticalHeader()->setDefaultSectionSize(verticalHeader()->minimumSectionSize());
     verticalHeader()->setVisible(false);
-    setSelectionBehavior(QAbstractItemView::SelectRows);
-setContextMenuPolicy(Qt::CustomContextMenu);
+
+    // context menu
+    setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(openMenu(QPoint)));
-setShowGrid(false);
-setItemDelegate(new TableCell());
     ctxMenu_ = new QMenu(this);
     nullAction_ = new QAction("Set to NULL", ctxMenu_);
     connect(nullAction_, SIGNAL(triggered()), this, SLOT(handleSetNull()));
@@ -42,22 +45,13 @@ setItemDelegate(new TableCell());
     ctxMenu_->addAction(addRowAction_);
 }
 
-#include <QDebug>
 void TableView::openMenu(QPoint p) {
     QModelIndex index = indexAt(p);
     ctxMenu_->popup(viewport()->mapToGlobal(p));
     nullAction_->setEnabled(index.isValid());
     deleteRowAction_->setEnabled(index.isValid());
-//    if(index.isValid()) {
-//        QMenu* menu = new QMenu(this);
-//        menu->addAction("test");
-//        menu->addAction("test2");
-//        menu->popup(viewport()->mapToGlobal(p));
-//        //menu->exec(p);
-//    }
 }
 
-#include <QSqlTableModel>
 void TableView::handleSetNull() {
     model()->setData(currentIndex(), QVariant());
 }
@@ -68,7 +62,8 @@ void TableView::handleDeleteRow() {
         rows << i.row();
     for(int i : rows)
         model()->removeRow(i);
-    ((SqlContentModel*) model())->select();
+    QEvent event{QEvent::Type(RefreshEvent)};
+    model()->event(&event);
 }
 
 void TableView::handleAddRow() {

@@ -1,9 +1,19 @@
+/*
+ * Copyright 2014 Oliver Giles
+ *
+ * This file is part of SequelJoe. SequelJoe is licensed under the
+ * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
+ * for more information
+ */
 #include "sqlcontentmodel.h"
+
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlResult>
 #include <QDebug>
 #include <QStringList>
+#include <QSqlError>
+
 SqlContentModel::SqlContentModel(QSqlDatabase *db, QString table, QObject *parent) :
     QAbstractTableModel(parent),
     db_(*db),
@@ -16,8 +26,8 @@ SqlContentModel::SqlContentModel(QSqlDatabase *db, QString table, QObject *paren
     query_(new QSqlQuery(*db))
 {
     describe();
-    //select();
 }
+
 SqlContentModel::~SqlContentModel() {
     delete query_;
 }
@@ -25,9 +35,11 @@ SqlContentModel::~SqlContentModel() {
 int SqlContentModel::rowCount(const QModelIndex &parent) const {
     return query_->size() + (isAdding_?1:0);
 }
+
 int SqlContentModel::columnCount(const QModelIndex &parent) const {
     return columns_.count();
 }
+
 QVariant SqlContentModel::data(const QModelIndex &index, int role) const {
     if(role == FilterColumnRole)
         return whereColumn_;
@@ -35,7 +47,6 @@ QVariant SqlContentModel::data(const QModelIndex &index, int role) const {
         return whereOperation_;
     if(role == FilterValueRole)
         return whereValue_;
-
 
     if(index.row() == query_->size())
         return QVariant(); // during editing only. isAdding_ should be true here
@@ -57,8 +68,8 @@ QVariant SqlContentModel::headerData(int section, Qt::Orientation orientation, i
         return QVariant();
     }
 }
-void SqlContentModel::describe()
-{
+
+void SqlContentModel::describe() {
     // primary key required if it should be editable
     QSqlQuery key("SHOW KEYS FROM "+tableName_+" WHERE Key_name = 'PRIMARY'", db_);
     key.next();
@@ -75,8 +86,6 @@ void SqlContentModel::describe()
     QSqlQuery count("SELECT count(*) FROM " + tableName_, db_);
     count.next();
     totalRecords_ = count.value(0).toInt();
-
-
 }
 
 void SqlContentModel::select()
@@ -104,7 +113,8 @@ void SqlContentModel::nextPage() {
 
 void SqlContentModel::prevPage() {
     rowsFrom_ -= rowsPerPage();
-    if(rowsFrom_ < 0) rowsFrom_ = 0;
+    if(rowsFrom_ < 0)
+        rowsFrom_ = 0;
     select();
 }
 
@@ -119,25 +129,21 @@ bool SqlContentModel::insertRows(int row, int count, const QModelIndex &parent) 
     endInsertRows();
     return true;
 }
-#include <QSqlError>
+
 bool SqlContentModel::removeRows(int row, int count, const QModelIndex &parent) {
     QStringList rowIds;
     for(int i = row; i < row+count; ++i)
         rowIds << data(index(i, primaryKeyIndex_)).toString();
-    qDebug() << "row: " << row << ", count: " << count;
     QSqlQuery q(db_);
     q.prepare("DELETE FROM `" + tableName_ + "` WHERE `" + columns_.at(primaryKeyIndex_).name + "` IN (?)");
     q.bindValue(0, rowIds.join(","));
     if(q.exec())
-    {totalRecords_--;}//select();
+        totalRecords_--;
     else
         qDebug() << q.lastError().text();
-//    beginRemoveRows(parent, row, row);
-//    columns_.remove(row);
-//    endRemoveRows();
 }
+
 bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, int role) {
-    qDebug() << "setting " << index.column() << "," << index.row() << " to " << value;
     if(role == FilterColumnRole) {
         whereColumn_ = value.toString();
         return true;
@@ -150,9 +156,7 @@ bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, i
         whereValue_ = value.toString();
         return true;
 
-    } else
-    //if(!index.isValid()) return false;
-    if(role == Qt::EditRole) {
+    } else if(role == Qt::EditRole) {
         if(index.row() == query_->size()) {
             QSqlQuery q(db_);
             q.prepare("INSERT INTO " + tableName_ + "(`" + columns_.at(primaryKeyIndex_).name + "`) VALUES(?)");

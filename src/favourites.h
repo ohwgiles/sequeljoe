@@ -19,8 +19,10 @@ class Favourites : public QWidget
     Q_OBJECT
 public:
     explicit Favourites(QWidget *parent = 0);
+
 signals:
     void favouriteSelected(QString name);
+
 public slots:
     void updateName(QString name);
 
@@ -28,6 +30,7 @@ private slots:
     void indexChanged(QListWidgetItem*);
     void addButtonClicked();
     void deleteButtonClicked();
+
 private:
     QListWidget* list_;
     QLayout* bar_;

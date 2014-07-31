@@ -20,9 +20,10 @@ class TableList : public QWidget
 public:
     explicit TableList(QWidget *parent = 0);
     void setTableNames(QStringList names);
+
 signals:
     void tableSelected(QString name);
-public slots:
+
 private slots:
     void filterTextChanged(QString text);
     void selectionChanged(QModelIndex index);

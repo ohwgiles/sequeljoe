@@ -27,25 +27,13 @@ class ConnectionWidget : public QWidget
     Q_OBJECT
 public:
     explicit ConnectionWidget(QWidget *parent = 0);
+
 signals:
     void doConnect(QString);
+    void nameChanged(QString);
+
 public slots:
-private:
-    QString group_;
-    QLineEdit *name_;
-    QLineEdit *host_;
-    QLineEdit *port_;
-    QComboBox* sqlType_;
-    QLineEdit *dbName_;
-    QLineEdit *username_;
-    QLineEdit *password_;
-    QCheckBox *chkUseSsh_;
-    QLineEdit *sshHost_;
-    QLineEdit *sshPort_;
-    QLineEdit *sshUsername_;
-    PassKeyWidget *sshPassKey_;
-    Favourites* listWidget_;
-    QListWidgetItem* listItem_;
+    void loadSettings(QString);
 
 private slots:
     void setupNameChanged(QString);
@@ -61,11 +49,22 @@ private slots:
     void setupSshUserChanged(QString);
     void setupSshPassKeyChanged(bool, QString);
     void connectButtonClicked();
-public slots:
-    void loadSettings(QString);
-    //void setTableNames(QStringList tables);
-signals:
-    void nameChanged(QString);
+
+private:
+    QString group_;
+    QLineEdit* name_;
+    QLineEdit* host_;
+    QLineEdit* port_;
+    QComboBox* sqlType_;
+    QLineEdit* dbName_;
+    QLineEdit* username_;
+    QLineEdit* password_;
+    QCheckBox* chkUseSsh_;
+    QLineEdit* sshHost_;
+    QLineEdit* sshPort_;
+    QLineEdit* sshUsername_;
+    PassKeyWidget* sshPassKey_;
+    Favourites* favourites_;
 };
 
 #endif // _SEQUELJOE_CONNECTION_WIDGET_H_

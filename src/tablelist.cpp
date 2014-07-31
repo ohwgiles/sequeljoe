@@ -1,3 +1,10 @@
+/*
+ * Copyright 2014 Oliver Giles
+ *
+ * This file is part of SequelJoe. SequelJoe is licensed under the
+ * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
+ * for more information
+ */
 #include "tablelist.h"
 
 #include <QListView>
@@ -31,21 +38,20 @@ TableList::TableList(QWidget *parent) :
     connect(filterInput_, SIGNAL(textChanged(QString)), this, SLOT(filterTextChanged(QString)));
     connect(tables_->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(selectionChanged(QModelIndex)));
 
-    //vlayout->setSpacing(0);
     vlayout->addWidget(tables_);
 
     setLayout(vlayout);
 }
+
 void TableList::selectionChanged(QModelIndex index) {
     if(index.isValid())
-    emit tableSelected(index.data().toString());
+        emit tableSelected(index.data().toString());
 }
 
 void TableList::filterTextChanged(QString text) {
     QSortFilterProxyModel* model = static_cast<QSortFilterProxyModel*>(tables_->model());
     tables_->setCurrentIndex(QModelIndex());
     tables_->clearSelection();
-    //tables_->selectionModel()->select(tables_->currentIndex(), QItemSelectionModel::Deselect);
     model->setFilterFixedString(text);
 }
 

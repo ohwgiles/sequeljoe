@@ -5,7 +5,9 @@
  * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
  * for more information
  */
+
 #include "viewtoolbar.h"
+
 #include <QAction>
 #include <QSpacerItem>
 #include <QComboBox>
@@ -17,13 +19,10 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
     group_ = new QActionGroup(this);
     setIconSize(QSize(20,20));
     setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-//this->setContentsMargins(20,20,20,20);
 
     // adding a dummy space widget appears to even out the toolbar
     addWidget(new QWidget(this));
 
-
-    //addWidget(new QLabel("Database:"));
     dbSelect_ = new QComboBox(this);
     dbSelect_->setMinimumWidth(150);
     connect(dbSelect_, SIGNAL(activated(int)), this, SLOT(dbComboModified(int)));
@@ -40,11 +39,9 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
 
     addAction(":users", "Users", SLOT(showQuery()));
     addAction(":disconnect", "Disconnect", SIGNAL(disconnect()))->setCheckable(false);
-
 }
 
-QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot)
-{
+QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot) {
     QAction* a = QToolBar::addAction(QIcon(icon), label, this, slot);
     a->setEnabled(false);
     a->setCheckable(true);
@@ -53,23 +50,19 @@ QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot)
     return a;
 }
 
-void ViewToolBar::enableAll(bool enabled)
-{
+void ViewToolBar::enableAll(bool enabled) {
     actions().first()->setChecked(true);
     for(QAction* a : actions())
         a->setEnabled(enabled);
     populateDatabases(QStringList());
 }
-#include <QDebug>
-void ViewToolBar::populateDatabases(QStringList names)
-{
+
+void ViewToolBar::populateDatabases(QStringList names) {
     QString current = dbSelect_->currentText();
     dbSelect_->clear();
     dbSelect_->addItem("Choose Database...");
     dbSelect_->insertSeparator(1);
     dbSelect_->addItems(names);
-    qDebug() << "adding " << names;
-    //if(names.isEmpty()) *((char*)nullptr) = 4;
     if(!current.isEmpty())
         dbSelect_->setCurrentText(current);
 }

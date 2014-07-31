@@ -7,114 +7,107 @@
  */
 #include "connectionwidget.h"
 
-#include <QtCore/QVariant>
-#include <QtWidgets/QAction>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QButtonGroup>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QFormLayout>
-#include <QtWidgets/QGroupBox>
-#include <QtWidgets/QHeaderView>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QPushButton>
-#include <QSettings>
-#include <QListWidget>
-#include <QListWidgetItem>
 #include "dbconnection.h"
 #include "sshdbconnection.h"
 #include "favourites.h"
 #include "passkeywidget.h"
+
+#include <QCheckBox>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QPushButton>
+#include <QSettings>
+#include <QListWidget>
 #include <QSqlDatabase>
-#include <QDebug>
+#include <QHBoxLayout>
+#include <QFormLayout>
+
 ConnectionWidget::ConnectionWidget(QWidget *parent) :
     QWidget(parent)
 {
-    QBoxLayout* panes = new QHBoxLayout(this);
-    panes->setContentsMargins(0,0,0,0);
-    listWidget_ = new Favourites(this);
+    QBoxLayout* layout = new QHBoxLayout(this);
+    layout->setContentsMargins(0,0,0,0);
 
+    { // widget for selecting saved database connections
+        favourites_ = new Favourites(this);
 
-//    QSettings s;
-//    foreach(QString c, s.childGroups()) {
-//        s.beginGroup(c);
-//        QListWidgetItem* item = new QListWidgetItem(s.value("Name", "Unnamed").toString());
-//        item->setData(Qt::UserRole, c);
-//        listWidget_->addItem(item);
-//    }
-    connect(listWidget_, SIGNAL(favouriteSelected(QString)), this, SLOT(loadSettings(QString)));
-connect(this, SIGNAL(nameChanged(QString)), listWidget_, SLOT(updateName(QString)));
+        connect(favourites_, SIGNAL(favouriteSelected(QString)), this, SLOT(loadSettings(QString)));
+        connect(this, SIGNAL(nameChanged(QString)), favourites_, SLOT(updateName(QString)));
 
-    panes->addWidget(listWidget_,1);
-    {
-        QWidget* panel = new QWidget(this);
-    QBoxLayout* layout = new QVBoxLayout(panel);
-    QGroupBox* boxSetup = new QGroupBox("Connection Setup", panel);
-    QFormLayout* form = new QFormLayout(boxSetup);
-
-    name_ = new QLineEdit(boxSetup);
-    form->addRow("Name", name_);
-
-    host_ = new QLineEdit(boxSetup);
-    form->addRow("Host", host_);
-
-    port_ = new QLineEdit(boxSetup);
-    port_->setPlaceholderText(QString::number(DbConnection::DEFAULT_SQL_PORT));
-    port_->setValidator(new QIntValidator);
-    form->addRow("Port", port_);
-
-    sqlType_ = new QComboBox(boxSetup);
-    QSqlDatabase db;
-    sqlType_->addItems(db.drivers());
-    form->addRow("Connection Type", sqlType_);
-
-    dbName_ = new QLineEdit(boxSetup);
-    form->addRow("Database Name", dbName_);
-
-    username_ = new QLineEdit(boxSetup);
-    form->addRow("Username", username_);
-
-    password_ = new QLineEdit(boxSetup);
-    form->addRow("Password", password_);
-
-    chkUseSsh_ = new QCheckBox("SSH Tunnel", boxSetup);
-    form->addWidget(chkUseSsh_);
-    {
-        QGroupBox* boxSsh = new QGroupBox("SSH", boxSetup);
-        boxSsh->setEnabled(false);
-        connect(chkUseSsh_, SIGNAL(toggled(bool)), boxSsh, SLOT(setEnabled(bool)));
-
-        QFormLayout* sshForm = new QFormLayout(boxSsh);
-
-        sshHost_ = new QLineEdit(boxSsh);
-        sshForm->addRow("Host", sshHost_);
-
-        sshPort_ = new QLineEdit(boxSsh);
-        sshPort_->setPlaceholderText(QString::number(SshDbConnection::DEFAULT_SSH_PORT));
-        sshPort_->setValidator(new QIntValidator);
-        sshForm->addRow("Port", sshPort_);
-
-        sshUsername_ = new QLineEdit(boxSsh);
-        sshForm->addRow("Username", sshUsername_);
-
-        sshPassKey_ = new PassKeyWidget(boxSsh);
-        sshForm->addRow("Password", sshPassKey_);
-
-        form->setWidget(8, QFormLayout::SpanningRole, boxSsh);
+        layout->addWidget(favourites_,1);
     }
-    QPushButton* pushButton = new QPushButton("Connect", boxSetup);
-    form->addWidget(pushButton);
-    connect(pushButton, &QPushButton::clicked, this, &ConnectionWidget::connectButtonClicked);
 
-    layout->addWidget(boxSetup);
-    layout->setAlignment(boxSetup, Qt::AlignCenter);
+    { // widget for configuring a connection
+        QWidget* cfgWidget = new QWidget(this);
+        QBoxLayout* cfgLayout = new QVBoxLayout(cfgWidget);
+        QGroupBox* boxSetup = new QGroupBox("Connection Setup", cfgWidget);
+        QFormLayout* form = new QFormLayout(boxSetup);
 
-panel->setLayout(layout);
-    panes->addWidget(panel,4);
-}
-    //this->setLayout(panes);
+        name_ = new QLineEdit(boxSetup);
+        form->addRow("Name", name_);
+
+        host_ = new QLineEdit(boxSetup);
+        form->addRow("Host", host_);
+
+        port_ = new QLineEdit(boxSetup);
+        port_->setPlaceholderText(QString::number(DbConnection::DEFAULT_SQL_PORT));
+        port_->setValidator(new QIntValidator);
+        form->addRow("Port", port_);
+
+        sqlType_ = new QComboBox(boxSetup);
+        { // enumerate the available SQL drivers
+            QSqlDatabase db;
+            sqlType_->addItems(db.drivers());
+        }
+        form->addRow("Connection Type", sqlType_);
+
+        dbName_ = new QLineEdit(boxSetup);
+        form->addRow("Database Name", dbName_);
+
+        username_ = new QLineEdit(boxSetup);
+        form->addRow("Username", username_);
+
+        password_ = new QLineEdit(boxSetup);
+        form->addRow("Password", password_);
+
+        chkUseSsh_ = new QCheckBox("SSH Tunnel", boxSetup);
+        form->addWidget(chkUseSsh_);
+
+        { // widget for configuring the SSH tunnel
+            QGroupBox* boxSsh = new QGroupBox("SSH", boxSetup);
+            boxSsh->setEnabled(false);
+            connect(chkUseSsh_, SIGNAL(toggled(bool)), boxSsh, SLOT(setEnabled(bool)));
+
+            QFormLayout* sshForm = new QFormLayout(boxSsh);
+
+            sshHost_ = new QLineEdit(boxSsh);
+            sshForm->addRow("Host", sshHost_);
+
+            sshPort_ = new QLineEdit(boxSsh);
+            sshPort_->setPlaceholderText(QString::number(SshDbConnection::DEFAULT_SSH_PORT));
+            sshPort_->setValidator(new QIntValidator);
+            sshForm->addRow("Port", sshPort_);
+
+            sshUsername_ = new QLineEdit(boxSsh);
+            sshForm->addRow("Username", sshUsername_);
+
+            sshPassKey_ = new PassKeyWidget(boxSsh);
+            sshForm->addRow("Password", sshPassKey_);
+
+            form->setWidget(8, QFormLayout::SpanningRole, boxSsh);
+        }
+
+        QPushButton* pushButton = new QPushButton("Connect", boxSetup);
+        form->addWidget(pushButton);
+        connect(pushButton, &QPushButton::clicked, this, &ConnectionWidget::connectButtonClicked);
+
+        cfgLayout->addWidget(boxSetup);
+        cfgLayout->setAlignment(boxSetup, Qt::AlignCenter);
+
+        layout->addWidget(cfgWidget,4);
+    }
 
     connect(name_, SIGNAL(textEdited(QString)), this, SLOT(setupNameChanged(QString)));
     connect(host_, SIGNAL(textEdited(QString)), this, SLOT(setupHostChanged(QString)));
@@ -130,18 +123,19 @@ panel->setLayout(layout);
     connect(sshPassKey_, SIGNAL(changed(bool,QString)), this, SLOT(setupSshPassKeyChanged(bool,QString)));
 
 }
-#include <QDebug>
+
 void ConnectionWidget::connectButtonClicked() {
     emit doConnect(group_);
 }
+
 void ConnectionWidget::setupNameChanged(QString name) {
     QSettings s;
     s.beginGroup(group_);
     s.setValue("Name", name);
     s.endGroup();
-   // listItem_->setText(name);
     emit nameChanged(name);
 }
+
 void ConnectionWidget::setupHostChanged(QString host) {
     QSettings s;
     s.beginGroup(group_);
@@ -190,35 +184,36 @@ void ConnectionWidget::setupUseSshChanged(bool ssh) {
     s.setValue(SshDbConnection::KEY_USE_SSH, ssh);
     s.endGroup();
 }
+
 void ConnectionWidget::setupSshHostChanged(QString host) {
     QSettings s;
     s.beginGroup(group_);
     s.setValue(SshDbConnection::KEY_SSH_HOST, host);
     s.endGroup();
 }
+
 void ConnectionWidget::setupSshPortChanged(QString port) {
     QSettings s;
     s.beginGroup(group_);
     s.setValue(SshDbConnection::KEY_SSH_PORT, port);
     s.endGroup();
 }
+
 void ConnectionWidget::setupSshUserChanged(QString user) {
     QSettings s;
     s.beginGroup(group_);
     s.setValue(SshDbConnection::KEY_SSH_USER, user);
     s.endGroup();
 }
+
 void ConnectionWidget::setupSshPassKeyChanged(bool key, QString value) {
     QSettings s;
     s.beginGroup(group_);
     s.remove(key ? SshDbConnection::KEY_SSH_PASS : SshDbConnection::KEY_SSH_KEY);
-    qDebug() << "removing " << (key ? SshDbConnection::KEY_SSH_PASS : SshDbConnection::KEY_SSH_KEY);
-    qDebug() << "value: " << value;
     s.setValue(key ? SshDbConnection::KEY_SSH_KEY : SshDbConnection::KEY_SSH_PASS, value);
     s.endGroup();
 }
 
-#include <qdebug.h>
 void ConnectionWidget::loadSettings(QString name) {
     group_ = name;
     QSettings s;
@@ -234,14 +229,9 @@ void ConnectionWidget::loadSettings(QString name) {
     sshHost_->setText(s.value(SshDbConnection::KEY_SSH_HOST).toString());
     sshPort_->setText(s.value(SshDbConnection::KEY_SSH_PORT).toString());
     sshUsername_->setText(s.value(SshDbConnection::KEY_SSH_USER).toString());
-    //sshPassword_->setText(s.value(SshDbConnection::KEY_SSH_PASS).toString());
-    if(s.contains(SshDbConnection::KEY_SSH_KEY)) sshPassKey_->setValue(true, s.value(SshDbConnection::KEY_SSH_KEY).toString());
-    else sshPassKey_->setValue(false, s.value(SshDbConnection::KEY_SSH_PASS).toString());
-
+    if(s.contains(SshDbConnection::KEY_SSH_KEY))
+        sshPassKey_->setValue(true, s.value(SshDbConnection::KEY_SSH_KEY).toString());
+    else
+        sshPassKey_->setValue(false, s.value(SshDbConnection::KEY_SSH_PASS).toString());
     s.endGroup();
-    //qDebug() << "loadsettings: "  << s;
 }
-/*
-void SettingsWidget::setTableNames(QStringList tables) {
-    listWidget_->addItems(tables);
-}*/

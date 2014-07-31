@@ -14,7 +14,8 @@ class SqlHighlighter : public QSyntaxHighlighter
 {
     Q_OBJECT
 public:
-    SqlHighlighter(QTextDocument* parent);
+    explicit SqlHighlighter(QTextDocument* parent);
+
 protected:
      void highlightBlock(const QString &text);
 
