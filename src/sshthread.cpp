@@ -71,11 +71,6 @@ SshThread::~SshThread()
 }
 
 int SshThread::connectToServer() {
-      // todo parametrize
-      const char *keyfile1 = "/home/username/.ssh/id_rsa.pub";
-      const char *keyfile2 = "/home/username/.ssh/id_rsa";
-
-
 #ifdef WIN32
     char sockopt;
     WSADATA wsadata;
@@ -85,14 +80,7 @@ int SshThread::connectToServer() {
     int sockopt;
 #endif
 
-    //struct sockaddr_in sin;
     { // Connect to SSH server
-        //sock_ = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-        //sin.sin_family = AF_INET;
-        qDebug() << params_.sshHost_.constData();
-//        if (INADDR_NONE == (sin.sin_addr.s_addr = inet_addr(params_.host))) {
-        //sin.sin_port = htons(params_.port);
-
         struct addrinfo* res;
         { // get address info
             struct addrinfo hints = {0};

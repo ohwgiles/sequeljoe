@@ -15,19 +15,24 @@ class TabWidget : public QTabWidget
     Q_OBJECT
 public:
     explicit TabWidget(QWidget *parent = 0);
+
     // override to insert before end
     int addTab(QWidget *widget, const QString & label) {
         return insertTab(0, widget, label);
     }
+
     int lastActiveIndex() const { return lastIndex_; }
-private:
-    QWidget* empty_;
-    int lastIndex_;
+
 signals:
     void newTab();
+
 private slots:
     void plusToEnd();
     void checkNewTab(int);
+
+private:
+    QWidget* empty_;
+    int lastIndex_;
 };
 
 #endif // _SEQUELJOE_TABWIDGET_H_
