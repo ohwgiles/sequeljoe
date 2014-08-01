@@ -74,7 +74,9 @@ void MainWindow::handleTabClosed(int index) {
         // if this is the last real tab (not including the + tab), we have to select
         // the previous tab first, so that the + tab is not auto-selected, creating
         // a new tab
-        if(index + 2 == tabs_->count()) {
+        if(index == 0)
+            newTab();
+        if(index > 0 && index + 2 == tabs_->count()) {
             tabs_->setCurrentIndex(index-1);
         }
         delete panel;

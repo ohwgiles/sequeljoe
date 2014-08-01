@@ -28,7 +28,8 @@
 #include <QSettings>
 
 MainPanel::MainPanel(QWidget* parent) :
-    QWidget(parent)
+    QWidget(parent),
+    db_(nullptr)
 {
     QGridLayout* layout = new QGridLayout(this);
     layout->setContentsMargins(0,0,0,0);
