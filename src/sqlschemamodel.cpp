@@ -6,6 +6,7 @@
  * for more information
  */
 #include "sqlschemamodel.h"
+#include "dbconnection.h"
 #include "notify.h"
 
 #include <QColor>
@@ -29,14 +30,16 @@ enum {
     SCHEMA_NUM_FIELDS
 };
 
-SqlSchemaModel::SqlSchemaModel(QSqlDatabase* db, QString tableName, QObject *parent) :
+SqlSchemaModel::SqlSchemaModel(DbConnection *db, QString tableName, QObject *parent) :
     QAbstractTableModel(parent),
     tableName_(tableName),
     db_(*db)
 {
     isAdding_ = false;
     // todo vary per db type
-    query_ = new QSqlQuery("SHOW FULL COLUMNS FROM " + tableName, *db);
+    query_ = new QSqlQuery(*db);
+    query_->prepare("SHOW FULL COLUMNS FROM " + tableName);
+    db_.execQuery(*query_);
     QRegExp typeRegexp("(\\w+)\\(([\\w,]+)\\)\\s*(\\w*)");
     while(query_->next()) {
         SqlColumn c;
@@ -146,8 +149,8 @@ bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, in
         QSqlQuery q(db_);
         if(index.row() == columns_.count()) {
             if(index.column() == SCHEMA_NAME) {
-                QSqlQuery q(db_);
-                if(q.exec("ALTER TABLE `" + tableName_ + "` ADD COLUMN `" + value.toString() + "` TEXT")) {
+                q.prepare("ALTER TABLE `" + tableName_ + "` ADD COLUMN `" + value.toString() + "` TEXT");
+                if(db_.execQuery(q)) {
                     SqlColumn c;
                     c.resize(SCHEMA_NUM_FIELDS);
                     c[SCHEMA_NAME] = value.toString();
@@ -178,7 +181,8 @@ bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, in
             case SCHEMA_COMMENT:
                 c[index.column()] = value.toString();
                 //qDebug() << "Executing: " << query;
-                if(q.exec(getColumnChangeQuery(columnName, c))) {
+                q.prepare(getColumnChangeQuery(columnName, c));
+                if(db_.execQuery(q)) {
                     columns_[index.row()] = c;
                     return true;
                 } else {
@@ -226,7 +230,8 @@ bool SqlSchemaModel::removeRows(int row, int count, const QModelIndex &parent) {
     QString columnName = columns_.at(row).at(SCHEMA_NAME).toString();
 
     QSqlQuery q(db_);
-    if(q.exec("ALTER TABLE `" + tableName_ + "` DROP COLUMN `" + columnName + "`")) {
+    q.prepare("ALTER TABLE `" + tableName_ + "` DROP COLUMN `" + columnName + "`");
+    if(db_.execQuery(q)) {
         beginRemoveRows(parent, row, row);
         columns_.remove(row);
         endRemoveRows();

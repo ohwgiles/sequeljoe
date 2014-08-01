@@ -40,6 +40,7 @@ public:
     virtual QAbstractTableModel* getTableModel(QString tableName);
     virtual QAbstractTableModel* getStructureModel(QString tableName);
     virtual QSqlQueryModel* query(QString q, QSqlQueryModel* update = 0);
+    virtual bool execQuery(QSqlQuery& q);
 
     void populateDatabases();
     QStringList getDatabaseNames() const { return dbNames_; }
@@ -50,6 +51,7 @@ public slots:
 
 signals:
     void connectionSuccess();
+    void queryExecuted(const QSqlQuery&);
 
 protected:
     static int nConnections_;

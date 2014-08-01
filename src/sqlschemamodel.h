@@ -10,8 +10,9 @@
 
 #include <QAbstractTableModel>
 
+class DbConnection;
+
 class QSqlQuery;
-class QSqlDatabase;
 
 typedef QVector<QVariant> SqlColumn;
 
@@ -19,7 +20,7 @@ class SqlSchemaModel : public QAbstractTableModel
 {
     Q_OBJECT
 public:
-    explicit SqlSchemaModel(QSqlDatabase* db, QString tableName, QObject *parent = 0);
+    explicit SqlSchemaModel(DbConnection* db, QString tableName, QObject *parent = 0);
     virtual ~SqlSchemaModel();
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const;
@@ -38,7 +39,7 @@ private:
     QSqlQuery* query_;
     QVector<SqlColumn> columns_;
     QString tableName_;
-    QSqlDatabase& db_;
+    DbConnection& db_;
 };
 
 #endif // _SEQUELJOE_SQLSCHEMAMODEL_H_

@@ -13,6 +13,7 @@
 #include "querypanel.h"
 #include "filteredpagedtableview.h"
 #include "tablelist.h"
+#include "querylog.h"
 
 #include <QSortFilterProxyModel>
 #include <QStringListModel>
@@ -90,11 +91,12 @@ MainPanel::MainPanel(QWidget* parent) :
                 logSplit_->addWidget(actionPanel);
             }
             { // query log (bottom half of splitter)
-                QWidget* queryLog = new QWidget(this);
-                logSplit_->addWidget(queryLog);
+                queryLog_ = new QueryLog(this);
+                logSplit_->addWidget(queryLog_);
             }
-            logSplit_->setStretchFactor(6,1);
             layout->addWidget(logSplit_);
+            logSplit_->setStretchFactor(0,5);
+            logSplit_->setStretchFactor(1,1);
         }
     }
 
@@ -159,6 +161,7 @@ void MainPanel::firstConnectionMade() {
 }
 
 void MainPanel::connectionMade() {
+    connect(db_, SIGNAL(queryExecuted(QSqlQuery)), queryLog_, SLOT(logQuery(QSqlQuery)));
     tableChooser_->setTableNames(db_->tables());
 }
 
@@ -197,6 +200,7 @@ void MainPanel::disconnectDb() {
     tableChooser_->setTableNames(QStringList());
     toggleEditSettings(true);
     if(db_) {
+        disconnect(db_, SIGNAL(queryExecuted(QSqlQuery)));
         db_->close();
         delete db_;
         db_ = 0;

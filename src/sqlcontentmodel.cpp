@@ -6,6 +6,7 @@
  * for more information
  */
 #include "sqlcontentmodel.h"
+#include "dbconnection.h"
 
 #include <QSqlDatabase>
 #include <QSqlQuery>
@@ -14,7 +15,7 @@
 #include <QStringList>
 #include <QSqlError>
 
-SqlContentModel::SqlContentModel(QSqlDatabase *db, QString table, QObject *parent) :
+SqlContentModel::SqlContentModel(DbConnection *db, QString table, QObject *parent) :
     QAbstractTableModel(parent),
     db_(*db),
     tableName_(table),
@@ -71,21 +72,28 @@ QVariant SqlContentModel::headerData(int section, Qt::Orientation orientation, i
 
 void SqlContentModel::describe() {
     // primary key required if it should be editable
-    QSqlQuery key("SHOW KEYS FROM "+tableName_+" WHERE Key_name = 'PRIMARY'", db_);
-    key.next();
-    QString primaryKey = key.value(4).toString();
+    QSqlQuery q(db_);
+    q.prepare("SHOW KEYS FROM "+tableName_+" WHERE Key_name = 'PRIMARY'");
+    db_.execQuery(q);
+    q.next();
+    QString primaryKey = q.value(4).toString();
+    q.finish();
 
-    QSqlQuery q("SHOW COLUMNS FROM " + tableName_, db_);
+    q.prepare("SHOW COLUMNS FROM " + tableName_);
+    db_.execQuery(q);
     columns_.clear();
     while(q.next()) {
         if(q.value(0).toString() == primaryKey)
             primaryKeyIndex_ = columns_.count();
         columns_.append({q.value(0).toString(), q.value(1).toString()});
     }
+    q.finish();
 
-    QSqlQuery count("SELECT count(*) FROM " + tableName_, db_);
-    count.next();
-    totalRecords_ = count.value(0).toInt();
+    q.prepare("SELECT count(*) FROM " + tableName_);
+    db_.execQuery(q);
+    q.next();
+    totalRecords_ = q.value(0).toInt();
+    q.finish();
 }
 
 void SqlContentModel::select()
@@ -100,7 +108,8 @@ void SqlContentModel::select()
     query_->bindValue(":value", whereValue_);
     query_->bindValue(":top", rowsFrom_);
     query_->bindValue(":count", rowsLimit_);
-    query_->exec();
+    //query_->exec();
+    db_.execQuery(*query_);
     endResetModel();
     emit pagesChanged(rowsFrom_, rowsLimit_, totalRecords_);
 }
@@ -137,7 +146,7 @@ bool SqlContentModel::removeRows(int row, int count, const QModelIndex &parent) 
     QSqlQuery q(db_);
     q.prepare("DELETE FROM `" + tableName_ + "` WHERE `" + columns_.at(primaryKeyIndex_).name + "` IN (?)");
     q.bindValue(0, rowIds.join(","));
-    if(q.exec())
+    if(db_.execQuery(q))
         totalRecords_--;
     else
         qDebug() << q.lastError().text();
@@ -162,7 +171,7 @@ bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, i
             q.prepare("INSERT INTO " + tableName_ + "(`" + columns_.at(primaryKeyIndex_).name + "`) VALUES(?)");
             q.bindValue(0, value.toString());
             isAdding_ = false;
-            if(q.exec()) {
+            if(db_.execQuery(q)) {
                 totalRecords_++;
                 return true;
             }else
@@ -172,7 +181,7 @@ bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, i
         q.prepare("UPDATE " + tableName_ + " SET `" + columns_.at(index.column()).name + "` = ? WHERE `" + columns_.at(primaryKeyIndex_).name + "` = ?");
         q.bindValue(0, value.toString());
         q.bindValue(1, data(this->index(index.row(), primaryKeyIndex_)).toString());
-        if(q.exec())
+        if(db_.execQuery(q))
             select();
         else
             qDebug() << q.lastError().text();

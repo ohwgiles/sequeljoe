@@ -16,6 +16,7 @@ class ConnectionWidget;
 class FilteredPagedTableView;
 class DbConnection;
 class TableList;
+class QueryLog;
 
 class QTableView;
 class QSqlTableModel;
@@ -62,6 +63,7 @@ private:
     QTableView* structure_;
     ViewToolBar* toolbar_;
     QueryPanel* queryWidget_;
+    QueryLog* queryLog_;
 };
 
 #endif // _SEQUELJOE_MAINPANEL_H_

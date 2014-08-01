@@ -22,6 +22,8 @@ enum {
     FilterValueRole
 };
 
+class DbConnection;
+
 class QSqlDatabase;
 class QSqlQuery;
 
@@ -29,7 +31,7 @@ class SqlContentModel : public QAbstractTableModel
 {
     Q_OBJECT
 public:
-    explicit SqlContentModel(QSqlDatabase* db, QString table, QObject *parent = 0);
+    explicit SqlContentModel(DbConnection* db, QString table, QObject *parent = 0);
     virtual ~SqlContentModel();
 
     static constexpr unsigned rowsPerPage() { return 1000; }
@@ -57,7 +59,7 @@ protected:
     bool event(QEvent *);
 
 private:
-    QSqlDatabase& db_;
+    DbConnection& db_;
     QString tableName_;
 
     int primaryKeyIndex_;

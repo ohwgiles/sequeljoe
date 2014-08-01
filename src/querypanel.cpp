@@ -87,8 +87,10 @@ QueryPanel::QueryPanel(QWidget* parent) :
 void QueryPanel::executeQuery() {
     error_->hide();
     status_->hide();
-    QString q = editor_->document()->toPlainText();
-    db_->query(q, model_);
+    QSqlQuery q(*db_);
+    q.prepare(editor_->document()->toPlainText());
+    db_->execQuery(q);
+    model_->setQuery(q);
     QSqlError err = model_->lastError();
     if(err.isValid()) {
         error_->setText(err.text());

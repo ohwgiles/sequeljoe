@@ -75,10 +75,17 @@ QAbstractTableModel* DbConnection::getStructureModel(QString tableName) {
     return schemaModels_[tableName];
 }
 
+bool DbConnection::execQuery(QSqlQuery& q) {
+    bool result = q.exec();
+    emit queryExecuted(q);
+    return result;
+}
+
 void DbConnection::populateDatabases() {
     dbNames_.clear();
     QSqlQuery query(*this);
-    query.exec("SHOW DATABASES");
+    query.prepare("SHOW DATABASES");
+    execQuery(query);
     while(query.next())
         dbNames_ << query.value(0).toString();
 }
