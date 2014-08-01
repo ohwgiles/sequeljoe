@@ -90,7 +90,17 @@ void DbConnection::populateDatabases() {
         dbNames_ << query.value(0).toString();
 }
 
-static char last_connect_name[] = "cs_name0";
+void DbConnection::createTable(QString tableName) {
+    QSqlQuery query(*this);
+    query.prepare("CREATE TABLE `" + tableName + "` (`id` INT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT)");
+    execQuery(query);
+}
+
+void DbConnection::deleteTable(QString tableName) {
+    QSqlQuery query(*this);
+    query.prepare("DROP TABLE `" + tableName + "`");
+    execQuery(query);
+}
 
 void DbConnection::newConnection() {
     QString name = "connection_" + QString::number(nConnections_++);

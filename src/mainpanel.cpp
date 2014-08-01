@@ -25,6 +25,8 @@
 #include <QSplitter>
 #include <QLineEdit>
 #include <QHeaderView>
+#include <QMessageBox>
+#include <QInputDialog>
 #include <QSettings>
 
 MainPanel::MainPanel(QWidget* parent) :
@@ -62,6 +64,9 @@ MainPanel::MainPanel(QWidget* parent) :
 
                     tableChooser_ = new TableList(this);
                     connect(tableChooser_, SIGNAL(tableSelected(QString)), this, SLOT(tableChanged(QString)));
+                    connect(tableChooser_, SIGNAL(addButtonClicked()), this, SLOT(addTable()));
+                    connect(tableChooser_, SIGNAL(delButtonClicked()), this, SLOT(deleteTable()));
+                    connect(tableChooser_, SIGNAL(refreshButtonClicked()), this, SLOT(refreshTables()));
                     contentSchemaSplit_->addWidget(tableChooser_);
 
                     { // the contents and structure table views (sharing the table list)
@@ -208,3 +213,24 @@ void MainPanel::disconnectDb() {
     }
 }
 
+void MainPanel::addTable() {
+    QString name = QInputDialog::getText(this, "Create Table", "Enter a name for the new table");
+    if(!name.isEmpty()) {
+        db_->createTable(name);
+        refreshTables();
+    }
+}
+
+void MainPanel::deleteTable() {
+    QString current = tableChooser_->selectedTable();
+    if(!current.isNull() && QMessageBox::warning(this, QString("Delete Table"), "Are you sure? This action cannot be undone", QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
+        db_->deleteTable(current);
+        content_->setModel(nullptr);
+        structure_->setModel(nullptr);
+        refreshTables();
+    }
+}
+
+void MainPanel::refreshTables() {
+    tableChooser_->setTableNames(db_->tables());
+}

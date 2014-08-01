@@ -53,6 +53,11 @@ public slots:
 
     void dbChanged(QString);
 
+private slots:
+    void addTable();
+    void deleteTable();
+    void refreshTables();
+
 private:
     DbConnection* db_;
     ConnectionWidget* settings_;

@@ -20,9 +20,13 @@ class TableList : public QWidget
 public:
     explicit TableList(QWidget *parent = 0);
     void setTableNames(QStringList names);
+    QString selectedTable() const;
 
 signals:
     void tableSelected(QString name);
+    void addButtonClicked();
+    void delButtonClicked();
+    void refreshButtonClicked();
 
 private slots:
     void filterTextChanged(QString text);

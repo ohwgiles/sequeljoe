@@ -42,6 +42,9 @@ public:
     virtual QSqlQueryModel* query(QString q, QSqlQueryModel* update = 0);
     virtual bool execQuery(QSqlQuery& q);
 
+    void deleteTable(QString tableName);
+    void createTable(QString tableName);
+
     void populateDatabases();
     QStringList getDatabaseNames() const { return dbNames_; }
     QString getDatabaseName() const { return dbName_; }
