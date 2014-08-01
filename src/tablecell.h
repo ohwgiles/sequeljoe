@@ -8,15 +8,23 @@
 #ifndef _SEQUELJOE_TABLECELL_H_
 #define _SEQUELJOE_TABLECELL_H_
 
-#include <QItemDelegate>
+#include <QStyledItemDelegate>
 
-class TableCell : public QItemDelegate
+class TableCell : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
     explicit TableCell(QObject *parent = 0);
 
+
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
+signals:
+    void goToForeignEntry(const QModelIndex& index);
+protected:
+    bool editorEvent(QEvent *event, QAbstractItemModel *model,
+                     const QStyleOptionViewItem &option, const QModelIndex &index);
+private:
+    QRect expandWidgetRect(QRect cellRect) const;
 };
 
 #endif // _SEQUELJOE_TABLECELL_H_

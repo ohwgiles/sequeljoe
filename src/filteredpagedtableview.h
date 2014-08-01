@@ -10,6 +10,8 @@
 
 #include "tableview.h"
 
+class TableView;
+
 class QAbstractButton;
 class QLabel;
 class QComboBox;
@@ -24,6 +26,10 @@ public:
 
     QAbstractItemModel* model() const { return table_->model(); }
     QHeaderView* horizontalHeader() const { return table_->horizontalHeader(); }
+    void setFilter(QString column, QString operation, QVariant vaulue);
+
+signals:
+    void foreignQuery(QString table, QString column, QVariant value);
 
 protected:
     QStringList filterOperations() const;
@@ -36,7 +42,7 @@ private slots:
 
 private:
     QAbstractButton* b;
-    QTableView* table_;
+    TableView* table_;
     QComboBox* filterColumns_;
     QComboBox* filterOperation_;
     QLineEdit* filterText_;

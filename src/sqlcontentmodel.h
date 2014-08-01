@@ -19,13 +19,17 @@ enum {
 enum {
     FilterColumnRole = Qt::UserRole,
     FilterOperationRole,
-    FilterValueRole
+    FilterValueRole,
+    ForeignKeyTableRole,
+    ForeignKeyColumnRole,
+    WidgetRole
 };
 
 class DbConnection;
 
 class QSqlDatabase;
 class QSqlQuery;
+
 
 class SqlContentModel : public QAbstractTableModel
 {
@@ -71,8 +75,11 @@ private:
     struct ColumnHeader {
         QString name;
         QString comment;
+        QString fk_table;
+        QString fk_column;
     };
     QVector<ColumnHeader> columns_;
+
     QSqlQuery* query_;
     QString whereColumn_;
     QString whereOperation_;

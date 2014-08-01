@@ -14,7 +14,8 @@
 #include <QDebug>
 #include <QStringList>
 #include <QSqlError>
-
+#include <QPushButton>
+QWidget* w;
 SqlContentModel::SqlContentModel(DbConnection *db, QString table, QObject *parent) :
     QAbstractTableModel(parent),
     db_(*db),
@@ -27,6 +28,7 @@ SqlContentModel::SqlContentModel(DbConnection *db, QString table, QObject *paren
     query_(new QSqlQuery(*db))
 {
     describe();
+    w = new QPushButton("test");
 }
 
 SqlContentModel::~SqlContentModel() {
@@ -49,9 +51,15 @@ QVariant SqlContentModel::data(const QModelIndex &index, int role) const {
     if(role == FilterValueRole)
         return whereValue_;
 
+    if(role == ForeignKeyTableRole)
+        return columns_[index.column()].fk_table;
+    if(role == ForeignKeyColumnRole)
+        return columns_[index.column()].fk_column;
+
     if(index.row() == query_->size())
         return QVariant(); // during editing only. isAdding_ should be true here
-
+//if(role == Qt::CheckStateRole) return true;
+    if(role == WidgetRole) return (qulonglong)w;
     if(index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole)) {
         query_->seek(index.row());
         return query_->value(index.column());
@@ -71,25 +79,27 @@ QVariant SqlContentModel::headerData(int section, Qt::Orientation orientation, i
 }
 
 void SqlContentModel::describe() {
+    // todo this will be different for other SQL drivers
+
     // primary key required if it should be editable
     QSqlQuery q(db_);
-    q.prepare("SHOW KEYS FROM "+tableName_+" WHERE Key_name = 'PRIMARY'");
-    db_.execQuery(q);
-    q.next();
-    QString primaryKey = q.value(4).toString();
-    q.finish();
-
-    q.prepare("SHOW COLUMNS FROM " + tableName_);
+    q.prepare(
+    "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.referenced_table_name, k.referenced_column_name "
+    "from information_schema.columns as c "
+    "left join information_schema.key_column_usage as k "
+    "on c.table_name = k.table_name and c.column_name = k.column_name and referenced_column_name is not null "
+    "where c.table_schema = '"+db_.databaseName()+"' "
+    "and c.table_name = '"+tableName_+"'");
     db_.execQuery(q);
     columns_.clear();
     while(q.next()) {
-        if(q.value(0).toString() == primaryKey)
+        if(q.value(2).toBool())
             primaryKeyIndex_ = columns_.count();
-        columns_.append({q.value(0).toString(), q.value(1).toString()});
+        columns_.append({q.value(0).toString(), q.value(1).toString(), q.value(3).toString(), q.value(4).toString()});
     }
     q.finish();
 
-    q.prepare("SELECT count(*) FROM " + tableName_);
+    q.prepare("SELECT count(1) FROM " + tableName_);
     db_.execQuery(q);
     q.next();
     totalRecords_ = q.value(0).toInt();
@@ -128,7 +138,7 @@ void SqlContentModel::prevPage() {
 }
 
 Qt::ItemFlags SqlContentModel::flags(const QModelIndex &index) const {
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable | (primaryKeyIndex_==-1?Qt::NoItemFlags:Qt::ItemIsEditable);
+    return  Qt::ItemIsEnabled | Qt::ItemIsSelectable | (primaryKeyIndex_==-1?Qt::NoItemFlags:Qt::ItemIsEditable);
 }
 
 
@@ -153,6 +163,9 @@ bool SqlContentModel::removeRows(int row, int count, const QModelIndex &parent) 
 }
 
 bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, int role) {
+    if(role == Qt::CheckStateRole)
+        qDebug() << "Got check state role!";
+
     if(role == FilterColumnRole) {
         whereColumn_ = value.toString();
         return true;

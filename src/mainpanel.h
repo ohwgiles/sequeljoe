@@ -57,6 +57,7 @@ private slots:
     void addTable();
     void deleteTable();
     void refreshTables();
+    void jumpToQuery(QString table, QString column, QVariant value);
 
 private:
     DbConnection* db_;

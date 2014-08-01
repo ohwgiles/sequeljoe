@@ -14,6 +14,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
+#include <QDebug>
 
 TableList::TableList(QWidget *parent) :
     QWidget(parent)
@@ -37,6 +38,7 @@ TableList::TableList(QWidget *parent) :
         proxy->setSourceModel(tableItems_);
         tables_ = new QListView(this);
         tables_->setEditTriggers(QListView::NoEditTriggers);
+        tables_->setSelectionMode(QAbstractItemView::SingleSelection);
         tables_->setModel(proxy);
 
         connect(filterInput_, SIGNAL(textChanged(QString)), this, SLOT(filterTextChanged(QString)));
@@ -83,4 +85,9 @@ void TableList::filterTextChanged(QString text) {
 
 void TableList::setTableNames(QStringList names) {
     tableItems_->setStringList(names);
+}
+
+void TableList::setCurrentTable(QString name) {
+    tables_->clearSelection();
+    tables_->selectionModel()->setCurrentIndex(tableItems_->index(tableItems_->stringList().indexOf(name)), QItemSelectionModel::Select);
 }

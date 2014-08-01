@@ -21,6 +21,7 @@ public:
     explicit TableList(QWidget *parent = 0);
     void setTableNames(QStringList names);
     QString selectedTable() const;
+    void setCurrentTable(QString name);
 
 signals:
     void tableSelected(QString name);

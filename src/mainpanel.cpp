@@ -28,6 +28,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QSettings>
+#include <QDebug>
 
 MainPanel::MainPanel(QWidget* parent) :
     QWidget(parent),
@@ -76,6 +77,7 @@ MainPanel::MainPanel(QWidget* parent) :
                         //vlayout->setSpacing(0);
 
                         content_ = new FilteredPagedTableView(w);
+                        connect(content_, SIGNAL(foreignQuery(QString,QString,QVariant)), this, SLOT(jumpToQuery(QString,QString,QVariant)));
                         vlayout->addWidget(content_);
 
                         structure_ = new TableView(w);
@@ -233,4 +235,9 @@ void MainPanel::deleteTable() {
 
 void MainPanel::refreshTables() {
     tableChooser_->setTableNames(db_->tables());
+}
+
+void MainPanel::jumpToQuery(QString table, QString column, QVariant value) {
+    tableChooser_->setCurrentTable(table);
+    content_->setFilter(column, "=", value);
 }

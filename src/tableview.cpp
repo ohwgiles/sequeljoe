@@ -23,7 +23,10 @@ TableView::TableView(QWidget *parent) :
     setAlternatingRowColors(true);
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setShowGrid(false);
-    setItemDelegate(new TableCell());
+
+    TableCell* tc = new TableCell;
+    connect(tc, SIGNAL(goToForeignEntry(QModelIndex)), this, SLOT(handleRequestForeignKey(QModelIndex)));
+    setItemDelegate(tc);
 
     horizontalHeader()->setSortIndicatorShown(true);
     horizontalHeader()->setFixedHeight(verticalHeader()->minimumSectionSize());
@@ -70,4 +73,11 @@ void TableView::handleAddRow() {
     int newRow = model()->rowCount();
     model()->insertRow(newRow);
     edit(model()->index(newRow, 0));
+}
+
+void TableView::handleRequestForeignKey(const QModelIndex& index) {
+    QString table = index.data(ForeignKeyTableRole).toString();
+    QString column = index.data(ForeignKeyColumnRole).toString();
+    QVariant value = index.data();
+    emit foreignQuery(table, column, value);
 }

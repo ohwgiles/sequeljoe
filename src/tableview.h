@@ -19,11 +19,17 @@ class TableView : public QTableView
 public:
     explicit TableView(QWidget *parent = 0);
 
+signals:
+    void foreignQuery(QString table, QString column, QVariant value);
+
 public slots:
     void openMenu(QPoint);
     void handleSetNull();
     void handleDeleteRow();
     void handleAddRow();
+
+private slots:
+    void handleRequestForeignKey(const QModelIndex&);
 
 private:
     QMenu* ctxMenu_;

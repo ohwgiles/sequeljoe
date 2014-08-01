@@ -27,6 +27,9 @@ FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
     table_ = new TableView(this);
     layout->addWidget(table_);
 
+    // proxy the signal
+    connect(table_, SIGNAL(foreignQuery(QString,QString,QVariant)), this, SIGNAL(foreignQuery(QString,QString,QVariant)));
+
     { // widget containing a toolbar with filter and pagination options
         QHBoxLayout* bar = new QHBoxLayout();
         bar->setContentsMargins(0,0,0,0);
@@ -102,6 +105,13 @@ void FilteredPagedTableView::updatePagination(int firstRow, int rowsInPage, int 
 
 void FilteredPagedTableView::clearFilter() {
     filterText_->setText(QString());
+    runFilter();
+}
+
+void FilteredPagedTableView::setFilter(QString column, QString operation, QVariant value) {
+    filterColumns_->setCurrentText(column);
+    filterOperation_->setCurrentText(operation);
+    filterText_->setText(value.toString());
     runFilter();
 }
 
