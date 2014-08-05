@@ -39,7 +39,6 @@ signals:
 
 public slots:
     void toggleEditSettings(bool showSettings = true);
-    void connectionMade();
     void firstConnectionMade();
 
     void openConnection(QString name);

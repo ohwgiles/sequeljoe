@@ -123,9 +123,11 @@ void MainPanel::openPanel(ViewToolBar::Panel p) {
         structure_->hide();
         switch(p) {
         case ViewToolBar::PANEL_CONTENT:
+            content_->setModel(db_->getTableModel(tableChooser_->selectedTable()));
             content_->show();
             break;
         case ViewToolBar::PANEL_STRUCTURE:
+            structure_->setModel(db_->getStructureModel(tableChooser_->selectedTable()));
             structure_->show();
             break;
         default:
@@ -136,11 +138,12 @@ void MainPanel::openPanel(ViewToolBar::Panel p) {
 
 void MainPanel::openConnection(QString name) {
     db_ = DbConnection::fromName(name);
+    connect(db_, SIGNAL(queryExecuted(QSqlQuery)), queryLog_, SLOT(logQuery(QSqlQuery)));
     connect(db_, SIGNAL(connectionSuccess()), this, SLOT(firstConnectionMade()));
 
     // todo show loading progress
-    toggleEditSettings(false);
     db_->connect();
+
     QSettings s;
     s.beginGroup(name);
     QString label = s.value("Name").toString();
@@ -155,35 +158,30 @@ void MainPanel::firstConnectionMade() {
     toolbar_->enableAll();
     queryWidget_->setDb(db_);
 
+    toggleEditSettings(false);
+
     toolbar_->populateDatabases(db_->getDatabaseNames());
-    if(!db_->getDatabaseName().isEmpty())
+    if(!db_->getDatabaseName().isEmpty()) {
         toolbar_->setCurrentDatabase(db_->getDatabaseName());
+        tableChooser_->setTableNames(db_->tables());
+    }
 
     connect(toolbar_, SIGNAL(dbChanged(QString)), this, SLOT(dbChanged(QString)));
-
-    // replace this handler with one that runs only on database changes
-    disconnect(db_, SIGNAL(connectionSuccess()), this, SLOT(firstConnectionMade()));
-    connect(db_, SIGNAL(connectionSuccess()), this, SLOT(connectionMade()));
-
-    connectionMade();
 }
 
-void MainPanel::connectionMade() {
-    connect(db_, SIGNAL(queryExecuted(QSqlQuery)), queryLog_, SLOT(logQuery(QSqlQuery)));
+
+void MainPanel::dbChanged(QString name) {
+    content_->setModel(nullptr);
+    structure_->setModel(nullptr);
+    db_->useDatabase(name);
     tableChooser_->setTableNames(db_->tables());
 }
 
-void MainPanel::dbChanged(QString name) {
-    content_->setModel(0);
-    structure_->setModel(0);
-    db_->close();
-    db_->setDbName(name);
-    db_->connect();
-}
-
 void MainPanel::tableChanged(QString name) {
-    structure_->setModel(db_->getStructureModel(name));
-    content_->setModel(db_->getTableModel(name));
+    if(structure_->isVisible())
+        structure_->setModel(db_->getStructureModel(name));
+    if(content_->isVisible())
+        content_->setModel(db_->getTableModel(name));
     // todo this shouldn't be set for every change of table, maybe it can be done just once? Or functionality bought into class
     //connect(content_->horizontalHeader(), SIGNAL(sortIndicatorChanged(int,Qt::SortOrder)), this, SLOT(changeSort(int,Qt::SortOrder)));
 }
@@ -205,6 +203,8 @@ void MainPanel::disconnectDb() {
     disconnect(this, SLOT(firstConnectionMade()));
     content_->setModel(0);
     structure_->setModel(0);
+    queryLog_->clear();
+    queryLog_->setRowCount(0);
     tableChooser_->setTableNames(QStringList());
     toggleEditSettings(true);
     if(db_) {

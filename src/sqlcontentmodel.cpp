@@ -84,25 +84,27 @@ void SqlContentModel::describe() {
     // primary key required if it should be editable
     QSqlQuery q(db_);
     q.prepare(
-    "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.referenced_table_name, k.referenced_column_name "
-    "from information_schema.columns as c "
-    "left join information_schema.key_column_usage as k "
-    "on c.table_name = k.table_name and c.column_name = k.column_name and referenced_column_name is not null "
-    "where c.table_schema = '"+db_.databaseName()+"' "
-    "and c.table_name = '"+tableName_+"'");
+        "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.referenced_table_name, k.referenced_column_name, t.table_rows "
+        "from information_schema.columns as c "
+        "inner join information_schema.tables as t "
+        "on c.table_schema = t.table_schema and c.table_name = t.table_name "
+        "left join information_schema.key_column_usage as k "
+        "on c.table_schema = k.table_schema and c.table_name = k.table_name and c.column_name = k.column_name and referenced_column_name is not null "
+        "where c.table_schema = '"+db_.databaseName()+"' and c.table_name = '"+tableName_+"'"
+    );
     db_.execQuery(q);
     columns_.clear();
     while(q.next()) {
         if(q.value(2).toBool())
             primaryKeyIndex_ = columns_.count();
         columns_.append({q.value(0).toString(), q.value(1).toString(), q.value(3).toString(), q.value(4).toString()});
+        totalRecords_ = q.value(5).toInt();
     }
     q.finish();
 
-    q.prepare("SELECT count(1) FROM " + tableName_);
-    db_.execQuery(q);
-    q.next();
-    totalRecords_ = q.value(0).toInt();
+//    q.prepare("SELECT count(1) FROM " + tableName_);
+//    db_.execQuery(q);
+//    q.next();
     q.finish();
 }
 

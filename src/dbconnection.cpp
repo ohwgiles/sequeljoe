@@ -16,6 +16,7 @@
 #include <QSqlTableModel>
 #include <QSqlQuery>
 #include <QStringList>
+#include <QDebug>
 
 int DbConnection::nConnections_ = 0;
 
@@ -75,7 +76,7 @@ QAbstractTableModel* DbConnection::getStructureModel(QString tableName) {
     return schemaModels_[tableName];
 }
 
-bool DbConnection::execQuery(QSqlQuery& q) {
+bool DbConnection::execQuery(QSqlQuery& q) const {
     bool result = q.exec();
     emit queryExecuted(q);
     return result;
@@ -86,8 +87,9 @@ void DbConnection::populateDatabases() {
     QSqlQuery query(*this);
     query.prepare("SHOW DATABASES");
     execQuery(query);
-    while(query.next())
+    while(query.next()) {
         dbNames_ << query.value(0).toString();
+    }
 }
 
 void DbConnection::createTable(QString tableName) {
@@ -121,8 +123,19 @@ bool DbConnection::connect() {
     }
 }
 
-void DbConnection::setDbName(QString name) {
-    dbName_ = name.toLocal8Bit();
-    setDatabaseName(name);
-    open();
+void DbConnection::useDatabase(QString dbName) {
+    QSqlQuery query(*this);
+    query.prepare("USE " + dbName + "");
+    execQuery(query);
+    setDatabaseName(dbName);
+}
+
+QStringList DbConnection::tables() const {
+    QSqlQuery query(*this);
+    query.prepare("SHOW TABLES");
+    execQuery(query);
+    QStringList result;
+    while(query.next())
+        result << query.value(0).toString();
+    return result;
 }

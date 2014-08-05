@@ -73,6 +73,9 @@ QStringList FilteredPagedTableView::filterOperations() const {
 }
 
 void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
+    if(m == table_->model())
+        return;
+
     disconnect(this, SLOT(updatePagination(int,int,int)));
     disconnect(prev_, SIGNAL(clicked()));
     disconnect(next_, SIGNAL(clicked()));
