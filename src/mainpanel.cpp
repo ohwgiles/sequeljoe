@@ -29,11 +29,15 @@
 #include <QInputDialog>
 #include <QSettings>
 #include <QDebug>
+#include <QThread>
 
 MainPanel::MainPanel(QWidget* parent) :
     QWidget(parent),
     db_(nullptr)
 {
+    backgroundWorker_ = new QThread;
+    backgroundWorker_->start();
+
     QGridLayout* layout = new QGridLayout(this);
     layout->setContentsMargins(0,0,0,0);
     layout->setSpacing(0);
@@ -112,6 +116,12 @@ MainPanel::MainPanel(QWidget* parent) :
     toggleEditSettings(true);
 }
 
+MainPanel::~MainPanel() {
+    backgroundWorker_->exit();
+    backgroundWorker_->wait();
+    delete backgroundWorker_;
+}
+
 void MainPanel::openPanel(ViewToolBar::Panel p) {
     if(p == ViewToolBar::PANEL_QUERY) {
         contentSchemaSplit_->hide();
@@ -123,11 +133,11 @@ void MainPanel::openPanel(ViewToolBar::Panel p) {
         structure_->hide();
         switch(p) {
         case ViewToolBar::PANEL_CONTENT:
-            content_->setModel(db_->getTableModel(tableChooser_->selectedTable()));
+            updateContentModel(tableChooser_->selectedTable());
             content_->show();
             break;
         case ViewToolBar::PANEL_STRUCTURE:
-            structure_->setModel(db_->getStructureModel(tableChooser_->selectedTable()));
+            updateSchemaModel(tableChooser_->selectedTable());
             structure_->show();
             break;
         default:
@@ -135,26 +145,73 @@ void MainPanel::openPanel(ViewToolBar::Panel p) {
         }
     }
 }
-
+#include "sqlcontentmodel.h"
+void MainPanel::updateContentModel(QString tableName) {
+    bool isModelNew = false;
+    SqlContentModel* model;
+    QString key = db_->databaseName() + tableName;
+    if(!db_->contentModels().contains(key)) {
+        model = new SqlContentModel(*db_, tableName);
+        db_->contentModels()[key] = model;
+        isModelNew = true;
+    } else
+        model = qobject_cast<SqlContentModel*>(db_->contentModels()[key]);
+    content_->setModel(model);
+    if(isModelNew) {
+        if(!jumpToTableFilter_.value.isNull())
+            model->describe(jumpToTableFilter_);
+        else
+            model->describe();
+    } else if(!jumpToTableFilter_.value.isNull())
+        model->setFilter(jumpToTableFilter_);
+    jumpToTableFilter_ = Filter{};
+}
+#include "sqlschemamodel.h"
+void MainPanel::updateSchemaModel(QString tableName) {
+    bool isModelNew = false;
+    SqlSchemaModel* model;
+    QString key = db_->databaseName() + tableName;
+    if(!db_->schemaModels().contains(key)) {
+        model = new SqlSchemaModel(*db_, tableName);
+        db_->schemaModels()[key] = model;
+        isModelNew = true;
+    }
+    model = qobject_cast<SqlSchemaModel*>(db_->schemaModels()[key]);
+    structure_->setModel(model);
+    if(isModelNew)
+        model->describe();
+}
 void MainPanel::openConnection(QString name) {
     db_ = DbConnection::fromName(name);
-    connect(db_, SIGNAL(queryExecuted(QSqlQuery)), queryLog_, SLOT(logQuery(QSqlQuery)));
-    connect(db_, SIGNAL(connectionSuccess()), this, SLOT(firstConnectionMade()));
+    db_->moveToThread(backgroundWorker_);
+    connect(db_, SIGNAL(queryExecuted(QString,QString)), queryLog_, SLOT(logQuery(QString,QString)));
+qDebug() << "out: " << QThread::currentThreadId();
+    connect(db_, SIGNAL(connectionSuccess()), this, SLOT(databaseConnected()));
 
-    // todo show loading progress
-    db_->connect();
-
+    // todo put in databesConnected
     QSettings s;
     s.beginGroup(name);
     QString label = s.value("Name").toString();
     s.endGroup();
 
     emit nameChanged(this, label);
+
+
+
+
+
+
+    connect(db_, SIGNAL(databaseChanged(QString)), this, SLOT(tableListChanged()));
+
+    // todo show loading progress
+    //db_->connect();
+    QMetaObject::invokeMethod(db_, "connect", Qt::QueuedConnection);
+
 }
 
-// this handler only runs on first connect, for example to get the list of databases
-void MainPanel::firstConnectionMade() {
-    // todo terminate any loading progress widget
+void MainPanel::databaseConnected() {
+    qDebug() << "in: " << QThread::currentThreadId();
+
     toolbar_->enableAll();
     queryWidget_->setDb(db_);
 
@@ -167,21 +224,28 @@ void MainPanel::firstConnectionMade() {
     }
 
     connect(toolbar_, SIGNAL(dbChanged(QString)), this, SLOT(dbChanged(QString)));
+
 }
 
+void MainPanel::tableListChanged() {
+    tableChooser_->setTableNames(db_->tables());
+
+}
 
 void MainPanel::dbChanged(QString name) {
     content_->setModel(nullptr);
     structure_->setModel(nullptr);
-    db_->useDatabase(name);
-    tableChooser_->setTableNames(db_->tables());
+    //db_->useDatabase(name);
+    QMetaObject::invokeMethod(db_, "useDatabase", Q_ARG(QString, name));
+    //tableChooser_->setTableNames(db_->tables());
 }
+
 
 void MainPanel::tableChanged(QString name) {
     if(structure_->isVisible())
-        structure_->setModel(db_->getStructureModel(name));
+        updateSchemaModel(name);
     if(content_->isVisible())
-        content_->setModel(db_->getTableModel(name));
+        updateContentModel(name);
     // todo this shouldn't be set for every change of table, maybe it can be done just once? Or functionality bought into class
     //connect(content_->horizontalHeader(), SIGNAL(sortIndicatorChanged(int,Qt::SortOrder)), this, SLOT(changeSort(int,Qt::SortOrder)));
 }
@@ -200,7 +264,6 @@ void MainPanel::toggleEditSettings(bool showSettings) {
 }
 
 void MainPanel::disconnectDb() {
-    disconnect(this, SLOT(firstConnectionMade()));
     content_->setModel(0);
     structure_->setModel(0);
     queryLog_->clear();
@@ -208,8 +271,9 @@ void MainPanel::disconnectDb() {
     tableChooser_->setTableNames(QStringList());
     toggleEditSettings(true);
     if(db_) {
-        disconnect(db_, SIGNAL(queryExecuted(QSqlQuery)));
-        db_->close();
+        disconnect(db_);
+        QMetaObject::invokeMethod(db_, "cleanup", Qt::BlockingQueuedConnection);
+        //backgroundWorker_->exit();
         delete db_;
         db_ = 0;
     }
@@ -238,6 +302,10 @@ void MainPanel::refreshTables() {
 }
 
 void MainPanel::jumpToQuery(QString table, QString column, QVariant value) {
+qDebug() << "jump to " << table << " with " << column << " = " << value;
+    jumpToTableFilter_.column = column;
+    jumpToTableFilter_.operation = "=";
+    jumpToTableFilter_.value = value.toString();
+    //content_->setFilter(column, "=", value);
     tableChooser_->setCurrentTable(table);
-    content_->setFilter(column, "=", value);
 }

@@ -10,6 +10,7 @@
 #include "dbconnection.h"
 #include "tableview.h"
 #include "sqlhighlighter.h"
+#include "sqlmodel.h"
 
 #include <QSplitter>
 #include <QTableView>
@@ -20,10 +21,11 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QLabel>
+#include <QDebug>
 
 QueryPanel::QueryPanel(QWidget* parent) :
     QWidget(parent),
-    model_(new QSqlQueryModel)
+    model_(0)
 {
     QBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
@@ -83,21 +85,23 @@ QueryPanel::QueryPanel(QWidget* parent) :
     }
     layout->addWidget(splitter);
 }
+void QueryPanel::setDb(DbConnection *db) {
+    model_ = new SqlModel(*db);
+    results_->setModel(model_);
+}
 
 void QueryPanel::executeQuery() {
     error_->hide();
     status_->hide();
-    QSqlQuery q(*db_);
-    q.prepare(editor_->document()->toPlainText());
-    db_->execQuery(q);
-    model_->setQuery(q);
-    QSqlError err = model_->lastError();
-    if(err.isValid()) {
-        error_->setText(err.text());
-        error_->show();
-    } else {
-        status_->setText("Query OK: " + QString::number(model_->query().numRowsAffected()) + " rows affected");
-        status_->show();
-    }
-    results_->update();
+    model_->setQuery(editor_->document()->toPlainText());
+model_->refresh();
+return;
+#if 0
+//begin
+//    results_->showLoadingOverlay(true);
+    query_->prepare(editor_->document()->toPlainText());
+    QMetaObject::invokeMethod(db_, "execQuery", Q_ARG(QSqlQuery*, query_),
+                              Q_ARG(QObject*, this), Q_ARG(const char*, "queryFinished"));
+#endif
+    //db_->execQuery(q);
 }

@@ -27,6 +27,12 @@ public slots:
     void handleSetNull();
     void handleDeleteRow();
     void handleAddRow();
+    void showLoadingOverlay(bool show);
+
+    void setModel(QAbstractItemModel *model);
+
+protected:
+    void resizeEvent(QResizeEvent *event);
 
 private slots:
     void handleRequestForeignKey(const QModelIndex&);
@@ -36,6 +42,7 @@ private:
     QAction* nullAction_;
     QAction* deleteRowAction_;
     QAction* addRowAction_;
+    QWidget* loadingOverlay_;
 };
 
 #endif // _SEQUELJOE_TABLEVIEW_H_

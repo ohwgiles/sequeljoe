@@ -56,7 +56,7 @@ public:
 private:
     Params params_;
     QThread* thread_;
-
+SshThread* tunnel_;
     static short nSshLibUsers;
 
 private slots:

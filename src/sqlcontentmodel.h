@@ -8,6 +8,8 @@
 #ifndef _SEQUELJOE_SQLCONTENTMODEL_H_
 #define _SEQUELJOE_SQLCONTENTMODEL_H_
 
+#include "sqlmodel.h"
+#include "dbconnection.h"
 #include <QAbstractTableModel>
 #include <QVector>
 #include <QEvent>
@@ -30,27 +32,32 @@ class DbConnection;
 class QSqlDatabase;
 class QSqlQuery;
 
+struct Filter {
+    QString column;
+    QString operation;
+    QString value;
+};
 
-class SqlContentModel : public QAbstractTableModel
+class SqlContentModel : public SqlModel
 {
     Q_OBJECT
 public:
-    explicit SqlContentModel(DbConnection* db, QString table, QObject *parent = 0);
+    explicit SqlContentModel(DbConnection& db, QString table, QObject *parent = 0);
     virtual ~SqlContentModel();
 
     static constexpr unsigned rowsPerPage() { return 1000; }
 
-    void describe();
+    void describe(const Filter &where = Filter{});
     void select();
 
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role);
     Qt::ItemFlags flags(const QModelIndex &index) const;
-    bool insertRows(int row, int count, const QModelIndex &parent);
-    bool removeRows(int row, int count, const QModelIndex &parent);
+    virtual bool deleteRows(QSet<int>);
+
+    void setFilter(Filter& f) { where_ = f; select();}
 
 signals:
     void pagesChanged(int,int,int);
@@ -58,33 +65,29 @@ signals:
 public slots:
     void nextPage();
     void prevPage();
+    void describeComplete(QVector<ColumnHeader> columns, int totalRecords, int primaryKeyIndex);
+
+    void selectComplete(QVector<QVector<QVariant> > data);
+
+    void updateComplete(bool result, int insertId);
 
 protected:
     bool event(QEvent *);
 
 private:
     DbConnection& db_;
-    QString tableName_;
-
+    int updatingIndex_;
+    int updatingColumn_;
     int primaryKeyIndex_;
+    QVector<ColumnHeader> columns_;
 
+    QVector<QVariant> modifiedRow_;
     unsigned int totalRecords_;
     unsigned int rowsFrom_;
     unsigned int rowsLimit_;
-    bool isAdding_;
-    struct ColumnHeader {
-        QString name;
-        QString comment;
-        QString fk_table;
-        QString fk_column;
-    };
-    QVector<ColumnHeader> columns_;
-
-    QSqlQuery* query_;
-    QString whereColumn_;
-    QString whereOperation_;
-    QString whereValue_;
-
+    //bool isAdding_;
+    //QVector<QVector<QVariant>> data_;
+    Filter where_;
 };
 
 #endif // _SEQUELJOE_SQLCONTENTMODEL_H_

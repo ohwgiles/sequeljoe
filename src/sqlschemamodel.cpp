@@ -15,62 +15,35 @@
 #include <QDebug>
 #include <QSqlError>
 
-enum {
-    SCHEMA_NAME = 0,
-    SCHEMA_TYPE,
-    SCHEMA_LENGTH,
-    SCHEMA_UNSIGNED,
-    SCHEMA_NULL,
-    SCHEMA_KEY,
-    SCHEMA_DEFAULT,
-    SCHEMA_EXTRA,
-    SCHEMA_COLLATION,
-    SCHEMA_COMMENT,
+#include "dbconnection.h"
 
-    SCHEMA_NUM_FIELDS
-};
-
-SqlSchemaModel::SqlSchemaModel(DbConnection *db, QString tableName, QObject *parent) :
-    QAbstractTableModel(parent),
+SqlSchemaModel::SqlSchemaModel(DbConnection& db, QString tableName, QObject *parent) :
+    SqlModel(db, parent),
     tableName_(tableName),
-    db_(*db)
+    db_(db)
 {
-    isAdding_ = false;
-    // todo vary per db type
-    query_ = new QSqlQuery(*db);
-    query_->prepare("SHOW FULL COLUMNS FROM " + tableName);
-    db_.execQuery(*query_);
-    QRegExp typeRegexp("(\\w+)\\(([\\w,]+)\\)\\s*(\\w*)");
-    while(query_->next()) {
-        SqlColumn c;
-        c.resize(SCHEMA_NUM_FIELDS);
-        c[SCHEMA_NAME] = query_->value(0).toString();
-        if(typeRegexp.exactMatch(query_->value(1).toString())) {
-            c[SCHEMA_TYPE] = typeRegexp.cap(1).toUpper();
-            c[SCHEMA_LENGTH] = typeRegexp.cap(2);
-            c[SCHEMA_UNSIGNED] = (typeRegexp.cap(3) == "unsigned");
-        } else
-            c[SCHEMA_TYPE] = query_->value(1).toString().toUpper(); //e.g. TEXT has no length or unsigned
-        c[SCHEMA_NULL] = (query_->value(3).toString() == "YES");
-        c[SCHEMA_KEY] = query_->value(4).toString();
-        c[SCHEMA_DEFAULT] = query_->value(5).toString();
-        c[SCHEMA_EXTRA] = query_->value(6).toString();
-        c[SCHEMA_COLLATION] = query_->value(2).toString();
-        c[SCHEMA_COMMENT] = query_->value(8).toString();
-        columns_.append(c);
-    }
+}
+
+void SqlSchemaModel::describe() {
+    //select();
+    beginResetModel();
+    QMetaObject::invokeMethod(&db_, "queryTableColumns", Qt::QueuedConnection, Q_ARG(QString, tableName_),
+                              Q_ARG(QObject*, this));
+
+}
+#include <QDebug>
+void SqlSchemaModel::describeComplete(QVector<QVector<QVariant>> data) {
+    qDebug() << __PRETTY_FUNCTION__;
+    data_ = data;
+    endResetModel();
 }
 
 SqlSchemaModel::~SqlSchemaModel() {
-    delete query_;
+    //delete query_;
 }
 
 int SqlSchemaModel::columnCount(const QModelIndex &parent) const {
     return SCHEMA_NUM_FIELDS;
-}
-
-int SqlSchemaModel::rowCount(const QModelIndex& parent) const {
-    return columns_.count() + (isAdding_ ? 1 : 0);
 }
 
 Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
@@ -98,8 +71,8 @@ Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
 
 QVariant SqlSchemaModel::data(const QModelIndex &item, int role) const {
     if(!item.isValid()) return QVariant();
-    if(item.row() < columns_.count()) {
-        const SqlColumn& c = columns_.at(item.row());
+    if(item.row() < data_.count()) {
+        const SqlColumn& c = data_.at(item.row());
         if(role == Qt::DisplayRole || role == Qt::EditRole) {
             switch(item.column()) {
             case SCHEMA_NAME:
@@ -121,7 +94,7 @@ QVariant SqlSchemaModel::data(const QModelIndex &item, int role) const {
             default: break;
             }
         }
-    } else if(item.row() == columns_.count()) {
+    } else if(item.row() == data_.count()) {
     }
     return QVariant();
 }
@@ -137,24 +110,26 @@ QString SqlSchemaModel::getColumnChangeQuery(QString column, const SqlColumn& de
             (def[SCHEMA_UNSIGNED].toBool() ? " UNSIGNED" : "") +
             (!def[SCHEMA_NULL].toBool() ? " NOT NULL" : "") +
             (!def[SCHEMA_DEFAULT].isNull() ? " DEFAULT " + def[SCHEMA_DEFAULT].toString() : "") +
-            (!def[SCHEMA_EXTRA].isNull() ? def[SCHEMA_EXTRA].toString() : "") +
+            (!def[SCHEMA_EXTRA].isNull() ? " " + def[SCHEMA_EXTRA].toString() : "") +
             (!def[SCHEMA_COLLATION].isNull() ? " COLLATE '" + def[SCHEMA_COLLATION].toString() + "'" : "") +
             (!def[SCHEMA_COMMENT].isNull() ? " COMMENT '" + def[SCHEMA_COMMENT].toString() + "'" : "");
 }
 
 bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, int role) {
-    if(!index.isValid()) return false;
+    if(!index.isValid())
+        return false;
+
     if(role == Qt::EditRole) {
         // make a copy
         QSqlQuery q(db_);
-        if(index.row() == columns_.count()) {
+        if(index.row() == data_.count()) {
             if(index.column() == SCHEMA_NAME) {
                 q.prepare("ALTER TABLE `" + tableName_ + "` ADD COLUMN `" + value.toString() + "` TEXT");
                 if(db_.execQuery(q)) {
                     SqlColumn c;
                     c.resize(SCHEMA_NUM_FIELDS);
                     c[SCHEMA_NAME] = value.toString();
-                    columns_.append(c);
+                    data_.append(c);
 
                 } else {
                     notify->send("Error creating column", q.lastError().text().toLocal8Bit().constData());
@@ -165,11 +140,10 @@ bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, in
             }
 
         } else {
-            SqlColumn c = columns_.at(index.row());
+            SqlColumn c = data_.at(index.row());
             QString columnName = c[SCHEMA_NAME].toString();
 
             QString v = value.toString();
-            bool runQuery = false;
             switch(index.column()) {
             case SCHEMA_TYPE:
                 v = v.toUpper();
@@ -183,7 +157,7 @@ bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, in
                 //qDebug() << "Executing: " << query;
                 q.prepare(getColumnChangeQuery(columnName, c));
                 if(db_.execQuery(q)) {
-                    columns_[index.row()] = c;
+                    data_[index.row()] = c;
                     return true;
                 } else {
                     qDebug() << "error: " << q.lastError();
@@ -218,26 +192,13 @@ QVariant SqlSchemaModel::headerData(int section, Qt::Orientation orientation, in
     return QVariant();
 }
 
-bool SqlSchemaModel::insertRows(int row, int count, const QModelIndex &parent) {
-    beginInsertRows(parent, columns_.count(), columns_.count()+1);
-    isAdding_ = true;
-    endInsertRows();
-    return true;
-}
-
-bool SqlSchemaModel::removeRows(int row, int count, const QModelIndex &parent) {
-    if(count != 1) return false;
-    QString columnName = columns_.at(row).at(SCHEMA_NAME).toString();
-
-    QSqlQuery q(db_);
-    q.prepare("ALTER TABLE `" + tableName_ + "` DROP COLUMN `" + columnName + "`");
-    if(db_.execQuery(q)) {
-        beginRemoveRows(parent, row, row);
-        columns_.remove(row);
-        endRemoveRows();
-        return true;
-    } else {
-        qDebug() << "could not remove row: " << q.lastError().text();
+bool SqlSchemaModel::deleteRows(QSet<int> rows) {
+    beginResetModel();
+    for(int i : rows) {
+        QString query("ALTER TABLE `" + tableName_ + "` DROP COLUMN `" + data_.at(i).at(SCHEMA_NAME).toString() + "`");
+        QMetaObject::invokeMethod(&db_, "queryTableUpdate", Q_ARG(QString, query));
+        data_.remove(i);
     }
-    return false;
+    refresh();
+    return true;
 }

@@ -31,15 +31,8 @@ QueryLog::QueryLog(QWidget *parent) :
 }
 
 
-void QueryLog::logQuery(const QSqlQuery& q) {
-    QTableWidgetItem* item = new QTableWidgetItem(QDateTime::currentDateTime().toString(Qt::ISODate) + ": " + q.executedQuery());
-    QString statusString;
-    if(q.lastError().isValid())
-        statusString = "Error: " + q.lastError().text();
-    else if(q.isSelect())
-        statusString = "OK: " + QString::number(q.size()) + " rows retrieved";
-    else
-        statusString = "OK: " + QString::number(q.numRowsAffected()) + " rows affected";
+void QueryLog::logQuery(QString query, QString statusString) {
+    QTableWidgetItem* item = new QTableWidgetItem(QDateTime::currentDateTime().toString(Qt::ISODate) + ": " + query);
     QTableWidgetItem* status = new QTableWidgetItem(statusString);
     int rows = rowCount();
     setRowCount(rows+2);

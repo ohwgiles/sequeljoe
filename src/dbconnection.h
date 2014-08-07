@@ -13,13 +13,30 @@
 #include <QHash>
 #include <QStringList>
 #include <QSqlDatabase>
+#include <functional>
+
+//del
+#include <QSqlQuery>
 
 class QSqlDatabase;
 class QSettings;
 class QAbstractTableModel;
 class QSqlTableModel;
 class QSqlQueryModel;
+enum {
+    SCHEMA_NAME = 0,
+    SCHEMA_TYPE,
+    SCHEMA_LENGTH,
+    SCHEMA_UNSIGNED,
+    SCHEMA_NULL,
+    SCHEMA_KEY,
+    SCHEMA_DEFAULT,
+    SCHEMA_EXTRA,
+    SCHEMA_COLLATION,
+    SCHEMA_COMMENT,
 
+    SCHEMA_NUM_FIELDS
+};
 class DbConnection : public QObject, public QSqlDatabase {
     Q_OBJECT
 public:
@@ -36,31 +53,47 @@ public:
     explicit DbConnection(const QSettings& settings);
     virtual ~DbConnection();
 
-    virtual bool connect();
-    virtual QAbstractTableModel* getTableModel(QString tableName);
-    virtual QAbstractTableModel* getStructureModel(QString tableName);
     virtual QSqlQueryModel* query(QString q, QSqlQueryModel* update = 0);
-    virtual bool execQuery(QSqlQuery& q) const;
 
-    void deleteTable(QString tableName);
-    void createTable(QString tableName);
 
     void populateDatabases();
     QStringList getDatabaseNames() const { return dbNames_; }
     QString getDatabaseName() const { return dbName_; }
 
-    QStringList tables() const;
-    void useDatabase(QString dbName);
+
+    QHash<QString, QAbstractTableModel*>& contentModels() { return tableModels_; }
+    QHash<QString, QAbstractTableModel*>& schemaModels() { return schemaModels_; }
+
+    QStringList tables() const { return tables_; }
 public slots:
+    virtual bool execQuery(QSqlQuery &q) const;
+
+
+    void queryTableColumns(QString tableName, QObject* callbackOwner, const char* callbackName = "describeComplete");
+    void queryTableMetadata(QString tableName, QObject* callbackOwner, const char *callbackName = "describeComplete");
+    void queryTableContent(QString query, QObject* callbackOwner, const char* callbackName = "selectComplete");
+    void queryTableUpdate(QString query, QObject* callbackOwner, const char* callbackName = "updateComplete");
+
+    void cleanup();
+
+    void deleteTable(QString tableName);
+    void createTable(QString tableName);
+    void useDatabase(QString dbName);
 //    void setDbName(QString name);
+    virtual bool connect();
+
+    void QueryInterface(std::function<void(QSqlQuery)> fn);
 
 signals:
     void connectionSuccess();
-    void queryExecuted(const QSqlQuery&) const;
+    void queryExecuted(QString query, QString result) const;
+    void databaseChanged(QString);
 
 protected:
     static int nConnections_;
     void newConnection();
+
+    void populateTables();
 
     QByteArray host_;
     short port_;
@@ -69,6 +102,7 @@ protected:
     QString type_;
     QByteArray dbName_;
     QStringList dbNames_;
+    QStringList tables_;
     QHash<QString, QAbstractTableModel*> tableModels_;
     QHash<QString, QAbstractTableModel*> schemaModels_;
 };

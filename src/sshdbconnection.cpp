@@ -33,14 +33,18 @@ SshDbConnection::SshDbConnection(const QSettings &settings) :
 
 SshDbConnection::~SshDbConnection()
 {
+    delete tunnel_;
+    thread_->exit();
+    thread_->wait();
+    delete thread_;
 }
 
 bool SshDbConnection::connect() {
     thread_ = new QThread;
-    SshThread* t = new SshThread(*this);
-    t->moveToThread(thread_);
-    QObject::connect(thread_, SIGNAL(started()), t, SLOT(connectToServer()));
-    QObject::connect(t, SIGNAL(sshTunnelOpened(int)), this, SLOT(beginDbConnect(int)));
+    tunnel_ = new SshThread(*this);
+    tunnel_->moveToThread(thread_);
+    QObject::connect(thread_, SIGNAL(started()), tunnel_, SLOT(connectToServer()));
+    QObject::connect(tunnel_, SIGNAL(sshTunnelOpened(int)), this, SLOT(beginDbConnect(int)));
     thread_->start();
     return true;
 }
@@ -54,9 +58,13 @@ void SshDbConnection::beginDbConnect(int port) {
     setPassword(pass_);
     bool ok = this->open();
     if(ok) {
+        qDebug() << "db name : " << dbName_;
         populateDatabases();
+        if(!dbName_.isEmpty())
+            populateTables();
         emit connectionSuccess();
-    }
+    } else
+        qDebug() << "connect failed";
 }
 
 

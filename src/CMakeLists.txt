@@ -10,14 +10,14 @@ find_library(LIBSSH_LIBRARY NAMES ssh2 libssh2)
 set(CMAKE_AUTOMOC TRUE)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions("-g -std=c++11")
+add_definitions("-Wall -Werror -g -std=c++11")
 qt5_add_resources(SRC_RESOURCES icons.qrc)
 
 set(SOURCES main.cpp mainwindow.cpp sshdbconnection.cpp dbconnection.cpp
 sshthread.cpp mainpanel.cpp connectionwidget.cpp filteredpagedtableview.cpp
 favourites.cpp viewtoolbar.cpp tablecell.cpp tableview.cpp tabwidget.cpp
 querypanel.cpp sqlcontentmodel.cpp sqlhighlighter.cpp sqlschemamodel.cpp
-tablelist.cpp passkeywidget.cpp querylog.cpp)
+tablelist.cpp passkeywidget.cpp querylog.cpp loadingoverlay.cpp sqlmodel.cpp)
 
 if(APPLE OR WIN32)
     set(exe "SequelJoe")

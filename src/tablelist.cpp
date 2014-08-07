@@ -89,5 +89,7 @@ void TableList::setTableNames(QStringList names) {
 
 void TableList::setCurrentTable(QString name) {
     tables_->clearSelection();
-    tables_->selectionModel()->setCurrentIndex(tableItems_->index(tableItems_->stringList().indexOf(name)), QItemSelectionModel::Select);
+    QModelIndex idx{tableItems_->index(tableItems_->stringList().indexOf(name))};
+    tables_->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::Select);
+    tables_->scrollTo(idx);
 }

@@ -87,12 +87,13 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
         connect(m, SIGNAL(pagesChanged(int,int,int)), this, SLOT(updatePagination(int,int,int)));
         connect(prev_, SIGNAL(clicked()), m, SLOT(prevPage()));
         connect(next_, SIGNAL(clicked()), m, SLOT(nextPage()));
+
         for(int i = 0; i < m->columnCount(); ++i)
             filterColumns_->addItem(m->headerData(i, Qt::Horizontal).toString());
         filterColumns_->setCurrentText(m->data(QModelIndex(), FilterColumnRole).toString());
         filterOperation_->setCurrentText(m->data(QModelIndex(), FilterOperationRole).toString());
         filterText_->setText(m->data(QModelIndex(), FilterValueRole).toString());
-        refreshModel();
+        //refreshModel();
     }
 }
 
@@ -110,7 +111,7 @@ void FilteredPagedTableView::clearFilter() {
     filterText_->setText(QString());
     runFilter();
 }
-
+#include <QDebug>
 void FilteredPagedTableView::setFilter(QString column, QString operation, QVariant value) {
     filterColumns_->setCurrentText(column);
     filterOperation_->setCurrentText(operation);
@@ -119,6 +120,7 @@ void FilteredPagedTableView::setFilter(QString column, QString operation, QVaria
 }
 
 void FilteredPagedTableView::runFilter() {
+    qDebug() << __PRETTY_FUNCTION__;
     model()->setData(QModelIndex(), filterColumns_->currentText(), FilterColumnRole);
     model()->setData(QModelIndex(), filterOperation_->currentText(), FilterOperationRole);
     model()->setData(QModelIndex(), filterText_->text(), FilterValueRole);
@@ -126,6 +128,7 @@ void FilteredPagedTableView::runFilter() {
 }
 
 void FilteredPagedTableView::refreshModel() {
+    table_->showLoadingOverlay(true);
     QEvent event{QEvent::Type(RefreshEvent)};
     model()->event(&event);
 }

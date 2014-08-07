@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     { // menu bar
         QMenuBar* menuBar = new QMenuBar(this);
-        QMenu* db = menuBar->addMenu("Database");
+        //QMenu* db = menuBar->addMenu("Database");
         //db->addAction("test", this, );
         setMenuBar(menuBar);
     }

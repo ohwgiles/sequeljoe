@@ -7,11 +7,13 @@
  */
 #include "mainwindow.h"
 #include "notify.h"
-
+#include "dbconnection.h"
 #include <QApplication>
 #include <QProxyStyle>
 #include <QMenu>
-
+#include <QSqlQuery>
+#include <QVector>
+#include "tabledata.h"
 class MacFontStyle : public QProxyStyle {
 protected:
     void polish(QWidget *w) {
@@ -26,6 +28,12 @@ int main(int argc, char *argv[]) {
     notify = new Notifier();
 
     QApplication a(argc, argv);
+    qRegisterMetaType<QSqlQuery*>("QSqlQuery*");
+
+    qRegisterMetaType<const char*>("const char*");
+
+qRegisterMetaType<QVector<ColumnHeader>>("QVector<ColumnHeader>");
+qRegisterMetaType<TableData>("TableData");
 
 #ifdef __APPLE__
     // prevents the font size from appearing overly large on OSX

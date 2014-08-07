@@ -11,7 +11,7 @@
 #include "viewtoolbar.h"
 #include <QWidget>
 #include <QModelIndex>
-
+#include "sqlcontentmodel.h" // for filter, move to own class
 class ConnectionWidget;
 class FilteredPagedTableView;
 class DbConnection;
@@ -26,12 +26,14 @@ class QLineEdit;
 class QSortFilterProxyModel;
 class QueryPanel;
 class QSplitter;
+class QThread;
 
 class MainPanel : public QWidget
 {
     Q_OBJECT
 public:
     explicit MainPanel(QWidget *parent = 0);
+    virtual ~MainPanel();
     void loadSettings(QListWidgetItem* item);
 
 signals:
@@ -39,7 +41,6 @@ signals:
 
 public slots:
     void toggleEditSettings(bool showSettings = true);
-    void firstConnectionMade();
 
     void openConnection(QString name);
     void tableChanged(QString name);
@@ -58,7 +59,13 @@ private slots:
     void refreshTables();
     void jumpToQuery(QString table, QString column, QVariant value);
 
+    void databaseConnected();
+    void tableListChanged();
+
 private:
+    void updateContentModel(QString tableName);
+    void updateSchemaModel(QString tableName);
+
     DbConnection* db_;
     ConnectionWidget* settings_;
     QSplitter* contentSchemaSplit_;
@@ -69,6 +76,8 @@ private:
     ViewToolBar* toolbar_;
     QueryPanel* queryWidget_;
     QueryLog* queryLog_;
+    QThread* backgroundWorker_;
+    Filter jumpToTableFilter_;
 };
 
 #endif // _SEQUELJOE_MAINPANEL_H_

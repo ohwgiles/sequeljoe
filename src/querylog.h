@@ -21,7 +21,7 @@ public:
 signals:
 
 public slots:
-    void logQuery(const QSqlQuery&);
+    void logQuery(QString query, QString status);
 };
 
 #endif // _SEQUELJOE_QUERYLOG_H_

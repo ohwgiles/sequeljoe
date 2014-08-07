@@ -9,11 +9,14 @@
 
 #include "tablecell.h"
 #include "sqlcontentmodel.h"
+#include "loadingoverlay.h"
+#include "sqlmodel.h"
 
 #include <QHeaderView>
 #include <QMenu>
 #include <QAction>
 #include <QLayout>
+#include <QResizeEvent>
 
 TableView::TableView(QWidget *parent) :
     QTableView(parent)
@@ -46,6 +49,31 @@ TableView::TableView(QWidget *parent) :
     ctxMenu_->addAction(nullAction_);
     ctxMenu_->addAction(deleteRowAction_);
     ctxMenu_->addAction(addRowAction_);
+
+    loadingOverlay_ = new LoadingOverlay{this};
+    loadingOverlay_->hide();
+}
+void TableView::setModel(QAbstractItemModel *m) {
+    if(model() == m)
+        return;
+
+    if(model())
+        disconnect(model());
+
+    connect(m, &QAbstractItemModel::modelAboutToBeReset, [=](){showLoadingOverlay(true);});
+    connect(m, &QAbstractItemModel::modelReset, [=](){showLoadingOverlay(false);});
+
+    QTableView::setModel(m);
+}
+
+#include <QDebug>
+void TableView::resizeEvent(QResizeEvent *event) {
+    QTableView::resizeEvent(event);
+    loadingOverlay_->setGeometry(geometry());
+}
+
+void TableView::showLoadingOverlay(bool show) {
+    loadingOverlay_->setVisible(show);
 }
 
 void TableView::openMenu(QPoint p) {
@@ -63,10 +91,10 @@ void TableView::handleDeleteRow() {
     QSet<int> rows;
     for(const QModelIndex& i : selectedIndexes())
         rows << i.row();
-    for(int i : rows)
-        model()->removeRow(i);
-    QEvent event{QEvent::Type(RefreshEvent)};
-    model()->event(&event);
+    ((SqlModel*) model())->deleteRows(rows);
+    clearSelection();
+//    QEvent event{QEvent::Type(RefreshEvent)};
+//    model()->event(&event);
 }
 
 void TableView::handleAddRow() {
