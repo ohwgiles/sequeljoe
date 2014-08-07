@@ -13,6 +13,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions("-Wall -Werror -g -std=c++11")
 qt5_add_resources(SRC_RESOURCES icons.qrc)
 
+configure_file(../osxbundle.sh.in osxbundle.sh @ONLY)
+
 set(SOURCES main.cpp mainwindow.cpp sshdbconnection.cpp dbconnection.cpp
 sshthread.cpp mainpanel.cpp connectionwidget.cpp filteredpagedtableview.cpp
 favourites.cpp viewtoolbar.cpp tablecell.cpp tableview.cpp tabwidget.cpp

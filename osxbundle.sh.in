@@ -1,0 +1,96 @@
+#!/bin/bash
+
+set -ex
+
+cd @CMAKE_BINARY_DIR@
+
+mkdir -p SequelJoe.app/Contents/Frameworks
+
+QTLIB="@Qt5Core_DIR@"
+QTLIB="${QTLIB%/cmake/Qt5Core}"
+
+QT5CORE="$QTLIB/QtCore.framework"
+cp $QT5CORE/Versions/Current/QtCore SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/Frameworks/QtCore
+install_name_tool -change $QT5CORE/Versions/5/QtCore @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/MacOS/SequelJoe
+
+QT5GUI="$QTLIB/QtGui.framework"
+cp $QT5GUI/Versions/Current/QtGui SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/QtGui SequelJoe.app/Contents/Frameworks/QtGui
+install_name_tool -change $QT5CORE/Versions/5/QtCore @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/Frameworks/QtGui
+install_name_tool -change $QT5GUI/Versions/5/QtGui @executable_path/../Frameworks/QtGui SequelJoe.app/Contents/MacOS/SequelJoe
+
+QT5WIDGETS="$QTLIB/QtWidgets.framework"
+cp $QT5WIDGETS/Versions/Current/QtWidgets SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/QtWidgets SequelJoe.app/Contents/Frameworks/QtWidgets
+install_name_tool -change $QT5GUI/Versions/5/QtGui @executable_path/../Frameworks/QtGui SequelJoe.app/Contents/Frameworks/QtWidgets
+install_name_tool -change $QT5CORE/Versions/5/QtCore @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/Frameworks/QtWidgets
+install_name_tool -change $QT5WIDGETS/Versions/5/QtWidgets @executable_path/../Frameworks/QtWidgets SequelJoe.app/Contents/MacOS/SequelJoe
+
+QT5SQL="$QTLIB/QtSql.framework"
+cp $QT5SQL/Versions/Current/QtSql SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/QtSql SequelJoe.app/Contents/Frameworks/QtSql
+install_name_tool -change $QT5CORE/Versions/5/QtCore @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/Frameworks/QtSql
+install_name_tool -change $QT5SQL/Versions/5/QtSql @executable_path/../Frameworks/QtSql SequelJoe.app/Contents/MacOS/SequelJoe
+
+# plugins
+
+cat <<EOF > SequelJoe.app/Contents/Resources/qt.conf
+[Paths]
+Plugins=plugins
+EOF
+
+QTPLUGINS="${QTLIB%/lib}/plugins"
+mkdir -p SequelJoe.app/Contents/plugins/{platforms,sqldrivers}
+
+cp $QTPLUGINS/platforms/libqcocoa.dylib SequelJoe.app/Contents/plugins/platforms
+install_name_tool -change $QT5CORE/Versions/5/QtCore @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/plugins/platforms/libqcocoa.dylib
+install_name_tool -change $QT5GUI/Versions/5/QtGui @executable_path/../Frameworks/QtGui SequelJoe.app/Contents/plugins/platforms/libqcocoa.dylib
+install_name_tool -change $QT5WIDGETS/Versions/5/QtWidgets @executable_path/../Frameworks/QtWidgets SequelJoe.app/Contents/plugins/platforms/libqcocoa.dylib
+
+cp $QTPLUGINS/sqldrivers/libqsqlmysql.dylib SequelJoe.app/Contents/plugins/sqldrivers
+install_name_tool -change libmysqlclient.18.dylib @executable_path/../Frameworks/libmysqlclient.18.dylib SequelJoe.app/Contents/plugins/sqldrivers/libqsqlmysql.dylib
+install_name_tool -change $QT5CORE/Versions/5/QtCore @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/plugins/sqldrivers/libqsqlmysql.dylib
+install_name_tool -change $QT5SQL/Versions/5/QtSql @executable_path/../Frameworks/QtSql SequelJoe.app/Contents/plugins/sqldrivers/libqsqlmysql.dylib
+
+
+# libqcocoa.dylib depends on Qt5PrintSupport
+
+QT5PRINT="@Qt5Core_DIR@"
+QT5PRINT="${QT5PRINT%cmake/Qt5Core}QtPrintSupport.framework"
+cp $QT5PRINT/Versions/Current/QtPrintSupport SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/QtPrintSupport SequelJoe.app/Contents/Frameworks/QtPrintSupport
+install_name_tool -change $QT5CORE/Versions/5/QtCore @executable_path/../Frameworks/QtCore SequelJoe.app/Contents/Frameworks/QtPrintSupport
+install_name_tool -change $QT5GUI/Versions/5/QtGui @executable_path/../Frameworks/QtGui SequelJoe.app/Contents/Frameworks/QtPrintSupport
+install_name_tool -change $QT5WIDGETS/Versions/5/QtWidgets @executable_path/../Frameworks/QtWidgets SequelJoe.app/Contents/Frameworks/QtPrintSupport
+install_name_tool -change $QT5PRINT/Versions/5/QtPrintSupport @executable_path/../Frameworks/QtPrintSupport SequelJoe.app/Contents/plugins/platforms/libqcocoa.dylib
+
+
+# other libraries
+
+cp /usr/local/lib/libssh2.dylib SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/libssh2.dylib SequelJoe.app/Contents/Frameworks/libssh2.dylib
+install_name_tool -change /usr/local/lib/libssh2.1.dylib @executable_path/../Frameworks/libssh2.dylib SequelJoe.app/Contents/MacOS/SequelJoe
+
+# mysqlclient appears to be compiled against homebrew libssl instead of osx?
+
+cp /usr/local/lib/libmysqlclient.18.dylib SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/libmysqlclient.18.dylib SequelJoe.app/Contents/Frameworks/libmysqlclient.18.dylib
+install_name_tool -change /usr/local/opt/openssl/lib/libssl.1.0.0.dylib @executable_path/../Frameworks/libssl.1.0.0.dylib SequelJoe.app/Contents/Frameworks/libmysqlclient.18.dylib
+install_name_tool -change /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib @executable_path/../Frameworks/libcrypto.1.0.0.dylib SequelJoe.app/Contents/Frameworks/libmysqlclient.18.dylib
+
+cp /usr/local/opt/openssl/lib/libssl.1.0.0.dylib SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/libssl.1.0.0.dylib SequelJoe.app/Contents/Frameworks/libssl.1.0.0.dylib
+install_name_tool -change /usr/local/Cellar/openssl/1.0.1g/lib/libcrypto.1.0.0.dylib @executable_path/../Frameworks/libcrypto.1.0.0.dylib SequelJoe.app/Contents/Frameworks/libssl.1.0.0.dylib
+
+cp /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib SequelJoe.app/Contents/Frameworks/
+install_name_tool -id @executable_path/../Frameworks/libcrypto.1.0.0.dylib SequelJoe.app/Contents/Frameworks/libcrypto.1.0.0.dylib
+
+hdiutil create -size 26m -fs HFS+ -volname SequelJoe .sequeljoe.dmg
+DMG_ROOT=$(hdiutil attach .sequeljoe.dmg | sed -n 2p | cut -f3)
+cp -R SequelJoe.app "$DMG_ROOT/"
+hdiutil detach $DMG_ROOT
+hdiutil convert .sequeljoe.dmg -format UDZO -o SequelJoe.dmg
+rm .sequeljoe.dmg
+
+
