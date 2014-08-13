@@ -32,6 +32,7 @@ DbConnection::DbConnection(const QSettings &settings) {
     pass_ = settings.value(DbConnection::KEY_PASS).toByteArray();
     type_ = settings.value(DbConnection::KEY_TYPE).toString();
     dbName_ = settings.value(DbConnection::KEY_DBNM).toByteArray();
+    dbFile_ = settings.value(DbConnection::KEY_FILE).toByteArray();
 }
 
 DbConnection::~DbConnection() {
@@ -90,8 +91,29 @@ bool DbConnection::execQuery(QSqlQuery& q) const {
     return result;
 }
 void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner, const char* callbackName) {
+
+
     QSqlQuery q{*this};
     QVector<ColumnHeader> columns;
+    int primaryKeyIndex = -1;
+    QVariant recordEstimate;
+
+    // todo subclass
+    if(type_ == "QSQLITE") {
+        q.prepare("PRAGMA table_info('" + tableName + "')");
+        q.exec();
+        while(q.next()) {
+            if(q.value(5).toBool())
+                primaryKeyIndex = columns.count();
+            columns.append({q.value(1).toString()});
+        }
+        // too lazy to implement foreign key support. would probably require regex matching the sql column from sqlite_master
+
+
+    } else {
+
+
+
         // primary key required if the row should be editable
         q.prepare(
             "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.referenced_table_name, k.referenced_column_name, t.table_rows "
@@ -103,9 +125,7 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
             "where c.table_schema = '"+databaseName()+"' and c.table_name = '"+tableName+"'"
         );
         q.exec();
-        QVariant recordEstimate;
         // reserve columns optimisation possible?
-        int primaryKeyIndex = -1;
         while(q.next()) {
             if(q.value(2).toBool())
                 primaryKeyIndex = columns.count();
@@ -116,8 +136,9 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
             recordEstimate = q.value(5).toInt();
         }
 
-        QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(QVector<ColumnHeader>, columns), Q_ARG(int, recordEstimate.toInt()), Q_ARG(int, primaryKeyIndex));
         //totalRecords_ = recordEstimate.toInt();
+    }
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(QVector<ColumnHeader>, columns), Q_ARG(int, recordEstimate.toInt()), Q_ARG(int, primaryKeyIndex));
 
 }
 #include <QSqlRecord>
@@ -139,28 +160,51 @@ void DbConnection::queryTableContent(QString query, QObject* callbackOwner, cons
     QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(TableData, data));
 }
 void DbConnection::queryTableColumns(QString tableName, QObject* callbackOwner, const char* callbackName) {
-    QSqlQuery q("SHOW FULL COLUMNS FROM " + tableName, *this);
     QVector<QVector<QVariant>> data;
-    data.reserve(q.size());
 
-    QRegExp typeRegexp("(\\w+)\\(([\\w,]+)\\)\\s*(\\w*)");
-    while(q.next()) {
-        SqlColumn c;
-        c.resize(SCHEMA_NUM_FIELDS);
-        c[SCHEMA_NAME] = q.value(0).toString();
-        if(typeRegexp.exactMatch(q.value(1).toString())) {
-            c[SCHEMA_TYPE] = typeRegexp.cap(1).toUpper();
-            c[SCHEMA_LENGTH] = typeRegexp.cap(2);
-            c[SCHEMA_UNSIGNED] = (typeRegexp.cap(3) == "unsigned");
-        } else
-            c[SCHEMA_TYPE] = q.value(1).toString().toUpper(); //e.g. TEXT has no length or unsigned
-        c[SCHEMA_NULL] = (q.value(3).toString() == "YES");
-        c[SCHEMA_KEY] = q.value(4).toString();
-        c[SCHEMA_DEFAULT] = q.value(5).toString();
-        c[SCHEMA_EXTRA] = q.value(6).toString();
-        c[SCHEMA_COLLATION] = q.value(2).toString();
-        c[SCHEMA_COMMENT] = q.value(8).toString();
-        data.append(c);
+
+    if(type_ == "QSQLITE") {
+        QSqlQuery q("PRAGMA table_info(" + tableName + ")", *this);
+        while(q.next()) {
+            SqlColumn c;
+            c.resize(SCHEMA_NUM_FIELDS);
+            c[SCHEMA_NAME] = q.value(1).toString();
+            c[SCHEMA_TYPE] = q.value(2).toString().toUpper();
+            c[SCHEMA_UNSIGNED] = (q.value(2).toString().contains("unsigned", Qt::CaseInsensitive));
+            c[SCHEMA_LENGTH] = 0;
+            c[SCHEMA_NULL] = bool(q.value(3).toInt());
+            c[SCHEMA_KEY] = "";
+            c[SCHEMA_DEFAULT] = q.value(4).toString();
+            c[SCHEMA_EXTRA] = "";
+            c[SCHEMA_COLLATION] = "";
+            c[SCHEMA_COMMENT] = "";
+            data.append(c);
+        }
+
+    } else {
+        QSqlQuery q("SHOW FULL COLUMNS FROM " + tableName, *this);
+
+        data.reserve(q.size());
+
+        QRegExp typeRegexp("(\\w+)\\(([\\w,]+)\\)\\s*(\\w*)");
+        while(q.next()) {
+            SqlColumn c;
+            c.resize(SCHEMA_NUM_FIELDS);
+            c[SCHEMA_NAME] = q.value(0).toString();
+            if(typeRegexp.exactMatch(q.value(1).toString())) {
+                c[SCHEMA_TYPE] = typeRegexp.cap(1).toUpper();
+                c[SCHEMA_LENGTH] = typeRegexp.cap(2);
+                c[SCHEMA_UNSIGNED] = (typeRegexp.cap(3) == "unsigned");
+            } else
+                c[SCHEMA_TYPE] = q.value(1).toString().toUpper(); //e.g. TEXT has no length or unsigned
+            c[SCHEMA_NULL] = (q.value(3).toString() == "YES");
+            c[SCHEMA_KEY] = q.value(4).toString();
+            c[SCHEMA_DEFAULT] = q.value(5).toString();
+            c[SCHEMA_EXTRA] = q.value(6).toString();
+            c[SCHEMA_COLLATION] = q.value(2).toString();
+            c[SCHEMA_COMMENT] = q.value(8).toString();
+            data.append(c);
+        }
     }
 
     QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(QVector<QVector<QVariant>>, data));
@@ -204,13 +248,14 @@ bool DbConnection::connect() {
     newConnection();
     setHostName(host_);
     setPort(port_);
-    setDatabaseName(dbName_);
+    setDatabaseName(dbFile_.isEmpty() ? dbName_ : dbFile_);
     setUserName(user_);
     setPassword(pass_);
     bool ok = this->open();
     if(ok) {
-        populateDatabases();
-        if(!dbName_.isEmpty())
+        if(dbFile_.isEmpty())
+            populateDatabases();
+        if(!dbFile_.isEmpty() || !dbName_.isEmpty())
             populateTables();
         emit connectionSuccess();
         return true;
@@ -234,7 +279,11 @@ void DbConnection::QueryInterface(std::function<void(QSqlQuery)> fn) {
 
 void DbConnection::populateTables() {
     QSqlQuery query(*this);
-    query.prepare("SHOW TABLES");
+    // todo abstract
+    if(type_ == "QSQLITE")
+        query.prepare("select name from sqlite_master where type='table'");
+    else
+        query.prepare("SHOW TABLES");
     execQuery(query);
     QStringList result;
     while(query.next())

@@ -202,7 +202,7 @@ bool SqlContentModel::deleteRows(QSet<int> rows) {
 }
 
 bool SqlContentModel::event(QEvent * e) {
-    if(e->type() == RefreshEvent)
+    if(e->type() == QEvent::Type(RefreshEvent))
         return select(), true;
     return QAbstractTableModel::event(e);
 }

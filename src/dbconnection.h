@@ -43,6 +43,7 @@ public:
     static constexpr int DEFAULT_SQL_PORT = 3306;
     static constexpr const char* KEY_HOST = "Host";
     static constexpr const char* KEY_DBNM = "DbName";
+    static constexpr const char* KEY_FILE = "DbFile";
     static constexpr const char* KEY_PORT = "Port";
     static constexpr const char* KEY_TYPE = "Type";
     static constexpr const char* KEY_USER = "Username";
@@ -101,6 +102,7 @@ protected:
     QByteArray pass_;
     QString type_;
     QByteArray dbName_;
+    QByteArray dbFile_;
     QStringList dbNames_;
     QStringList tables_;
     QHash<QString, QAbstractTableModel*> tableModels_;

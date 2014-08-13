@@ -11,6 +11,7 @@
 #include "sshdbconnection.h"
 #include "favourites.h"
 #include "passkeywidget.h"
+#include "dbfilewidget.h"
 
 #include <QCheckBox>
 #include <QGroupBox>
@@ -43,6 +44,8 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
         QWidget* cfgWidget = new QWidget(this);
         QBoxLayout* cfgLayout = new QVBoxLayout(cfgWidget);
         QGroupBox* boxSetup = new QGroupBox("Connection Setup", cfgWidget);
+boxSetup->setStyleSheet("QGroupBox{border:1px solid #bbb;border-radius:2px;margin-top:3ex;}QGroupBox::title{subcontrol-origin:margin;}");
+//boxSetup->setIsFlat(true);
         QFormLayout* form = new QFormLayout(boxSetup);
 
         name_ = new QLineEdit(boxSetup);
@@ -63,13 +66,14 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
         }
         form->addRow("Connection Type", sqlType_);
 
-        dbName_ = new QLineEdit(boxSetup);
-        form->addRow("Database Name", dbName_);
+        dbName_ = new DbFileWidget(boxSetup);
+        form->addRow("Database", dbName_);
 
         username_ = new QLineEdit(boxSetup);
         form->addRow("Username", username_);
 
         password_ = new QLineEdit(boxSetup);
+        password_->setEchoMode(QLineEdit::Password);
         form->addRow("Password", password_);
 
         chkUseSsh_ = new QCheckBox("SSH Tunnel", boxSetup);
@@ -113,7 +117,7 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
     connect(host_, SIGNAL(textEdited(QString)), this, SLOT(setupHostChanged(QString)));
     connect(port_, SIGNAL(textEdited(QString)), this, SLOT(setupPortChanged(QString)));
     connect(sqlType_, SIGNAL(currentTextChanged(QString)), this, SLOT(setupSqlTypeChanged(QString)));
-    connect(dbName_, SIGNAL(textEdited(QString)), this, SLOT(setupDbChanged(QString)));
+    connect(dbName_, SIGNAL(changed(bool,QString)), this, SLOT(setupDbChanged(bool,QString)));
     connect(username_, SIGNAL(textEdited(QString)), this, SLOT(setupUserChanged(QString)));
     connect(password_, SIGNAL(textEdited(QString)), this, SLOT(setupPassChanged(QString)));
     connect(chkUseSsh_, SIGNAL(toggled(bool)), this, SLOT(setupUseSshChanged(bool)));
@@ -154,13 +158,18 @@ void ConnectionWidget::setupSqlTypeChanged(QString type) {
     QSettings s;
     s.beginGroup(group_);
     s.setValue(DbConnection::KEY_TYPE, type);
+    bool isFile = (type == "QSQLITE");
+    host_->setEnabled(!isFile);
+    port_->setEnabled(!isFile);
+    dbName_->setValue(isFile, s.value(isFile ? DbConnection::KEY_FILE : DbConnection::KEY_DBNM).toString());
     s.endGroup();
 }
 
-void ConnectionWidget::setupDbChanged(QString db) {
+void ConnectionWidget::setupDbChanged(bool isFile, QString value) {
     QSettings s;
     s.beginGroup(group_);
-    s.setValue(DbConnection::KEY_DBNM, db);
+    s.remove(isFile ? SshDbConnection::KEY_DBNM : SshDbConnection::KEY_FILE);
+    s.setValue(isFile ? SshDbConnection::KEY_FILE : SshDbConnection::KEY_DBNM, value);
     s.endGroup();
 }
 
@@ -222,7 +231,10 @@ void ConnectionWidget::loadSettings(QString name) {
     host_->setText(s.value(DbConnection::KEY_HOST).toString());
     sqlType_->setCurrentText(s.value(DbConnection::KEY_TYPE).toString());
     port_->setText(s.value(DbConnection::KEY_PORT).toString());
-    dbName_->setText(s.value(DbConnection::KEY_DBNM).toString());
+    if(s.contains(DbConnection::KEY_FILE))
+        dbName_->setValue(true, s.value(DbConnection::KEY_FILE).toString());
+    else
+        dbName_->setValue(false, s.value(DbConnection::KEY_DBNM).toString());
     username_->setText(s.value(DbConnection::KEY_USER).toString());
     password_->setText(s.value(DbConnection::KEY_PASS).toString());
     chkUseSsh_->setChecked(s.value(SshDbConnection::KEY_USE_SSH).toBool());

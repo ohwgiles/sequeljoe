@@ -220,8 +220,8 @@ void MainPanel::databaseConnected() {
     toolbar_->populateDatabases(db_->getDatabaseNames());
     if(!db_->getDatabaseName().isEmpty()) {
         toolbar_->setCurrentDatabase(db_->getDatabaseName());
-        tableChooser_->setTableNames(db_->tables());
     }
+    tableChooser_->setTableNames(db_->tables());
 
     connect(toolbar_, SIGNAL(dbChanged(QString)), this, SLOT(dbChanged(QString)));
 
