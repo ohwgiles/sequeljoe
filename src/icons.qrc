@@ -1,13 +1,12 @@
 <RCC>
     <qresource prefix="/">
         <file alias="query">res/1402417927_variable.png</file>
-        <file alias="triggers">res/1402417932_champagne.png</file>
         <file alias="disconnect">res/1402417937_logout.png</file>
-        <file alias="users">res/1402417941_user.png</file>
         <file alias="schema">res/1402417947_data_configuration.png</file>
         <file alias="content">res/1402418004_day_view.png</file>
         <file alias="icon">res/joe.png</file>
         <file alias="key">res/glyphicons_044_keys.png</file>
         <file alias="remove">res/glyphicons_192_circle_remove.png</file>
+        <file alias="browse">res/glyphicons_144_folder_open.png</file>
     </qresource>
 </RCC>

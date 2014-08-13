@@ -30,14 +30,12 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
 
     addAction(":content", "Content", SLOT(showContent()))->setChecked(true);
     addAction(":schema", "Schema", SLOT(showStructure()));
-    addAction(":triggers", "Triggers", SLOT(showStructure()));
     addAction(":query", "Query", SLOT(showQuery()));
 
     QWidget* spacer = new QWidget(this);
     spacer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
     addWidget(spacer);
 
-    addAction(":users", "Users", SLOT(showQuery()));
     addAction(":disconnect", "Disconnect", SIGNAL(disconnect()))->setCheckable(false);
 }
 
