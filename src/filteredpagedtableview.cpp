@@ -77,8 +77,10 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
         return;
 
     disconnect(this, SLOT(updatePagination(int,int,int)));
+    disconnect(this, SLOT(populateFilter()));
     disconnect(prev_, SIGNAL(clicked()));
     disconnect(next_, SIGNAL(clicked()));
+
     filterColumns_->clear();
     filterText_->clear();
     table_->setModel(m);
@@ -87,13 +89,8 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
         connect(m, SIGNAL(pagesChanged(int,int,int)), this, SLOT(updatePagination(int,int,int)));
         connect(prev_, SIGNAL(clicked()), m, SLOT(prevPage()));
         connect(next_, SIGNAL(clicked()), m, SLOT(nextPage()));
-
-        for(int i = 0; i < m->columnCount(); ++i)
-            filterColumns_->addItem(m->headerData(i, Qt::Horizontal).toString());
-        filterColumns_->setCurrentText(m->data(QModelIndex(), FilterColumnRole).toString());
-        filterOperation_->setCurrentText(m->data(QModelIndex(), FilterOperationRole).toString());
-        filterText_->setText(m->data(QModelIndex(), FilterValueRole).toString());
-        //refreshModel();
+        connect(m, SIGNAL(selectFinished()), this, SLOT(populateFilter()));
+        populateFilter();
     }
 }
 
@@ -105,6 +102,14 @@ void FilteredPagedTableView::updatePagination(int firstRow, int rowsInPage, int 
         pageNum_->setText("No Records");
     else
         pageNum_->setText("Rows " + QString::number(firstRow+1) + " to " + QString::number(last) + " of " + QString::number(totalRecords));
+}
+
+void FilteredPagedTableView::populateFilter() {
+    for(int i = 0; i < model()->columnCount(); ++i)
+        filterColumns_->addItem(model()->headerData(i, Qt::Horizontal).toString());
+    filterColumns_->setCurrentText(model()->data(QModelIndex(), FilterColumnRole).toString());
+    filterOperation_->setCurrentText(model()->data(QModelIndex(), FilterOperationRole).toString());
+    filterText_->setText(model()->data(QModelIndex(), FilterValueRole).toString());
 }
 
 void FilteredPagedTableView::clearFilter() {

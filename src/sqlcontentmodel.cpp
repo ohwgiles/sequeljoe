@@ -71,7 +71,6 @@ void SqlContentModel::describe(const Filter& where) {
 }
 
 void SqlContentModel::describeComplete(QVector<ColumnHeader> columns, int totalRecords, int primaryKeyIndex) {
-    // mutex lock necessary?
     columns_ = columns;
     totalRecords_ = totalRecords;
     primaryKeyIndex_ = primaryKeyIndex;
@@ -97,6 +96,7 @@ void SqlContentModel::select() {
 void SqlContentModel::selectComplete(QVector<QVector<QVariant>> data) {
     data_ = data;
     endResetModel();
+    emit selectFinished();
     emit pagesChanged(rowsFrom_, rowsLimit_, totalRecords_);
 }
 

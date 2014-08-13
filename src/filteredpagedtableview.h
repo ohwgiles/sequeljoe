@@ -36,6 +36,7 @@ protected:
 
 private slots:
     void updatePagination(int,int,int);
+    void populateFilter();
     void clearFilter();
     void runFilter();
     void refreshModel();

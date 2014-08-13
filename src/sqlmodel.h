@@ -41,6 +41,7 @@ public:
     }
 
 signals:
+    void selectFinished();
 
 public slots:
 
