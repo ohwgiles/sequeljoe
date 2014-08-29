@@ -32,7 +32,7 @@ enum {
     SCHEMA_KEY,
     SCHEMA_DEFAULT,
     SCHEMA_EXTRA,
-    SCHEMA_COLLATION,
+    SCHEMA_FOREIGNKEY,
     SCHEMA_COMMENT,
 
     SCHEMA_NUM_FIELDS
@@ -62,15 +62,13 @@ public:
     QString getDatabaseName() const { return dbName_; }
 
 
-    QHash<QString, QAbstractTableModel*>& contentModels() { return tableModels_; }
-    QHash<QString, QAbstractTableModel*>& schemaModels() { return schemaModels_; }
-
     QStringList tables() const { return tables_; }
 public slots:
     virtual bool execQuery(QSqlQuery &q) const;
 
 
     void queryTableColumns(QString tableName, QObject* callbackOwner, const char* callbackName = "describeComplete");
+    void queryTableIndices(QString tableName, QObject* callbackOwner, const char* callbackName = "describeComplete");
     void queryTableMetadata(QString tableName, QObject* callbackOwner, const char *callbackName = "describeComplete");
     void queryTableContent(QString query, QObject* callbackOwner, const char* callbackName = "selectComplete");
     void queryTableUpdate(QString query, QObject* callbackOwner, const char* callbackName = "updateComplete");
@@ -105,8 +103,6 @@ protected:
     QByteArray dbFile_;
     QStringList dbNames_;
     QStringList tables_;
-    QHash<QString, QAbstractTableModel*> tableModels_;
-    QHash<QString, QAbstractTableModel*> schemaModels_;
 };
 
 #endif // _SEQUELJOE_DBCONNECTION_H_

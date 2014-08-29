@@ -25,7 +25,7 @@ public:
     void setModel(QAbstractItemModel* m);
 
     QAbstractItemModel* model() const { return table_->model(); }
-    QHeaderView* horizontalHeader() const { return table_->horizontalHeader(); }
+//    QHeaderView* horizontalHeader() const { return table_->horizontalHeader(); }
     void setFilter(QString column, QString operation, QVariant vaulue);
 
 signals:

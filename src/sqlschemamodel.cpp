@@ -18,13 +18,11 @@
 #include "dbconnection.h"
 
 SqlSchemaModel::SqlSchemaModel(DbConnection& db, QString tableName, QObject *parent) :
-    SqlModel(db, parent),
-    tableName_(tableName),
-    db_(db)
+    AbstractSqlModel(db, tableName, parent)
 {
 }
 
-void SqlSchemaModel::describe() {
+void SqlSchemaModel::describe(const Filter&) {
     //select();
     beginResetModel();
     QMetaObject::invokeMethod(&db_, "queryTableColumns", Qt::QueuedConnection, Q_ARG(QString, tableName_),
@@ -32,7 +30,7 @@ void SqlSchemaModel::describe() {
 
 }
 #include <QDebug>
-void SqlSchemaModel::describeComplete(QVector<QVector<QVariant>> data) {
+void SqlSchemaModel::describeComplete(TableData data) {
     qDebug() << __PRETTY_FUNCTION__;
     data_ = data;
     endResetModel();
@@ -55,7 +53,6 @@ Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
         case SCHEMA_LENGTH:
         case SCHEMA_DEFAULT:
         case SCHEMA_EXTRA:
-        case SCHEMA_COLLATION:
         case SCHEMA_COMMENT:
             flags |= Qt::ItemIsEditable;
             break;
@@ -81,8 +78,8 @@ QVariant SqlSchemaModel::data(const QModelIndex &item, int role) const {
             case SCHEMA_KEY:
             case SCHEMA_DEFAULT:
             case SCHEMA_EXTRA:
-            case SCHEMA_COLLATION:
             case SCHEMA_COMMENT:
+            case SCHEMA_FOREIGNKEY:
                 return c[item.column()];
             default: break;
             }
@@ -111,7 +108,6 @@ QString SqlSchemaModel::getColumnChangeQuery(QString column, const SqlColumn& de
             (!def[SCHEMA_NULL].toBool() ? " NOT NULL" : "") +
             (!def[SCHEMA_DEFAULT].isNull() ? " DEFAULT " + def[SCHEMA_DEFAULT].toString() : "") +
             (!def[SCHEMA_EXTRA].isNull() ? " " + def[SCHEMA_EXTRA].toString() : "") +
-            (!def[SCHEMA_COLLATION].isNull() ? " COLLATE '" + def[SCHEMA_COLLATION].toString() + "'" : "") +
             (!def[SCHEMA_COMMENT].isNull() ? " COMMENT '" + def[SCHEMA_COMMENT].toString() + "'" : "");
 }
 
@@ -151,7 +147,6 @@ bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, in
             case SCHEMA_NAME:
             case SCHEMA_LENGTH:
             case SCHEMA_DEFAULT:
-            case SCHEMA_COLLATION:
             case SCHEMA_COMMENT:
                 c[index.column()] = value.toString();
                 //qDebug() << "Executing: " << query;
@@ -184,8 +179,8 @@ QVariant SqlSchemaModel::headerData(int section, Qt::Orientation orientation, in
         case SCHEMA_KEY: return "Key";
         case SCHEMA_DEFAULT: return "Default";
         case SCHEMA_EXTRA: return "Extra";
-        case SCHEMA_COLLATION: return "Collation";
         case SCHEMA_COMMENT: return "Comment";
+        case SCHEMA_FOREIGNKEY: return "Foreign Key";
         default: break;
         }
     }

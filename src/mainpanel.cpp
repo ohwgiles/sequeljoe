@@ -12,8 +12,11 @@
 #include "viewtoolbar.h"
 #include "querypanel.h"
 #include "filteredpagedtableview.h"
+#include "sqlindexmodel.h"
+#include "schemaview.h"
 #include "tablelist.h"
 #include "querylog.h"
+#include "querymodel.h"
 
 #include <QSortFilterProxyModel>
 #include <QStringListModel>
@@ -84,7 +87,7 @@ MainPanel::MainPanel(QWidget* parent) :
                         connect(content_, SIGNAL(foreignQuery(QString,QString,QVariant)), this, SLOT(jumpToQuery(QString,QString,QVariant)));
                         vlayout->addWidget(content_);
 
-                        structure_ = new TableView(w);
+                        structure_ = new SchemaView(w);
                         structure_->hide(); // show only the contents by default
                         vlayout->addWidget(structure_);
                         w->setLayout(vlayout);
@@ -150,12 +153,12 @@ void MainPanel::updateContentModel(QString tableName) {
     bool isModelNew = false;
     SqlContentModel* model;
     QString key = db_->databaseName() + tableName;
-    if(!db_->contentModels().contains(key)) {
+    if(!contentModels_.contains(key)) {
         model = new SqlContentModel(*db_, tableName);
-        db_->contentModels()[key] = model;
+        contentModels_[key] = model;
         isModelNew = true;
     } else
-        model = qobject_cast<SqlContentModel*>(db_->contentModels()[key]);
+        model = contentModels_[key];
     content_->setModel(model);
     if(isModelNew) {
         if(!jumpToTableFilter_.value.isNull())
@@ -169,17 +172,22 @@ void MainPanel::updateContentModel(QString tableName) {
 #include "sqlschemamodel.h"
 void MainPanel::updateSchemaModel(QString tableName) {
     bool isModelNew = false;
-    SqlSchemaModel* model;
+    SchemaView::ModelGroup models;
     QString key = db_->databaseName() + tableName;
-    if(!db_->schemaModels().contains(key)) {
-        model = new SqlSchemaModel(*db_, tableName);
-        db_->schemaModels()[key] = model;
+    if(!schemaModels_.contains(key)) {
+        models.columnModel = new SqlSchemaModel(*db_, tableName);
+        models.indexModel = new QueryModel(*db_);
+        schemaModels_[key] = models;
         isModelNew = true;
     }
-    model = qobject_cast<SqlSchemaModel*>(db_->schemaModels()[key]);
-    structure_->setModel(model);
-    if(isModelNew)
-        model->describe();
+    models = schemaModels_[key];
+    structure_->setModel(models);
+    if(isModelNew) {
+        models.columnModel->describe();
+        static_cast<QueryModel*>(models.indexModel)->setQuery("show index from " + tableName);
+        static_cast<QueryModel*>(models.indexModel)->refresh();
+        //models.indexModel->describe();
+    }
 }
 void MainPanel::openConnection(QString name) {
     db_ = DbConnection::fromName(name);
@@ -234,7 +242,7 @@ void MainPanel::tableListChanged() {
 
 void MainPanel::dbChanged(QString name) {
     content_->setModel(nullptr);
-    structure_->setModel(nullptr);
+    structure_->setModel(SchemaView::ModelGroup{});
     //db_->useDatabase(name);
     QMetaObject::invokeMethod(db_, "useDatabase", Q_ARG(QString, name));
     //tableChooser_->setTableNames(db_->tables());
@@ -265,13 +273,22 @@ void MainPanel::toggleEditSettings(bool showSettings) {
 
 void MainPanel::disconnectDb() {
     content_->setModel(0);
-    structure_->setModel(0);
+    structure_->setModel({nullptr});
     queryLog_->clear();
     queryLog_->setRowCount(0);
     tableChooser_->setTableNames(QStringList());
     toggleEditSettings(true);
     if(db_) {
         disconnect(db_);
+        for(SqlContentModel* m : contentModels_)
+            delete m;
+        for(SchemaView::ModelGroup& m : schemaModels_) {
+            delete m.columnModel;
+            delete m.indexModel;
+        }
+        contentModels_.clear();
+        schemaModels_.clear();
+
         QMetaObject::invokeMethod(db_, "cleanup", Qt::BlockingQueuedConnection);
         //backgroundWorker_->exit();
         delete db_;
@@ -292,7 +309,7 @@ void MainPanel::deleteTable() {
     if(!current.isNull() && QMessageBox::warning(this, QString("Delete Table"), "Are you sure? This action cannot be undone", QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
         db_->deleteTable(current);
         content_->setModel(nullptr);
-        structure_->setModel(nullptr);
+        structure_->setModel({nullptr,nullptr});
         refreshTables();
     }
 }

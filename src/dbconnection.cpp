@@ -20,6 +20,7 @@
 #include <QDebug>
 #include <QSqlError>
 #include <QApplication>
+#include <QSqlRecord>
 
 int DbConnection::nConnections_ = 0;
 
@@ -44,12 +45,6 @@ DbConnection::~DbConnection() {
 }
 
 void DbConnection::cleanup() {
-    for(QAbstractTableModel* m : tableModels_)
-        delete m;
-    for(QAbstractTableModel* m : schemaModels_)
-        delete m;
-    tableModels_.clear();
-    schemaModels_.clear();
     close();
 
     QString name = connectionName();
@@ -94,18 +89,19 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
 
 
     QSqlQuery q{*this};
-    QVector<ColumnHeader> columns;
-    int primaryKeyIndex = -1;
-    QVariant recordEstimate;
+    TableMetadata metadata;
 
     // todo subclass
     if(type_ == "QSQLITE") {
         q.prepare("PRAGMA table_info('" + tableName + "')");
         q.exec();
+        if(q.size()) metadata.resize(q.record().count());
+        int i = 0;
         while(q.next()) {
             if(q.value(5).toBool())
-                primaryKeyIndex = columns.count();
-            columns.append({q.value(1).toString()});
+                metadata.primaryKeyColumn = i;
+            i++;
+            //columns.append({q.value(1).toString()});
         }
         // too lazy to implement foreign key support. would probably require regex matching the sql column from sqlite_master
 
@@ -126,45 +122,92 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
         );
         q.exec();
         // reserve columns optimisation possible?
-        while(q.next()) {
-            if(q.value(2).toBool())
-                primaryKeyIndex = columns.count();
-            columns.append({q.value(0).toString(),
-                             q.value(1).toString(),
-                             q.value(3).toString(),
-                             q.value(4).toString()});
-            recordEstimate = q.value(5).toInt();
+        if(q.first()) {
+            int i = 0;
+            qDebug() << q.record().count();
+            qDebug() << q.size();
+            metadata.resize(q.size());
+            do {
+                if(q.value(2).toBool())
+                    metadata.primaryKeyColumn = i;
+                metadata.columnNames[i] = q.value(0).toString();
+                metadata.columnComments[i] = q.value(1).toString();
+                metadata.foreignKeyTables[i] = q.value(3).toString();
+                metadata.foreignKeyColumns[i] = q.value(4).toString();
+                //recordEstimate = q.value(5).toInt();
+                i++;
+
+            } while(q.next());
         }
 
         //totalRecords_ = recordEstimate.toInt();
     }
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(QVector<ColumnHeader>, columns), Q_ARG(int, recordEstimate.toInt()), Q_ARG(int, primaryKeyIndex));
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(TableMetadata, metadata));
 
 }
+
 #include <QSqlRecord>
+void DbConnection::queryTableIndices(QString tableName, QObject *callbackOwner, const char *callbackName) {
+    QSqlQuery q{*this};
+
+    Indices indices;
+    q.prepare("show index from " + tableName);
+    execQuery(q);
+    Index currentIndex;
+    QString currentIndexName;
+    while(q.next()) {
+        if(currentIndex.name != q.value(2).toString()) {
+            if(!currentIndex.name.isNull()) {
+                indices.append(currentIndex);
+                currentIndex.members.clear();
+            }
+            currentIndex.name = q.value(2).toString();
+        }
+        currentIndex.members.append({
+                                        q.value(4).toString(),
+                                        q.value(3).toInt(),
+                                        !q.value(1).toBool(),
+                                        0
+
+                                    });
+
+    }
+    if(!currentIndex.name.isNull())
+        indices.append(currentIndex);
+    //qDebug() << data;
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(Indices, indices));
+}
+
 #include "tabledata.h"
+#include <QSqlResult>
 void DbConnection::queryTableContent(QString query, QObject* callbackOwner, const char* callbackName) {
     QSqlQuery q(*this);
     TableData data;
     data.reserve(q.size());
     q.prepare(query);
     execQuery(q);
-    while(q.next()) {
-        QVector<QVariant> row;
-        row.resize(q.record().count());
+    if(q.first()) {
+        data.columnNames.resize(q.record().count());
         for(int i = 0; i < q.record().count(); ++i)
-            row[i] = q.value(i);
-        data.append(row);
+            data.columnNames[i] = q.record().fieldName(i).trimmed();
+        do {
+            QVector<QVariant> row;
+            row.resize(q.record().count());
+            for(int i = 0; i < q.record().count(); ++i)
+                row[i] = q.value(i);
+            data.append(row);
+        } while(q.next());
     }
     //qDebug() << data;
     QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(TableData, data));
 }
 void DbConnection::queryTableColumns(QString tableName, QObject* callbackOwner, const char* callbackName) {
-    QVector<QVector<QVariant>> data;
-
+    TableData data;
+QSqlQuery q{*this};
 
     if(type_ == "QSQLITE") {
-        QSqlQuery q("PRAGMA table_info(" + tableName + ")", *this);
+        q.prepare("PRAGMA table_info(" + tableName + ")");
+        q.exec();
         while(q.next()) {
             SqlColumn c;
             c.resize(SCHEMA_NUM_FIELDS);
@@ -176,13 +219,18 @@ void DbConnection::queryTableColumns(QString tableName, QObject* callbackOwner, 
             c[SCHEMA_KEY] = "";
             c[SCHEMA_DEFAULT] = q.value(4).toString();
             c[SCHEMA_EXTRA] = "";
-            c[SCHEMA_COLLATION] = "";
             c[SCHEMA_COMMENT] = "";
+            c[SCHEMA_FOREIGNKEY] = "";
             data.append(c);
         }
 
     } else {
-        QSqlQuery q("SHOW FULL COLUMNS FROM " + tableName, *this);
+        q.prepare("select c.column_name, c.column_type, c.is_nullable, c.column_key, c.column_default, c.extra, c.column_comment, k.referenced_table_name, k.referenced_column_name "
+                  "from information_schema.columns as c "
+                  "left join information_schema.key_column_usage as k "
+                  "on c.table_schema = k.table_schema and c.table_name = k.table_name and c.column_name = k.column_name and referenced_column_name is not null "
+                  "where c.table_schema = '"+databaseName()+"' and c.table_name = '"+tableName+"'");
+        q.exec();
 
         data.reserve(q.size());
 
@@ -197,17 +245,18 @@ void DbConnection::queryTableColumns(QString tableName, QObject* callbackOwner, 
                 c[SCHEMA_UNSIGNED] = (typeRegexp.cap(3) == "unsigned");
             } else
                 c[SCHEMA_TYPE] = q.value(1).toString().toUpper(); //e.g. TEXT has no length or unsigned
-            c[SCHEMA_NULL] = (q.value(3).toString() == "YES");
-            c[SCHEMA_KEY] = q.value(4).toString();
-            c[SCHEMA_DEFAULT] = q.value(5).toString();
-            c[SCHEMA_EXTRA] = q.value(6).toString();
-            c[SCHEMA_COLLATION] = q.value(2).toString();
-            c[SCHEMA_COMMENT] = q.value(8).toString();
+            c[SCHEMA_NULL] = (q.value(2).toString() == "YES");
+            c[SCHEMA_KEY] = q.value(3).toString();
+            c[SCHEMA_DEFAULT] = q.value(4).toString();
+            c[SCHEMA_EXTRA] = q.value(5).toString();
+            //c[SCHEMA_COLLATION] = q.value(2).toString();
+            c[SCHEMA_COMMENT] = q.value(6).toString();
+            c[SCHEMA_FOREIGNKEY] = q.value(8).isNull() ? QVariant() : (q.value(7).toString() + '.' + q.value(8).toString());
             data.append(c);
         }
     }
 
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(QVector<QVector<QVariant>>, data));
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(TableData, data));
 }
 
 void DbConnection::queryTableUpdate(QString query, QObject *callbackOwner, const char *callbackName) {

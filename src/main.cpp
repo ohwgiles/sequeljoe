@@ -32,8 +32,9 @@ int main(int argc, char *argv[]) {
 
     qRegisterMetaType<const char*>("const char*");
 
-qRegisterMetaType<QVector<ColumnHeader>>("QVector<ColumnHeader>");
+qRegisterMetaType<TableMetadata>("TableMetadata");
 qRegisterMetaType<TableData>("TableData");
+qRegisterMetaType<Indices>("Indices");
 
 #ifdef __APPLE__
     // prevents the font size from appearing overly large on OSX

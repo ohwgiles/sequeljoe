@@ -8,7 +8,8 @@
 #ifndef _SEQUELJOE_SQLSCHEMAMODEL_H_
 #define _SEQUELJOE_SQLSCHEMAMODEL_H_
 
-#include "sqlmodel.h"
+#include "abstractsqlmodel.h"
+#include "tabledata.h"
 
 class DbConnection;
 
@@ -16,13 +17,18 @@ class QSqlQuery;
 
 typedef QVector<QVariant> SqlColumn;
 
-class SqlSchemaModel : public SqlModel
+class SqlSchemaModel : public AbstractSqlModel
 {
     Q_OBJECT
 public:
     explicit SqlSchemaModel(DbConnection &db, QString tableName, QObject *parent = 0);
     virtual ~SqlSchemaModel();
 
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex{}) const override { return createIndex(row, column); }
+    QModelIndex parent(const QModelIndex &child = QModelIndex{}) const { return QModelIndex{}; }
+    int rowCount(const QModelIndex &parent = QModelIndex{}) const {
+        return data_.size() + (isAdding_?1:0);
+    }
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &item, int role = Qt::DisplayRole) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role);
@@ -30,17 +36,17 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const;
     virtual bool deleteRows(QSet<int>);
 
-    void describe();
+    void describe(const Filter& filter = Filter{});
 private slots:
-    void describeComplete(QVector<QVector<QVariant>> data);
+    void describeComplete(TableData data);
 private:
     QString getColumnChangeQuery(QString column, const SqlColumn& def) const;
 
-    //bool isAdding_;
-    QSqlQuery* query_;
+    TableData data_;
+    bool isAdding_;
+
+    //QSqlQuery* query_;
     //QVector<SqlColumn> columns_;
-    QString tableName_;
-    DbConnection& db_;
 };
 
 #endif // _SEQUELJOE_SQLSCHEMAMODEL_H_

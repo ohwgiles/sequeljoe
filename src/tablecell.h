@@ -18,6 +18,10 @@ public:
 
 
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
+QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
+public slots:
+    void handleCollapse(const QModelIndex& index);
+    void handleExpand(const QModelIndex& index);
 signals:
     void goToForeignEntry(const QModelIndex& index);
 protected:

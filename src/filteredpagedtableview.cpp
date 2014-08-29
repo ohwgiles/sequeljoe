@@ -71,7 +71,7 @@ QStringList FilteredPagedTableView::filterOperations() const {
     ops << "=" << "!=" << ">" << ">=" << "<" << "<=" << "CONTAINS" << "IN" << "LIKE";
     return ops;
 }
-
+#include <QDebug>
 void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
     if(m == table_->model())
         return;
@@ -83,6 +83,7 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
 
     filterColumns_->clear();
     filterText_->clear();
+    qDebug() << m;
     table_->setModel(m);
 
     if(m) {

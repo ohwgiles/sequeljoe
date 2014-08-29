@@ -10,7 +10,7 @@
 #include "dbconnection.h"
 #include "tableview.h"
 #include "sqlhighlighter.h"
-#include "sqlmodel.h"
+#include "querymodel.h"
 
 #include <QSplitter>
 #include <QTableView>
@@ -86,7 +86,7 @@ QueryPanel::QueryPanel(QWidget* parent) :
     layout->addWidget(splitter);
 }
 void QueryPanel::setDb(DbConnection *db) {
-    model_ = new SqlModel(*db);
+    model_ = new QueryModel(*db);
     results_->setModel(model_);
 }
 

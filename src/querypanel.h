@@ -11,7 +11,7 @@
 #include <QWidget>
 
 class TableView;
-class SqlModel;
+class QueryModel;
 
 
 class QSqlQueryModel;
@@ -35,7 +35,7 @@ private:
     QLabel* error_;
     QLabel* status_;
     TableView* results_;
-    SqlModel* model_;
+    QueryModel* model_;
     QSqlQuery* query_;
 };
 

@@ -5,8 +5,8 @@
  * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
  * for more information
  */
-#ifndef _SEQUELJOE_SQLMODEL_H_
-#define _SEQUELJOE_SQLMODEL_H_
+#ifndef _SEQUELJOE_QUERYMODEL_H_
+#define _SEQUELJOE_QUERYMODEL_H_
 
 #include "tabledata.h"
 
@@ -15,11 +15,13 @@
 
 class DbConnection;
 
-class SqlModel : public QAbstractTableModel
+#include "abstractsqlmodel.h"
+
+class QueryModel : public AbstractSqlModel
 {
     Q_OBJECT
 public:
-    explicit SqlModel(DbConnection& db, QObject *parent = 0);
+    explicit QueryModel(DbConnection& db, QObject *parent = 0);
 
     void setQuery(QString q);
     void refresh();
@@ -33,12 +35,14 @@ public:
         return false;
     }
 
-    virtual bool insertRows(int row, int count, const QModelIndex &parent);
-
+    virtual bool hasChildren(const QModelIndex &parent) const override { if(!parent.isValid()) return true;return false; }
+    virtual void describe(const Filter& filter = Filter{}) {}
 
     virtual bool deleteRows(QSet<int>) {
         return false;
     }
+
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::Horizontal) const override;
 
 signals:
     void selectFinished();
@@ -50,13 +54,8 @@ private slots:
     void deleteComplete();
 
 protected:
-    QString tableName_;
-
-
     TableData data_;
-    bool isAdding_;
-    DbConnection& db_;
     QString query_;
 };
 
-#endif // _SEQUELJOE_SQLMODEL_H_
+#endif // _SEQUELJOE_QUERYMODEL_H_

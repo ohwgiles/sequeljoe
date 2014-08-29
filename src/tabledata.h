@@ -11,14 +11,41 @@
 #include <QVector>
 #include <QVariant>
 
-typedef QVector<QVector<QVariant>> TableData;
-
-struct ColumnHeader {
+struct Index {
     QString name;
-    QString comment;
-    QString fk_table;
-    QString fk_column;
+    struct Member {
+        QString column;
+        int sequence;
+        bool unique;
+        int cardinality;
+    };
+    QVector<Member> members;
 };
+
+typedef QVector<Index> Indices;
+
+struct TableData : QVector<QVector<QVariant>> {
+    QVector<QString> columnNames;
+};
+
+struct TableMetadata {
+    void resize(int nColumns) {
+        columnNames.resize(nColumns);
+        columnComments.resize(nColumns);
+        foreignKeyTables.resize(nColumns);
+        foreignKeyColumns.resize(nColumns);
+        size_ = nColumns;
+    }
+    int count() const { return size_; }
+    int primaryKeyColumn = -1;
+    QVector<QString> columnNames;
+    QVector<QString> columnComments;
+    QVector<QString> foreignKeyTables;
+    QVector<QString> foreignKeyColumns;
+private:
+    int size_;
+};
+
 
 
 #endif // _SEQUELJOE_TABLEDATA_H_

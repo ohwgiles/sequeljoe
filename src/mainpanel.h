@@ -11,12 +11,19 @@
 #include "viewtoolbar.h"
 #include <QWidget>
 #include <QModelIndex>
+#include <QHash>
 #include "sqlcontentmodel.h" // for filter, move to own class
+
+#include "schemaview.h" // for ModelGroup, move out?
+
 class ConnectionWidget;
 class FilteredPagedTableView;
+class SchemaView;
 class DbConnection;
 class TableList;
 class QueryLog;
+class SqlContentModel;
+class SqlSchemaModel;
 
 class QTableView;
 class QSqlTableModel;
@@ -72,12 +79,16 @@ private:
     QSplitter* logSplit_;
     TableList* tableChooser_;
     FilteredPagedTableView* content_;
-    QTableView* structure_;
+    SchemaView* structure_;
     ViewToolBar* toolbar_;
     QueryPanel* queryWidget_;
     QueryLog* queryLog_;
     QThread* backgroundWorker_;
     Filter jumpToTableFilter_;
+
+    QHash<QString, SqlContentModel*> contentModels_;
+    QHash<QString, SchemaView::ModelGroup> schemaModels_;
+
 };
 
 #endif // _SEQUELJOE_MAINPANEL_H_
