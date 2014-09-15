@@ -34,9 +34,11 @@
 #endif
 
 #include <libssh2.h>
+
 #include <QThread>
 #include <QDebug>
 #include <QException>
+#include <QFile>
 
 #include "sshdbconnection.h"
 #include "sshthread.h"
@@ -167,9 +169,23 @@ int SshThread::connectToServer() {
    //     }
 
         if(params_.useSshKey_) {
-            if (libssh2_userauth_publickey_fromfile_ex(session,
+            // libssh2 needs the corresponding public key in order to authenticate. If compiled against
+            // openssl, it can generate it itself (pass NULL to libssh2_userauth_publickey_fromfile_ex)
+            // from the private key. If compiled against gnutls, this will fail. Until this is resolved,
+            // first attempt to load a public key from <path/to/privatekey>.pub - if this file doesn't
+            // exist, cross fingers, pass NULL, and hope we're running against openssl :)
+
+            QByteArray publicKeyPath = params_.sshKeyPath_ + ".pub";
+            bool useGuessedPublicKey = false;
+            { // guess the path to public key
+                QFile guessedPublicKey(publicKeyPath);
+                if(guessedPublicKey.exists() && guessedPublicKey.isReadable())
+                    useGuessedPublicKey = true;
+            }
+
+            if(libssh2_userauth_publickey_fromfile_ex(session,
                     params_.sshUser_.constData(), params_.sshUser_.length(),
-                           NULL, params_.sshKeyPath_.constData(), NULL))
+                           useGuessedPublicKey ? publicKeyPath : nullptr, params_.sshKeyPath_.constData(), NULL))
                 return shutdown("Authentication by public key failed!\n");
             fprintf(stderr, "Authentication by public key succeeded.\n");
         } else {
