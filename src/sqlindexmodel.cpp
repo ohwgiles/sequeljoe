@@ -47,7 +47,7 @@ QModelIndex SqlIndexModel::parent(const QModelIndex &child) const {
         return QModelIndex();
 //qDebug() << __PRETTY_FUNCTION__;
     quintptr idx = quintptr(child.internalPointer());
-    if(idx == -1)
+    if(idx == quintptr(-1))
         return QModelIndex();
     return createIndex(idx, 0, quintptr(-1));
 }
