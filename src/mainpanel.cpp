@@ -115,7 +115,7 @@ MainPanel::MainPanel(QWidget* parent) :
         }
     }
 
-    emit nameChanged(this, "New Connection");
+    //emit nameChanged(this, "New Connection");
     toggleEditSettings(true);
 }
 

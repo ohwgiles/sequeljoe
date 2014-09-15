@@ -26,25 +26,9 @@ Favourites::Favourites(QWidget *parent) :
 
     { // widget containing list of saved connections
         list_ = new QListWidget(this);
-        QSettings s;
-        int count = 0;
-        foreach(QString c, s.childGroups()) {
-            if(!c.startsWith("Favourite_"))
-                continue;
-            s.beginGroup(c);
-            QListWidgetItem* item = new QListWidgetItem(s.value("Name", "Unnamed").toString());
-            item->setData(Qt::UserRole, c);
-            list_->addItem(item);
-            s.endGroup();
-            count++;
-        }
 
         connect(list_, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)), this, SLOT(indexChanged(QListWidgetItem*)));
         layout->addWidget(list_);
-
-        // if there are no favourites, create an empty one
-        if(count == 0)
-            addButtonClicked();
     }
 
     { // widget with "Add" and "Remove" actions
@@ -61,6 +45,27 @@ Favourites::Favourites(QWidget *parent) :
 
         layout->addLayout(bar_);
     }
+}
+
+void Favourites::populateFromConfig() {
+    QSettings s;
+    int count = 0;
+    foreach(QString c, s.childGroups()) {
+        if(!c.startsWith("Favourite_"))
+            continue;
+        s.beginGroup(c);
+        QListWidgetItem* item = new QListWidgetItem(s.value("Name", "Unnamed").toString());
+        item->setData(Qt::UserRole, c);
+        list_->addItem(item);
+        s.endGroup();
+        count++;
+    }
+
+    // if there are no favourites, create an empty one
+    if(count == 0)
+        addButtonClicked();
+    else // select the first one
+        list_->setCurrentRow(0);
 }
 
 void Favourites::indexChanged(QListWidgetItem * item) {

@@ -19,6 +19,7 @@ class Favourites : public QWidget
     Q_OBJECT
 public:
     explicit Favourites(QWidget *parent = 0);
+    void populateFromConfig();
 
 signals:
     void favouriteSelected(QString name);

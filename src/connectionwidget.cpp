@@ -113,6 +113,8 @@ boxSetup->setStyleSheet("QGroupBox{border:1px solid #bbb;border-radius:2px;margi
         layout->addWidget(cfgWidget,4);
     }
 
+    favourites_->populateFromConfig();
+
     connect(name_, SIGNAL(textEdited(QString)), this, SLOT(setupNameChanged(QString)));
     connect(host_, SIGNAL(textEdited(QString)), this, SLOT(setupHostChanged(QString)));
     connect(port_, SIGNAL(textEdited(QString)), this, SLOT(setupPortChanged(QString)));
@@ -125,7 +127,6 @@ boxSetup->setStyleSheet("QGroupBox{border:1px solid #bbb;border-radius:2px;margi
     connect(sshPort_, SIGNAL(textEdited(QString)), this, SLOT(setupSshPortChanged(QString)));
     connect(sshUsername_, SIGNAL(textEdited(QString)), this, SLOT(setupSshUserChanged(QString)));
     connect(sshPassKey_, SIGNAL(changed(bool,QString)), this, SLOT(setupSshPassKeyChanged(bool,QString)));
-
 }
 
 void ConnectionWidget::connectButtonClicked() {
