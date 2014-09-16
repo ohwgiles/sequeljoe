@@ -38,7 +38,7 @@
 #include <QThread>
 #include <QDebug>
 #include <QException>
-#include <QFile>
+#include <QFileInfo>
 
 #include "sshdbconnection.h"
 #include "sshthread.h"
@@ -178,7 +178,7 @@ int SshThread::connectToServer() {
             QByteArray publicKeyPath = params_.sshKeyPath_ + ".pub";
             bool useGuessedPublicKey = false;
             { // guess the path to public key
-                QFile guessedPublicKey(publicKeyPath);
+                QFileInfo guessedPublicKey(publicKeyPath);
                 if(guessedPublicKey.exists() && guessedPublicKey.isReadable())
                     useGuessedPublicKey = true;
             }
