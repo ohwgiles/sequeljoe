@@ -42,12 +42,13 @@ QVariant SqlContentModel::data(const QModelIndex &index, int role) const {
     if(!index.isValid()) return QVariant();
     if(role == ExpandedColumnIndexRole) {
         if(!expandedColumns_.contains(index.row()))
-            return -1;
+            return quintptr(-1);
         return expandedColumns_.value(index.row());
     }
 
     if(role == WidgetRole) {
-        return quintptr(subwidgetFactory_->createTableView(index));
+        Q_ASSERT(false);
+        return 0;//quintptr(subwidgetFactory_->createTableView(index));
     }
     //if(role == Qt::DisplayRole && index.parent().isValid()) return "hi";
 
@@ -72,6 +73,7 @@ bool SqlContentModel::hasChildren(const QModelIndex &parent) const {
         return false;
     if(metadata_.foreignKeyTables[parent.column()].isNull())
         return true;
+    return true; ///???
     return false;
 }
 QModelIndex SqlContentModel::index(int row, int column, const QModelIndex &parent) const {
@@ -81,7 +83,7 @@ QModelIndex SqlContentModel::index(int row, int column, const QModelIndex &paren
     if(!parent.isValid())
         return createIndex(row, column, quintptr(-1));
     else { //todo
-        qDebug() << "creating child index";
+        //qDebug() << "creating child index";
 //        if(row < indices_.at(parent.row()).members.count())
         return createIndex(row, column, quintptr(parent.row()));
         return QModelIndex{};
@@ -120,7 +122,7 @@ void SqlContentModel::describe(const Filter& where) {
 
 void SqlContentModel::describeComplete(TableMetadata metadata) {
     metadata_ = metadata;
-    modifiedRow_.resize(metadata.count());
+    //modifiedRow_.resize(metadata.count());
     select();
 }
 #include <QSqlField>
@@ -170,6 +172,7 @@ bool SqlContentModel::setData(const QModelIndex &index, const QVariant &value, i
             expandedColumns_.remove(index.row());
         else
             expandedColumns_[index.row()] = value.toInt();
+        return true;
     }
 
     if(role == Qt::CheckStateRole)

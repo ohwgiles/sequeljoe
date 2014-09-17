@@ -7,7 +7,7 @@
  */
 #include "tablecell.h"
 #include "sqlcontentmodel.h"
-
+#include "tableview.h"
 #include <QPainter>
 #include <QDebug>
 #include <QApplication>
@@ -15,20 +15,23 @@
 #include <QMouseEvent>
 #include <QLineEdit>
 //QWidget* w;
-TableCell::TableCell(QObject *parent) :
-    QStyledItemDelegate(parent)
+TableCell::TableCell(SubwidgetFactory& swf, QObject *parent) :
+    QStyledItemDelegate(parent),
+    subwidgetFactory_(swf)
 {
     //w = new QLineEdit(this);
 }
 
 QSize TableCell::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const {
+    //return QStyledItemDelegate::sizeHint(option, index);
     QSize sz = QStyledItemDelegate::sizeHint(option, index);
 
-    if(index.isValid() && index.parent().isValid() && index.parent().data(ExpandedColumnIndexRole).toInt() == index.column()) {
-        QWidget* w = static_cast<QWidget*>((void*)(index.data(WidgetRole).toULongLong()));
-    if(w) {
-        sz.setHeight(sz.height() + w->sizeHint().height());
-    }
+    if(0 && index.isValid() && index.parent().isValid() && index.parent().data(ExpandedColumnIndexRole).toInt() == index.column()) {
+        //QWidget* w = static_cast<QWidget*>((void*)(index.data(WidgetRole).toULongLong()));
+        QWidget* w = subwidgetFactory_.createTableView(index);
+        if(w) {
+            sz.setHeight(w->sizeHint().height() + sz.height());
+        }
     }
     return sz;
 }
@@ -38,31 +41,58 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
     initStyleOption(&opt, index);
 
     if(index.parent().isValid()) {
-        qDebug() << "parent column: " << index.parent().column();
-        if(index.column() == index.parent().data(ExpandedColumnIndexRole).toInt()) {
-            QWidget* w = static_cast<QWidget*>((void*)(index.data(WidgetRole).toULongLong()));
-            qDebug() << "got widget " << w;
+opt.rect.setLeft(0);
+opt.features &= ~QStyleOptionViewItem::HasDecoration;
+        //qDebug() << "parent column: " << index.parent().column();
+        if(0 && index.column() == index.parent().data(ExpandedColumnIndexRole).toInt()) {
+            //QWidget* w = static_cast<QWidget*>((void*)(index.data(WidgetRole).toULongLong()));
+            QWidget* w = qobject_cast<QWidget*>(subwidgetFactory_.createTableView(index));
+
+            //connect(w, SIGNAL())
+            //qDebug() << "got widget " << w;
             if(w) {
             //QStyledItemDelegate::paint(painter, option, index);
                 //opt.rect.setHeight(opt.rect.height()*2);
-            qDebug() << "painting: " << index.row() << index.column();
+            //qDebug() << "painting: " << index.row() << index.column();
             //opt.rect.adjust(0,w->sizeHint().height(), 0, w->sizeHint().height());
             QAbstractScrollArea* area = qobject_cast<QAbstractScrollArea*>(parent());
             Q_ASSERT(area);
-            QSize sz = QStyledItemDelegate::sizeHint(opt, index);
-            opt.rect.adjust(0, sz.height(), 0, sz.height());
-            opt.rect.setLeft(0);
-            opt.rect.setRight(area->viewport()->width());
-            w->setGeometry(opt.rect);
+            //QSize sz = sizeHint(opt, index);
+            QRect pos;
+            pos.setLeft(0);
+            pos.setRight(area->viewport()->width());
+            pos.setTop(opt.rect.top() + sizeHint(option, index.parent()).height());
+            pos.setHeight(w->sizeHint().height());
+            //opt.rect.setLeft(0);
+            //opt.rect.setRight(area->viewport()->width());
+            w->setGeometry(pos);
+            opt.rect.setHeight(w->sizeHint().height());
+            //opt.rect.adjust(0, 0, 0, sz.height());
+            QStyledItemDelegate::paint(painter, opt, index);
+//w->recalculateRowHeights();
+            //if(!w->isVisible()) {
             w->show();
+
+
+
+
+            //}
+
+
             }
         }
 
     } else {
-
         if(!index.data(ForeignKeyTableRole).toString().isNull()) {
-            opt.rect = expandWidgetRect(opt.rect);
+            int indicatorWidth = opt.rect.height() * 2 / 3;
+opt.decorationSize = QSize(indicatorWidth,indicatorWidth);
+opt.features |= QStyleOptionViewItem::HasDecoration;
+            //opt.rect.setLeft(opt.rect.left() + indicatorWidth);
 
+            QStyledItemDelegate::paint(painter, opt, index);
+//            opt.rect.setLeft(0);// = expandWidgetRect(opt.rect);
+opt.rect.setWidth(indicatorWidth);
+//opt.decorationAlignment = Qt::AlignLeft;
             QStyle* s = QApplication::style();
             if(index.sibling(index.row(), 0).data(ExpandedColumnIndexRole).toInt() == index.column()) {
                 opt.state = QStyle::State_Open;
@@ -71,9 +101,9 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
                 opt.state = QStyle::State_Children;
                 s->drawPrimitive(QStyle::PE_IndicatorBranch, &opt, painter);
             }
-            opt.rect.setLeft(opt.rect.left() + s->);
-        }
-        QStyledItemDelegate::paint(painter, opt, index);
+        } else
+            QStyledItemDelegate::paint(painter, opt, index);
+
 
         if(index.data().isNull() && index.data(Qt::CheckStateRole).isNull()) {
             painter->setPen(Qt::lightGray);
@@ -83,9 +113,11 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
 
 }
 void TableCell::handleCollapse(const QModelIndex &index) {
+    return;
     qDebug() << "collapsing:"<<index.data(ExpandedColumnIndexRole).toInt();
     qDebug() << index.sibling(index.row(), index.data(ExpandedColumnIndexRole).toInt());
-    QWidget* w = static_cast<QWidget*>((void*)(index.child(0, index.data(ExpandedColumnIndexRole).toInt()).data(WidgetRole).toULongLong()));
+    //QWidget* w = static_cast<QWidget*>((void*)(index.child(0, index.data(ExpandedColumnIndexRole).toInt()).data(WidgetRole).toULongLong()));
+    QWidget* w = subwidgetFactory_.createTableView(index.child(0, index.data(ExpandedColumnIndexRole).toInt()));
     qDebug() << "2got widget " << w;
 
     if(w)
@@ -95,14 +127,23 @@ void TableCell::handleCollapse(const QModelIndex &index) {
 }
 void TableCell::handleExpand(const QModelIndex& index) {
     QAbstractScrollArea* area = qobject_cast<QAbstractScrollArea*>(parent());
-    area->update();
+    qDebug() << __PRETTY_FUNCTION__;
+    while(area) {
+        qDebug() << "updating geometry of " << area;
+    area->updateGeometry();
+    area = qobject_cast<QAbstractScrollArea*>(area->parentWidget());
+    }
 
+
+//    QWidget* w = qobject_cast<QWidget*>((void*)(index.data(WidgetRole).toULongLong()));
+//            if(w) { w->show();w->adjustSize(); }
+    //area->repaint();
 }
 
 bool TableCell::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) {
     if(event->type() == QEvent::MouseButtonPress && !index.data(ForeignKeyTableRole).toString().isNull()) {
         QMouseEvent* me = static_cast<QMouseEvent*>(event);
-        QRect r = expandWidgetRect(option.rect);
+        QRect r = option.rect.adjusted(0,0,-option.rect.width() + option.rect.height() * 2 /3,0);
         if(r.contains(me->pos())) {
             emit goToForeignEntry(index);
             return true;
@@ -111,7 +152,7 @@ bool TableCell::editorEvent(QEvent *event, QAbstractItemModel *model, const QSty
     return QStyledItemDelegate::editorEvent(event, model, option, index);
 }
 
-QRect TableCell::expandWidgetRect(QRect r) const {
+QRect TableCell::expandWidgetRect(QRect r) const { //todo remove
     r.adjust(r.width() - r.height(), 0, 0, 0);
     return r;
 }

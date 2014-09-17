@@ -10,7 +10,7 @@
 
 #include <QTreeView>
 
-#include "sqlcontentmodel.h" // for subwidgetfactory, move
+#include "tablecell.h" // for subwidgetfactory, move
 
 class QMenu;
 class QAction;
@@ -22,7 +22,7 @@ public:
     virtual QWidget* createTableView(const QModelIndex& index) override;
 
     virtual QSize sizeHint() const;
-
+void recalculateRowHeights();
 signals:
     void foreignQuery(QString table, QString column, QVariant value);
 
@@ -39,6 +39,7 @@ public slots:
 
 protected:
     void resizeEvent(QResizeEvent *event);
+    void paintEvent(QPaintEvent* event) override;
 
 private slots:
     void handleRequestForeignKey(const QModelIndex&);

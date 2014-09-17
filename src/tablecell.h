@@ -10,11 +10,17 @@
 
 #include <QStyledItemDelegate>
 
+class SubwidgetFactory {
+public:
+    virtual QWidget* createTableView(const QModelIndex& index) = 0;
+};
+
+
 class TableCell : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    explicit TableCell(QObject *parent = 0);
+    explicit TableCell(SubwidgetFactory& subWidgetFactory, QObject *parent = 0);
 
 
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
@@ -29,6 +35,9 @@ protected:
                      const QStyleOptionViewItem &option, const QModelIndex &index);
 private:
     QRect expandWidgetRect(QRect cellRect) const;
+
+    SubwidgetFactory& subwidgetFactory_;
+
 };
 
 #endif // _SEQUELJOE_TABLECELL_H_

@@ -35,10 +35,6 @@ class DbConnection;
 class QSqlDatabase;
 class QSqlQuery;
 
-class SubwidgetFactory {
-public:
-    virtual QWidget* createTableView(const QModelIndex& index) = 0;
-};
 
 class SqlContentModel : public EditableSqlModel
 {
@@ -65,7 +61,6 @@ public:
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex{}) const override;
     virtual QModelIndex parent(const QModelIndex &child = QModelIndex{}) const;
 
-SubwidgetFactory* subwidgetFactory_;
 
     virtual bool hasChildren(const QModelIndex &parent) const override;
 
