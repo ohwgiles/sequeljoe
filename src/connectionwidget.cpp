@@ -29,7 +29,7 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
     QWidget(parent)
 {
     QBoxLayout* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(0,0,0,0);
+    //layout->setContentsMargins(0,0,0,0);
 
     { // widget for selecting saved database connections
         favourites_ = new Favourites(this);
@@ -231,6 +231,9 @@ void ConnectionWidget::loadSettings(QString name) {
     name_->setText(s.value("Name").toString());
     host_->setText(s.value(DbConnection::KEY_HOST).toString());
     sqlType_->setCurrentText(s.value(DbConnection::KEY_TYPE).toString());
+    // actually save back the value, for the case when the config value doesn't exist in the combo box (i.e. "" new entry)
+    s.setValue(DbConnection::KEY_TYPE, sqlType_->currentText());
+
     port_->setText(s.value(DbConnection::KEY_PORT).toString());
     if(s.contains(DbConnection::KEY_FILE))
         dbName_->setValue(true, s.value(DbConnection::KEY_FILE).toString());

@@ -31,7 +31,8 @@ TableView::TableView(QWidget *parent) :
     TableCell* tc = new TableCell(*this, this);
     connect(tc, SIGNAL(goToForeignEntry(QModelIndex)), this, SLOT(handleRequestForeignKey(QModelIndex)));
     setItemDelegate(tc);
-setRootIsDecorated(false);
+
+    setRootIsDecorated(false);
 setIndentation(0);
 //setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
 //    horizontalHeader()->setSortIndicatorShown(true);
@@ -74,8 +75,8 @@ QSize TableView::sizeHint() const {
 //    }
     //int height = header()->height();
     if(model()) {
-    qDebug() << "rowheights:"<<rowHeight(model()->index(0,0));
-    qDebug() << rowHeight(model()->index(1,0));
+//    qDebug() << "rowheights:"<<rowHeight(model()->index(0,0));
+//    qDebug() << rowHeight(model()->index(1,0));
 }
 //    int height = sz.height();
 //    for(const QHash<int, QWidget*>& h : foreignTableWidgets_) {
@@ -105,18 +106,21 @@ void TableView::setModel(QAbstractItemModel *m) {
             qDeleteAll(h);
         foreignTableWidgets_.clear();
     }
+    auto resizeFn = [=](const QModelIndex& topLeft, const QModelIndex& bottomRight){
+            for(int i = topLeft.column(); i < bottomRight.column(); ++i)
+                resizeColumnToContents(i);
+        };
 
     if(m) {
     connect(m, &QAbstractItemModel::modelAboutToBeReset, [=](){showLoadingOverlay(true);});
     connect(m, &QAbstractItemModel::modelReset, [=](){
         showLoadingOverlay(false);
     });
-    connect(m, &QAbstractItemModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight){
-        for(int i = topLeft.column(); i < bottomRight.column(); ++i)
-            resizeColumnToContents(i);
-    });
+    connect(m, &QAbstractItemModel::dataChanged, resizeFn);
 }
     QTreeView::setModel(m);
+    if(m)
+    resizeFn(m->index(0,0),m->index(m->rowCount()-1,m->columnCount()-1));
 
 //    if(SqlContentModel* contentModel = dynamic_cast<SqlContentModel*>(m)) {
 //        contentModel->subwidgetFactory_ = this;
@@ -124,7 +128,7 @@ void TableView::setModel(QAbstractItemModel *m) {
 }
 
 QWidget* TableView::createTableView(const QModelIndex& index) {
-    if(!foreignTableWidgets_.contains(index.row()) || !foreignTableWidgets_.value(index.row()).contains(index.column())) {
+    //if(!foreignTableWidgets_.contains(index.row()) || !foreignTableWidgets_.value(index.row()).contains(index.column())) {
 
         QFrame * f = new QFrame(this);
         TableView* view = new TableView(f);
@@ -153,15 +157,15 @@ QWidget* TableView::createTableView(const QModelIndex& index) {
         f->layout()->addWidget(label);
         f->layout()->addWidget(view);
 
-
-        foreignTableWidgets_[index.row()][index.column()] = f;
+return f;
+        //foreignTableWidgets_[index.row()][index.column()] = f;
 //            QHash<int,QWidget*> h = foreignTableWidgets_[index.row()];
 //            h.insert(index.column(), subwidgetFactory_->createTableView(index));
 //            foreignTableWidgets_.insert(index.row(), h);
         //foreignTableWidgets_[index.row()].insert(index.column(), subwidgetFactory_->createTableView(index));
-    }
+    //}
 
-    return foreignTableWidgets_.value(index.row()).value(index.column());
+    //return foreignTableWidgets_.value(index.row()).value(index.column());
 
 }
 

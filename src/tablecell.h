@@ -22,12 +22,17 @@ class TableCell : public QStyledItemDelegate
 public:
     explicit TableCell(SubwidgetFactory& subWidgetFactory, QObject *parent = 0);
 
+    QWidget* createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const;
+    void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
 QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
 public slots:
     void handleCollapse(const QModelIndex& index);
     void handleExpand(const QModelIndex& index);
+
 signals:
     void goToForeignEntry(const QModelIndex& index);
 protected:

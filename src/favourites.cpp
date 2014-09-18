@@ -22,7 +22,7 @@ Favourites::Favourites(QWidget *parent) :
 {
     QBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
-    layout->setSpacing(0);
+    //layout->setSpacing(0);
 
     { // widget containing list of saved connections
         list_ = new QListWidget(this);

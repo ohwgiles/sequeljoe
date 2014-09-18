@@ -50,6 +50,7 @@ public slots:
     void toggleEditSettings(bool showSettings = true);
 
     void openConnection(QString name);
+
     void tableChanged(QString name);
 
     void changeSort(int, Qt::SortOrder);
@@ -67,8 +68,12 @@ private slots:
     void jumpToQuery(QString table, QString column, QVariant value);
 
     void databaseConnected();
-    void tableListChanged();
+    void connectionFailed(QString reason);
+    void confirmUnknownHost(QString fingerprint, bool* ok);
 
+    void tableListChanged();
+protected:
+    void resizeEvent(QResizeEvent *) override;
 private:
     void updateContentModel(QString tableName);
     void updateSchemaModel(QString tableName);
@@ -85,6 +90,7 @@ private:
     QueryLog* queryLog_;
     QThread* backgroundWorker_;
     Filter jumpToTableFilter_;
+    QWidget* loadingOverlay_;
 
     QHash<QString, SqlContentModel*> contentModels_;
     QHash<QString, SchemaView::ModelGroup> schemaModels_;

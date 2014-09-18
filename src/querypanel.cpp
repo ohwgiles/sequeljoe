@@ -22,6 +22,7 @@
 #include <QSqlQuery>
 #include <QLabel>
 #include <QDebug>
+#include <QAction>
 
 QueryPanel::QueryPanel(QWidget* parent) :
     QWidget(parent),
@@ -38,7 +39,7 @@ QueryPanel::QueryPanel(QWidget* parent) :
         QWidget* top = new QWidget(splitter);
         QBoxLayout* editorLayout = new QVBoxLayout(top);
         editorLayout->setContentsMargins(0,0,0,0);
-        editorLayout->setSpacing(0);
+        //editorLayout->setSpacing(0);
 
         editor_ = new QPlainTextEdit(this);
         QFont f;
@@ -54,16 +55,24 @@ QueryPanel::QueryPanel(QWidget* parent) :
         error_->setContentsMargins(8,8,8,8);
         editorLayout->addWidget(error_);
 
+        QAction* runQueryAction = new QAction(this);
+        QKeySequence ctrlEnter(Qt::CTRL + Qt::Key_Return);
+        runQueryAction->setShortcut(ctrlEnter);
+        addAction(runQueryAction);
+
         QBoxLayout* toolbar = new QHBoxLayout();
-        QPushButton* run = new QPushButton("Run Query");
-        run->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+        QPushButton* run = new QPushButton("Run Query (" + ctrlEnter.toString(QKeySequence::NativeText) + ")", this);
+        //run->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         toolbar->addWidget(run);
         editorLayout->addLayout(toolbar);
 
         splitter->addWidget(top);
 
+
+        //run->addAction(runQueryAction);
         connect(editor_, SIGNAL(textChanged()), error_, SLOT(hide()));
-        connect(run, SIGNAL(clicked()), this, SLOT(executeQuery()));
+        connect(runQueryAction, SIGNAL(triggered()), this, SLOT(executeQuery()));
+        connect(run, SIGNAL(clicked()), runQueryAction, SIGNAL(triggered()));
     }
 
     { // bottom half: results table

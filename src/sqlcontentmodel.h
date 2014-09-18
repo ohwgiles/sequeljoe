@@ -27,7 +27,7 @@ enum {
     ForeignKeyTableRole,
     ForeignKeyColumnRole,
     ExpandedColumnIndexRole,
-    WidgetRole
+    SqlTypeRole
 };
 
 class DbConnection;

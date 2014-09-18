@@ -10,6 +10,7 @@
 
 EditableSqlModel::EditableSqlModel(DbConnection& db, QString tableName, QObject* parent) :
     AbstractSqlModel(db, tableName, parent),
+    dataSafe_(false),
     isAdding_(false)
 {
 
@@ -24,13 +25,19 @@ bool EditableSqlModel::insertRows(int row, int count, const QModelIndex &parent)
 }
 #include <QDebug>
 QVariant EditableSqlModel::data(const QModelIndex &index, int role) const {
+    if(!dataSafe_)
+        return QVariant();
+
     if(index.row() == data_.count())
         return QVariant(); // during editing only. isAdding_ should be true here
 
     //qDebug() << "role:"<<role<<"index:"<<index<<"datacount:"<<data_.count();
     if(index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole)) {
-        if(index.row() < data_.count() && index.column() < data_.at(index.row()).count())
-        return data_.at(index.row()).at(index.column());
+        if(index.row() < data_.count() && index.column() < data_.at(index.row()).count()) {
+            if(role == Qt::EditRole)
+                return data_.at(index.row()).at(index.column());
+            return data_.at(index.row()).at(index.column()).toString().replace("\n","");
+        }
     }
 
     return QVariant();

@@ -83,7 +83,7 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
 
     filterColumns_->clear();
     filterText_->clear();
-    qDebug() << m;
+    //qDebug() << m;
     table_->setModel(m);
 
     if(m) {
@@ -91,7 +91,7 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
         connect(prev_, SIGNAL(clicked()), m, SLOT(prevPage()));
         connect(next_, SIGNAL(clicked()), m, SLOT(nextPage()));
         connect(m, SIGNAL(selectFinished()), this, SLOT(populateFilter()));
-        populateFilter();
+        //populateFilter();
     }
 }
 

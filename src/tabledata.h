@@ -31,6 +31,7 @@ struct TableData : QVector<QVector<QVariant>> {
 struct TableMetadata {
     void resize(int nColumns) {
         columnNames.resize(nColumns);
+        columnTypes.resize(nColumns);
         columnComments.resize(nColumns);
         foreignKeyTables.resize(nColumns);
         foreignKeyColumns.resize(nColumns);
@@ -39,6 +40,7 @@ struct TableMetadata {
     int count() const { return size_; }
     int primaryKeyColumn = -1;
     QVector<QString> columnNames;
+    QVector<QString> columnTypes;
     QVector<QString> columnComments;
     QVector<QString> foreignKeyTables;
     QVector<QString> foreignKeyColumns;

@@ -37,7 +37,7 @@ QVariant QueryModel::headerData(int section, Qt::Orientation orientation, int ro
     if(orientation == Qt::Horizontal && role == Qt::DisplayRole) {
         return data_.columnNames.at(section);
     }
-    return section;
+    return QVariant();
 }
 
 

@@ -46,11 +46,26 @@ public slots:
     int connectToServer();
 signals:
     void sshTunnelOpened(int);
+    void tunnelFailed(QString);
 
+    // blocked
+    void confirmUnknownHost(QString fingerprint, bool* ok);
 private:
+
+    bool createSocket();
+    bool createSession();
+    bool authenticate();
+    bool setupTunnel();
+    void routeTraffic();
+
+
+
+
+
+
     int sock_, sock_fwd_, sock_listen_;
-    _LIBSSH2_SESSION *session;
-    _LIBSSH2_CHANNEL *channel = NULL;
+    _LIBSSH2_SESSION *session = nullptr;
+    _LIBSSH2_CHANNEL *channel = nullptr;
 
     int shutdown(const char *msg = nullptr, ...);
 

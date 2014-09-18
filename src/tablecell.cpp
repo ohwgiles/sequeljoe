@@ -8,12 +8,14 @@
 #include "tablecell.h"
 #include "sqlcontentmodel.h"
 #include "tableview.h"
+#include "textcelleditor.h"
 #include <QPainter>
 #include <QDebug>
 #include <QApplication>
 #include <QPushButton>
 #include <QMouseEvent>
 #include <QLineEdit>
+#include <QMessageBox>
 //QWidget* w;
 TableCell::TableCell(SubwidgetFactory& swf, QObject *parent) :
     QStyledItemDelegate(parent),
@@ -35,6 +37,41 @@ QSize TableCell::sizeHint(const QStyleOptionViewItem &option, const QModelIndex 
     }
     return sz;
 }
+QWidget* TableCell::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const {
+//    QMessageBox* b = new QMessageBox("title", "text", QMessageBox::Information, int(QMessageBox::Ok),0,0);
+//    connect(b, &QMessageBox::accepted, [=](){ closeEditor(b); });
+    if(index.data(SqlTypeRole).toString() == "text")
+        return new TextCellEditor(parent);
+    else
+        return QStyledItemDelegate::createEditor(parent, option, index);
+
+}
+void TableCell::setEditorData(QWidget *editor, const QModelIndex &index) const {
+    TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
+    if(tce)
+        tce->setContent(index.data().toString());
+    else
+        QStyledItemDelegate::setEditorData(editor, index);
+}
+
+void TableCell::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const {
+    TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
+    if(tce)
+        model->setData(index, tce->content());
+    else
+        QStyledItemDelegate::setModelData(editor, model, index);
+
+}
+void TableCell::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const {
+    TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
+    if(tce)
+        // todo: these are just a guess
+        editor->setGeometry(0,0,350,500);
+    else
+        QStyledItemDelegate::updateEditorGeometry(editor, option, index);
+
+}
+
 #include <QAbstractScrollArea>
 void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const {
     QStyleOptionViewItemV4 opt(option);

@@ -19,6 +19,8 @@ public:
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
 
 protected:
+    bool dataSafe_;
+
     TableData data_;
     bool isAdding_;
 };

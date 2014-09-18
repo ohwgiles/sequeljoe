@@ -20,7 +20,8 @@ sshthread.cpp mainpanel.cpp connectionwidget.cpp filteredpagedtableview.cpp
 favourites.cpp viewtoolbar.cpp tablecell.cpp tableview.cpp tabwidget.cpp
 querypanel.cpp sqlcontentmodel.cpp sqlhighlighter.cpp sqlschemamodel.cpp
 tablelist.cpp passkeywidget.cpp querylog.cpp loadingoverlay.cpp querymodel.cpp
-dbfilewidget.cpp schemaview.cpp sqlindexmodel.cpp editablesqlmodel.cpp)
+dbfilewidget.cpp schemaview.cpp sqlindexmodel.cpp editablesqlmodel.cpp
+textcelleditor.cpp)
 
 if(APPLE OR WIN32)
     set(exe "SequelJoe")

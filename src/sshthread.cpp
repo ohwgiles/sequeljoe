@@ -39,6 +39,9 @@
 #include <QDebug>
 #include <QException>
 #include <QFileInfo>
+#include <QApplication>
+#include <QStandardPaths>
+#include <QDir>
 
 #include "sshdbconnection.h"
 #include "sshthread.h"
@@ -57,13 +60,23 @@ int SshThread::nLibSshUsers = 0;
 // (so you might run into problems if you create > 3535 connections without restarting)
 int SshThread::localBoundPort = 62000;
 
-SshThread::SshThread(SshParameters& params) : params_(params)
+SshThread::SshThread(SshParameters& params) :
+    params_(params)
 {
     sock_ = -1;
     sock_listen_ = -1;
     sock_fwd_ = -1;
-    if(nLibSshUsers++ == 0 && libssh2_init(0) != 0)
-        throw new QException();//"libssh2 initialization failed");
+    if(nLibSshUsers == 0) {
+#ifdef WIN32
+        WSADATA wsadata;
+        WSAStartup(MAKEWORD(2,0), &wsadata);
+#endif
+        if(libssh2_init(0) != 0) {
+            fprintf(stderr, "libssh2 initialization failed");
+            qApp->exit(1);
+        }
+        nLibSshUsers++;
+    }
 }
 
 SshThread::~SshThread()
@@ -72,240 +85,323 @@ SshThread::~SshThread()
         libssh2_exit();
 }
 
-int SshThread::connectToServer() {
+
+bool SshThread::createSocket() {
+    struct addrinfo* res;
+
+    { // get address info
+        struct addrinfo hints = {0};
+        hints.ai_family = PF_INET; // | PF_INET6
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+        int rc = getaddrinfo(params_.sshHost_.constData(), params_.sshPort_.constData(), &hints, &res);
+        if(rc != 0) {
+            emit tunnelFailed(rc == EAI_SYSTEM ? strerror(errno) : gai_strerror(rc));
+            return false;
+        }
+    }
+
+    int lastError = 0;
+    for(struct addrinfo* p = res; p; p = p->ai_next) {
+        if((sock_ = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+            lastError = errno;
+            continue;
+        }
+
+        if(::connect(sock_, p->ai_addr, p->ai_addrlen) != 0) {
+            lastError = errno;
+            close(sock_);
+            sock_ = -1;
+            continue;
+        }
+        break;
+    }
+
+    freeaddrinfo(res);
+
+    if(lastError || sock_ < 0) {
+        emit tunnelFailed(strerror(lastError));
+        return false;
+    }
+
+    return true;
+}
+
+bool SshThread::createSession() {
+    session = libssh2_session_init();
+    if(session == nullptr) {
+        emit tunnelFailed("libssh2_session_init failed");
+        return false;
+    }
+
+    // trade banners, keys, setup crypto, compression, MAC
+    int rc = libssh2_session_handshake(session, sock_);
+    if(rc) {
+        char* msg = 0;
+        libssh2_session_last_error(session, &msg, nullptr, 0);
+        emit tunnelFailed(msg);
+        free(msg);
+        return false;
+    }
+
+    LIBSSH2_KNOWNHOSTS* knownHosts = libssh2_knownhost_init(session);
+    if(knownHosts == nullptr)
+        return false;
+    QDir dataDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+    if(!dataDir.exists())
+        dataDir.mkpath(dataDir.path());
+    QByteArray knownHostsFile = dataDir.filePath("known_hosts").toLocal8Bit();
+    qDebug() << libssh2_knownhost_readfile(knownHosts, knownHostsFile.constData(), LIBSSH2_KNOWNHOST_FILE_OPENSSH);
+    int type;
+    size_t len;
+    const char* fingerprint = libssh2_session_hostkey(session, &len, &type);
+
+    bool fingerprintOk = false;
+
+    if(fingerprint) {
+        struct libssh2_knownhost *host;
+        qDebug() << params_.sshHost_.constData();
+        qDebug() << QString(params_.sshPort_).toInt();
+        int check = libssh2_knownhost_checkp(knownHosts, params_.sshHost_.constData(), QString(params_.sshPort_).toInt(),
+                        fingerprint, len, LIBSSH2_KNOWNHOST_TYPE_PLAIN|LIBSSH2_KNOWNHOST_KEYENC_RAW, &host);
+
+        fprintf(stderr, "Host check: %d, key: %s\n", check,
+                (check <= LIBSSH2_KNOWNHOST_CHECK_MISMATCH)?
+                host->key:"<none>");
+
+        char readableFingerprint[41];
+        for(int i = 0; i < 20; i++)
+            sprintf(&readableFingerprint[i<<1], "%02X", fingerprint[i]);
+
+        switch(check) {
+        case LIBSSH2_KNOWNHOST_CHECK_MATCH:
+            fingerprintOk = true;
+            break;
+        case LIBSSH2_KNOWNHOST_CHECK_MISMATCH:
+            emit tunnelFailed("Server host key does not match that in known_hosts file");
+            break;
+        case LIBSSH2_KNOWNHOST_CHECK_NOTFOUND:
+            emit confirmUnknownHost(readableFingerprint, &fingerprintOk);
+            if(fingerprintOk) {
+                libssh2_knownhost_addc(knownHosts, params_.sshHost_.constData(), params_.sshHost_.constData(), fingerprint, len,
+                    nullptr, 0, LIBSSH2_KNOWNHOST_TYPE_PLAIN|LIBSSH2_KNOWNHOST_KEYENC_RAW|LIBSSH2_KNOWNHOST_KEY_SSHRSA, nullptr);
+                libssh2_knownhost_writefile(knownHosts, knownHostsFile.constData(), LIBSSH2_KNOWNHOST_FILE_OPENSSH);
+            } else
+                emit tunnelFailed(QString{});
+            break;
+        case LIBSSH2_KNOWNHOST_CHECK_FAILURE:
+            emit tunnelFailed("Failed to check known hosts");
+            break;
+        default:
+            Q_ASSERT("Branch can't happen" == 0);
+            break;
+        }
+    } else {
+        emit tunnelFailed("Failed to get server host key");
+    }
+    libssh2_knownhost_free(knownHosts);
+
+    if(!fingerprintOk)
+        return false;
+
+    return true;
+}
+
+
+bool SshThread::authenticate() {
+
+    const char* userauthlist = libssh2_userauth_list(session, params_.sshUser_.constData(), params_.sshUser_.length());
+
+    if(params_.useSshKey_) {
+        if(strstr(userauthlist, "publickey") == nullptr) {
+            emit tunnelFailed("Public Key authentication method not supported by server");
+            return false;
+        }
+
+        // libssh2 needs the corresponding public key in order to authenticate. If compiled against
+        // openssl, it can generate it itself (pass nullptr to libssh2_userauth_publickey_fromfile_ex)
+        // from the private key. If compiled against gnutls, this will fail. Until this is resolved,
+        // first attempt to load a public key from <path/to/privatekey>.pub - if this file doesn't
+        // exist, cross fingers, pass nullptr, and hope we're running against openssl :)
+
+        QByteArray publicKeyPath = params_.sshKeyPath_ + ".pub";
+        bool useGuessedPublicKey = false;
+        { // guess the path to public key
+            QFileInfo guessedPublicKey(publicKeyPath);
+            if(guessedPublicKey.exists() && guessedPublicKey.isReadable())
+                useGuessedPublicKey = true;
+        }
+
+        if(libssh2_userauth_publickey_fromfile_ex(session,
+                params_.sshUser_.constData(), params_.sshUser_.length(),
+                       useGuessedPublicKey ? publicKeyPath.constData() : nullptr, params_.sshKeyPath_.constData(), nullptr))
+            return shutdown("Authentication by public key failed!\n");
+        fprintf(stderr, "Authentication by public key succeeded.\n");
+    } else {
+
+        if(strstr(userauthlist, "password") == nullptr) {
+            emit tunnelFailed("Password authentication method not supported by server");
+            return false;
+        }
+
+        if (libssh2_userauth_password_ex(session,
+                params_.sshUser_.constData(), params_.sshUser_.length(),
+                params_.sshPass_.constData(), params_.sshPass_.length(), nullptr))
+            return shutdown("Authentication by password failed.\n");
+    }
+
+    return true;
+
+}
+
+bool SshThread::setupTunnel() {
 #ifdef WIN32
     char sockopt;
-    WSADATA wsadata;
-
-    WSAStartup(MAKEWORD(2,0), &wsadata);
 #else
     int sockopt;
 #endif
 
-    { // Connect to SSH server
-        struct addrinfo* res;
-        { // get address info
-            struct addrinfo hints = {0};
-            hints.ai_family = PF_INET; // | PF_INET6
-            hints.ai_socktype = SOCK_STREAM;
-            hints.ai_protocol = IPPROTO_TCP;
-            if(getaddrinfo(params_.sshHost_.constData(), params_.sshPort_.constData(), &hints, &res) != 0) {
-                perror("getaddrinfo");
-                return -1;
-            }
-        }
+    struct sockaddr_in sin;
 
-        for(struct addrinfo* p = res; p; p = p->ai_next) {
-            fprintf(stderr, "type: %d\n", p->ai_socktype);
-            if((sock_ = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-                fprintf(stderr, "couldn't create socket: %s\n", strerror(errno));
-
-                continue;
-            }
-
-            //p->ai_addr->sin_port = htons(params_.port);
-
-            if(::connect(sock_, p->ai_addr, p->ai_addrlen) != 0) {
-                fprintf(stderr, "couldn't connect: %s\n", strerror(errno));
-                close(sock_);
-                sock_ = -1;
-
-                continue;
-
-            }
-            fprintf(stderr, "found one\n");
-            break;
-        }
-
-        if(sock_ < 0) {
-            fprintf(stderr, "failed to connect\n");
-            return -1;
-        }
-
-        freeaddrinfo(res);
+    int localListenPort = localBoundPort++;
+    sock_listen_ = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(localListenPort);
+    sin.sin_addr.s_addr = inet_addr("127.0.0.1");
+    if(sin.sin_addr.s_addr == INADDR_NONE) {
+        emit tunnelFailed(strerror(errno));
+        return false;
     }
 
-    { // create a session
-        if(nullptr == (session = libssh2_session_init())) {
-            fprintf(stderr, "Could not initialize SSH session!\n");
-            return -1;
-        }
+    sockopt = 1;
+    setsockopt(sock_listen_, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
 
-        // trade banners, keys, setup crypto, compression, MAC
-        int rc = libssh2_session_handshake(session, sock_);
-        if(rc) {
-            char* msg;
-            libssh2_session_last_error(session, &msg, NULL, 0);
-            fprintf(stderr, "Error when starting up SSH session: %d (%s)\n", rc, msg);
-            return -1;
-        }
+    socklen_t sinlen = sizeof(sin);
+    qDebug() << "attempting to bind to local port " << localListenPort;
+
+    if(bind(sock_listen_, (struct sockaddr *)&sin, sinlen) < 0) {
+        emit tunnelFailed(strerror(errno));
+        return false;
     }
 
-    { // fingerprinting - from here we must redirect to shutdown rather than just returning
-        const char* fingerprint = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);
-
-        fprintf(stderr, "Fingerprint: ");
-        for(int i = 0; i < 20; i++)
-            fprintf(stderr, "%02X ", (unsigned char)fingerprint[i]);
-        fprintf(stderr, "\n");
-        // TODO compare with known_hosts, popup dialog
+    if(listen(sock_listen_, 2) < 0) {
+        emit tunnelFailed(strerror(errno));
+        return false;
     }
 
-    { // authentication
-        const char* userauthlist = libssh2_userauth_list(session, params_.sshUser_.constData(), params_.sshUser_.length());
-        int auth = AUTH_NONE;
-        fprintf(stderr, "Authentication methods: %s\n", userauthlist);
-        if (strstr(userauthlist, "password"))
-            auth |= AUTH_PASSWORD;
-        if (strstr(userauthlist, "publickey"))
-            auth |= AUTH_PUBLICKEY;
+    qDebug() << "Waiting for TCP connection on" << inet_ntoa(sin.sin_addr) << "port" << ntohs(sin.sin_port);
 
-        /* check for options */
-   //     if(argc > 8) {
-   //         if ((auth & AUTH_PASSWORD) && !strcasecmp(argv[8], "-p"))
-   //             auth = AUTH_PASSWORD;
-   //         if ((auth & AUTH_PUBLICKEY) && !strcasecmp(argv[8], "-k"))
-   //             auth = AUTH_PUBLICKEY;
-   //     }
+    // actually we shouldn't emit until after accept, but that's tricky
+    emit sshTunnelOpened(localListenPort);
 
-        if(params_.useSshKey_) {
-            // libssh2 needs the corresponding public key in order to authenticate. If compiled against
-            // openssl, it can generate it itself (pass NULL to libssh2_userauth_publickey_fromfile_ex)
-            // from the private key. If compiled against gnutls, this will fail. Until this is resolved,
-            // first attempt to load a public key from <path/to/privatekey>.pub - if this file doesn't
-            // exist, cross fingers, pass NULL, and hope we're running against openssl :)
+    sock_fwd_ = accept(sock_listen_, (struct sockaddr *)&sin, &sinlen);
+    if(sock_fwd_ < 0) {
+        emit tunnelFailed(strerror(errno));
+        return false;
+    }
 
-            QByteArray publicKeyPath = params_.sshKeyPath_ + ".pub";
-            bool useGuessedPublicKey = false;
-            { // guess the path to public key
-                QFileInfo guessedPublicKey(publicKeyPath);
-                if(guessedPublicKey.exists() && guessedPublicKey.isReadable())
-                    useGuessedPublicKey = true;
+    const char* shost = inet_ntoa(sin.sin_addr);
+    unsigned int sport = ntohs(sin.sin_port);
+
+    qDebug() << "Forwarding connection from" << shost << ":" << sport << "to remote" << params_.remoteHost().constData() << ":" << params_.remotePort();
+
+    channel = libssh2_channel_direct_tcpip_ex(session, params_.remoteHost().constData(), params_.remotePort(), shost, sport);
+    if (!channel) {
+        emit tunnelFailed("Could not open direct TCP/IP channel. Please review the server logs");
+        return false;
+    }
+
+    return true;
+}
+
+void SshThread::routeTraffic() {
+    libssh2_session_set_blocking(session, 0);
+
+    // select loop
+    struct timeval tv;
+    fd_set fds;
+    char buf[16384];
+
+    while(true) {
+        FD_ZERO(&fds);
+        FD_SET(sock_fwd_, &fds);
+        tv.tv_sec = 0;
+        tv.tv_usec = 100000;
+
+        int rc = select(sock_fwd_ + 1, &fds, nullptr, nullptr, &tv);
+        if(rc < 0)
+            return tunnelFailed(strerror(errno));
+
+        if(rc > 0 && FD_ISSET(sock_fwd_, &fds)) {
+            ssize_t len = recv(sock_fwd_, buf, sizeof(buf), 0);
+            if(len < 0) {
+                char* msg = 0;
+                libssh2_session_last_error(session, &msg, nullptr, 0);
+                emit tunnelFailed(msg);
+                free(msg);
+                return;
             }
-
-            if(libssh2_userauth_publickey_fromfile_ex(session,
-                    params_.sshUser_.constData(), params_.sshUser_.length(),
-                           useGuessedPublicKey ? publicKeyPath.constData() : nullptr, params_.sshKeyPath_.constData(), NULL))
-                return shutdown("Authentication by public key failed!\n");
-            fprintf(stderr, "Authentication by public key succeeded.\n");
-        } else {
-            if (libssh2_userauth_password_ex(session,
-                    params_.sshUser_.constData(), params_.sshUser_.length(),
-                    params_.sshPass_.constData(), params_.sshPass_.length(), NULL))
-                return shutdown("Authentication by password failed.\n");
-        }
-        /*
-        if (auth & AUTH_PASSWORD) {
-            if (libssh2_userauth_password_ex(session,
-                    params_.sshUser_.constData(), params_.sshUser_.length(),
-                    params_.sshPass_.constData(), params_.sshPass_.length(), NULL))
-                return shutdown("Authentication by password failed.\n");
-        } else if (auth & AUTH_PUBLICKEY) {
-            if (libssh2_userauth_publickey_fromfile_ex(session,
-                    params_.sshUser_.constData(), params_.sshUser_.length(),
-                           keyfile1, keyfile2, NULL))
-                return shutdown("Authentication by public key failed!\n");
-            fprintf(stderr, "Authentication by public key succeeded.\n");
-        } else {
-            return shutdown("No supported authentication methods found!\n");
-        }*/
-    }
-
-struct sockaddr_in sin;
-    { // create tunnel
-        int localListenPort = localBoundPort++;
-        sock_listen_ = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-        sin.sin_family = AF_INET;
-        sin.sin_port = htons(localListenPort);
-        if (INADDR_NONE == (sin.sin_addr.s_addr = inet_addr("127.0.0.1")))
-            return shutdown(strerror(errno));
-
-        sockopt = 1;
-        setsockopt(sock_listen_, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
-        socklen_t sinlen = sizeof(sin);
-        qDebug() << "attempting to bind to local port " << localListenPort;
-        if (-1 == bind(sock_listen_, (struct sockaddr *)&sin, sinlen))
-            return shutdown(strerror(errno));
-        if (-1 == listen(sock_listen_, 2))
-            return shutdown(strerror(errno));
-
-        fprintf(stderr, "Waiting for TCP connection on %s:%d...\n", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port));
-        qDebug() << __PRETTY_FUNCTION__ << QThread::currentThreadId();
-
-        // small race here, actually we shouldn't emit until accepted, but that's tricky :)
-        emit sshTunnelOpened(localListenPort);
-
-        if (-1 == (sock_fwd_ = accept(sock_listen_, (struct sockaddr *)&sin, &sinlen)))
-            return shutdown(strerror(errno));
-    }
-
-
-    { // connected, route traffic
-        const char* shost = inet_ntoa(sin.sin_addr);
-        unsigned int sport = ntohs(sin.sin_port);
-
-        fprintf(stderr, "Forwarding connection from %s:%d here to remote %s:%d\n", shost, sport, params_.remoteHost().constData(), params_.remotePort());
-
-        channel = libssh2_channel_direct_tcpip_ex(session, params_.remoteHost().constData(), params_.remotePort(), shost, sport);
-        if (!channel)
-            return shutdown("Could not open the direct-tcpip channel!\n"
-                    "(Note that this can be a problem at the server!"
-                    " Please review the server logs.)\n");
-
-        // Must use non-blocking IO hereafter due to the current libssh2 API
-        libssh2_session_set_blocking(session, 0);
-
-        // select loop
-        struct timeval tv;
-        fd_set fds;
-        char buf[16384];
-
-        for(;;) {
-            FD_ZERO(&fds);
-            FD_SET(sock_fwd_, &fds);
-            tv.tv_sec = 0;
-            tv.tv_usec = 100000;
-
-            int rc = select(sock_fwd_ + 1, &fds, NULL, NULL, &tv);
-            if (-1 == rc)
-                return shutdown(strerror(errno));
-
-            if (rc && FD_ISSET(sock_fwd_, &fds)) {
-                ssize_t len = recv(sock_fwd_, buf, sizeof(buf), 0);
-                if (len < 0)
-                    return shutdown(strerror(errno));
-                else if (0 == len)
-                    return shutdown("The client at %s:%d disconnected!\n", shost, sport);
-                ssize_t n = 0;
-                int i;
-                do {
-                    i = libssh2_channel_write(channel, buf, len);
-                    if (i < 0)
-                        return shutdown("libssh2_channel_write: %d\n", i);
-                    n += i;
-                } while(i > 0 && n < len);
-            }
-            for(;;) {
-                ssize_t len = libssh2_channel_read(channel, buf, sizeof(buf));
-
-                if (LIBSSH2_ERROR_EAGAIN == len)
-                    break;
-                else if (len < 0)
-                    return shutdown("libssh2_channel_read: %d", (int)len);
-                ssize_t n = 0;
-                int i;
-                while (n < len) {
-                    i = send(sock_fwd_, buf + n, len - n, 0);
-                    if (i <= 0)
-                        return shutdown(strerror(errno));
-                    n += i;
+            else if (0 == len)
+                return; // tunnelFailed("The client at %s:%d disconnected!\n", shost, sport);
+            ssize_t n = 0;
+            int i;
+            do {
+                i = libssh2_channel_write(channel, buf, len);
+                if (i < 0) {
+                    char* msg = 0;
+                    libssh2_session_last_error(session, &msg, nullptr, 0);
+                    emit tunnelFailed(msg);
+                    free(msg);
+                    return;
                 }
-                if (libssh2_channel_eof(channel))
-                    return shutdown("The server at %s:%d disconnected!\n", params_.remoteHost().constData(), params_.remotePort());
-            }
+                n += i;
+            } while(i > 0 && n < len);
         }
-        // end select loop
+        while(true) {
+            ssize_t len = libssh2_channel_read(channel, buf, sizeof(buf));
+
+            if (LIBSSH2_ERROR_EAGAIN == len)
+                break;
+            else if (len < 0)  {
+                char* msg = 0;
+                libssh2_session_last_error(session, &msg, nullptr, 0);
+                emit tunnelFailed(msg);
+                free(msg);
+                return;
+            }
+            ssize_t n = 0;
+            int i;
+            while (n < len) {
+                i = send(sock_fwd_, buf + n, len - n, 0);
+                if (i <= 0) {
+                    char* msg = 0;
+                    libssh2_session_last_error(session, &msg, nullptr, 0);
+                    emit tunnelFailed(msg);
+                    free(msg);
+                    return;
+                }
+                n += i;
+            }
+            if (libssh2_channel_eof(channel))
+                return tunnelFailed("Disconnected by remote host");
+        }
     }
+}
+
+int SshThread::connectToServer() {
+
+    { // Connect to SSH server
+        if(createSocket() &&
+        createSession() &&
+        authenticate() &&
+        setupTunnel())
+        routeTraffic();
+    }
+
+
+
+
+
     shutdown();
     return 0;
 }
@@ -317,6 +413,10 @@ int SshThread::shutdown(const char* msg, ...) {
         vfprintf(stderr, msg, args);
         va_end(args);
     }
+
+    if(channel)
+        libssh2_channel_free(channel);
+
 #ifdef WIN32
     closesocket(sock_fwd_);
     closesocket(sock_listen_);
@@ -324,11 +424,11 @@ int SshThread::shutdown(const char* msg, ...) {
     close(sock_fwd_);
     close(sock_listen_);
 #endif
-    if(channel)
-        libssh2_channel_free(channel);
 
-    libssh2_session_disconnect(session, "Client disconnecting normally");
-    libssh2_session_free(session);
+    if(session) {
+        libssh2_session_disconnect(session, "Client disconnecting normally");
+        libssh2_session_free(session);
+    }
 
 #ifdef WIN32
     closesocket(sock_);

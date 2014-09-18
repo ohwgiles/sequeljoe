@@ -85,6 +85,9 @@ public slots:
 
 signals:
     void connectionSuccess();
+    void connectionFailed(QString reason);
+    void confirmUnknownHost(QString fingerprint, bool* ok);
+
     void queryExecuted(QString query, QString result) const;
     void databaseChanged(QString);
 

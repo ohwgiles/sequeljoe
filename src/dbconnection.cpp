@@ -112,13 +112,14 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
 
         // primary key required if the row should be editable
         q.prepare(
-            "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.referenced_table_name, k.referenced_column_name, t.table_rows "
+            "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.referenced_table_name, k.referenced_column_name, t.table_rows, c.data_type "
             "from information_schema.columns as c "
             "inner join information_schema.tables as t "
             "on c.table_schema = t.table_schema and c.table_name = t.table_name "
             "left join information_schema.key_column_usage as k "
             "on c.table_schema = k.table_schema and c.table_name = k.table_name and c.column_name = k.column_name and referenced_column_name is not null "
             "where c.table_schema = '"+databaseName()+"' and c.table_name = '"+tableName+"'"
+            "order by c.ordinal_position"
         );
         q.exec();
         // reserve columns optimisation possible?
@@ -131,6 +132,7 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
                 if(q.value(2).toBool())
                     metadata.primaryKeyColumn = i;
                 metadata.columnNames[i] = q.value(0).toString();
+                metadata.columnTypes[i] = q.value(6).toString();
                 metadata.columnComments[i] = q.value(1).toString();
                 metadata.foreignKeyTables[i] = q.value(3).toString();
                 metadata.foreignKeyColumns[i] = q.value(4).toString();
@@ -188,8 +190,10 @@ void DbConnection::queryTableContent(QString query, QObject* callbackOwner, cons
     execQuery(q);
     if(q.first()) {
         data.columnNames.resize(q.record().count());
-        for(int i = 0; i < q.record().count(); ++i)
+        for(int i = 0; i < q.record().count(); ++i) {
+//            qDebug() << "adding column name " << q.record().fieldName(i);
             data.columnNames[i] = q.record().fieldName(i).trimmed();
+        }
         do {
             QVector<QVariant> row;
             row.resize(q.record().count());
@@ -310,6 +314,7 @@ bool DbConnection::connect() {
         return true;
     } else
         qDebug() << "connect failed";
+    emit connectionFailed(this->lastError().text());
     return false;
 }
 

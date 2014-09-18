@@ -17,6 +17,7 @@
 #include "tablelist.h"
 #include "querylog.h"
 #include "querymodel.h"
+#include "loadingoverlay.h"
 
 #include <QSortFilterProxyModel>
 #include <QStringListModel>
@@ -115,6 +116,10 @@ MainPanel::MainPanel(QWidget* parent) :
         }
     }
 
+    loadingOverlay_ = new LoadingOverlay{this};
+    loadingOverlay_->hide();
+
+
     //emit nameChanged(this, "New Connection");
     toggleEditSettings(true);
 }
@@ -189,12 +194,20 @@ void MainPanel::updateSchemaModel(QString tableName) {
         //models.indexModel->describe();
     }
 }
+void MainPanel::resizeEvent(QResizeEvent *event) {
+    QWidget::resizeEvent(event);
+    loadingOverlay_->setGeometry(geometry());
+}
+
 void MainPanel::openConnection(QString name) {
+    loadingOverlay_->show();
     db_ = DbConnection::fromName(name);
     db_->moveToThread(backgroundWorker_);
     connect(db_, SIGNAL(queryExecuted(QString,QString)), queryLog_, SLOT(logQuery(QString,QString)));
 qDebug() << "out: " << QThread::currentThreadId();
     connect(db_, SIGNAL(connectionSuccess()), this, SLOT(databaseConnected()));
+    connect(db_, SIGNAL(connectionFailed(QString)), this, SLOT(connectionFailed(QString)));
+    connect(db_, SIGNAL(confirmUnknownHost(QString,bool*)), this, SLOT(confirmUnknownHost(QString,bool*)), Qt::BlockingQueuedConnection);
 
     // todo put in databesConnected
     QSettings s;
@@ -218,6 +231,7 @@ qDebug() << "out: " << QThread::currentThreadId();
 }
 
 void MainPanel::databaseConnected() {
+    loadingOverlay_->hide();
     qDebug() << "in: " << QThread::currentThreadId();
 
     toolbar_->enableAll();
@@ -233,6 +247,16 @@ void MainPanel::databaseConnected() {
 
     connect(toolbar_, SIGNAL(dbChanged(QString)), this, SLOT(dbChanged(QString)));
 
+}
+
+void MainPanel::connectionFailed(QString reason) {
+    if(!reason.isNull())
+        QMessageBox::critical(this, "Connection failed", reason);
+    loadingOverlay_->hide();
+}
+void MainPanel::confirmUnknownHost(QString fingerprint, bool* ok) {
+    if(QMessageBox::warning(this, "Unknown Server Host Key", "Server host key with fingerprint " + fingerprint + " does not exist in known_hosts file. Would you like to continue and add it?", QMessageBox::Yes, QMessageBox::Abort) == QMessageBox::Yes)
+        *ok = true;
 }
 
 void MainPanel::tableListChanged() {

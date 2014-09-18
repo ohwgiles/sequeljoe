@@ -45,6 +45,8 @@ bool SshDbConnection::connect() {
     tunnel_->moveToThread(thread_);
     QObject::connect(thread_, SIGNAL(started()), tunnel_, SLOT(connectToServer()));
     QObject::connect(tunnel_, SIGNAL(sshTunnelOpened(int)), this, SLOT(beginDbConnect(int)));
+    QObject::connect(tunnel_, SIGNAL(tunnelFailed(QString)), this, SIGNAL(connectionFailed(QString)));
+    QObject::connect(tunnel_, SIGNAL(confirmUnknownHost(QString,bool*)), this, SIGNAL(confirmUnknownHost(QString,bool*)), Qt::BlockingQueuedConnection);
     thread_->start();
     return true;
 }

@@ -29,16 +29,25 @@ SqlContentModel::~SqlContentModel() {
 }
 
 int SqlContentModel::columnCount(const QModelIndex &parent) const {
+    if(!dataSafe_)
+        return 0;
+
     if(parent.isValid())
         return 1;
     return metadata_.count();
 }
 int SqlContentModel::rowCount(const QModelIndex &parent) const {
+    if(!dataSafe_)
+        return 0;
+
     if(parent.isValid()) return 1;
     return data_.count() + (isAdding_?1:0);
 }
 #include "tableview.h"
 QVariant SqlContentModel::data(const QModelIndex &index, int role) const {
+    if(!dataSafe_)
+        return QVariant();
+
     if(!index.isValid()) return QVariant();
     if(role == ExpandedColumnIndexRole) {
         if(!expandedColumns_.contains(index.row()))
@@ -46,11 +55,8 @@ QVariant SqlContentModel::data(const QModelIndex &index, int role) const {
         return expandedColumns_.value(index.row());
     }
 
-    if(role == WidgetRole) {
-        Q_ASSERT(false);
-        return 0;//quintptr(subwidgetFactory_->createTableView(index));
-    }
-    //if(role == Qt::DisplayRole && index.parent().isValid()) return "hi";
+    if(role == SqlTypeRole)
+        return metadata_.columnTypes[index.column()];
 
     if(role == FilterColumnRole)
         return where_.column;
@@ -115,6 +121,7 @@ QVariant SqlContentModel::headerData(int section, Qt::Orientation orientation, i
 }
 
 void SqlContentModel::describe(const Filter& where) {
+    dataSafe_ = false;
     beginResetModel();
     where_ = where;
     QMetaObject::invokeMethod(&db_, "queryTableMetadata", Qt::QueuedConnection, Q_ARG(QString, tableName_), Q_ARG(QObject*, this));
@@ -144,6 +151,7 @@ void SqlContentModel::select() {
 void SqlContentModel::selectComplete(TableData data) {
     data_ = data;
     endResetModel();
+    dataSafe_ = true;
     emit selectFinished();
     emit pagesChanged(rowsFrom_, rowsLimit_, totalRecords_);
 }
