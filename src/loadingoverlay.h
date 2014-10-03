@@ -21,13 +21,13 @@ public:
     virtual ~LoadingOverlay();
 
 protected:
-    virtual void paintEvent(QPaintEvent *);
-    void showEvent(QShowEvent *);
-    void hideEvent(QHideEvent *);
+    virtual void paintEvent(QPaintEvent *) override;
+    virtual void showEvent(QShowEvent *) override;
+    virtual void hideEvent(QHideEvent *) override;
 
 private:
     static Spinner* spinner;
-    QTimeLine* timeline_;
+    QTimeLine* timeline;
 };
 
 #endif // _SEQUELJOE_LOADINGOVERLAY_H_

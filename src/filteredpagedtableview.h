@@ -8,7 +8,8 @@
 #ifndef _SEQUELJOE_FILTEREDPAGEDTABLEVIEW_H_
 #define _SEQUELJOE_FILTEREDPAGEDTABLEVIEW_H_
 
-#include "tableview.h"
+#include <QWidget>
+#include <QAbstractItemModel>
 
 class TableView;
 
@@ -23,16 +24,9 @@ public:
     explicit FilteredPagedTableView(QWidget *parent = 0);
 
     void setModel(QAbstractItemModel* m);
+    QAbstractItemModel* model() const;
 
-    QAbstractItemModel* model() const { return table_->model(); }
-//    QHeaderView* horizontalHeader() const { return table_->horizontalHeader(); }
     void setFilter(QString column, QString operation, QVariant vaulue);
-
-signals:
-    void foreignQuery(QString table, QString column, QVariant value);
-
-protected:
-    QStringList filterOperations() const;
 
 private slots:
     void updatePagination(int,int,int);
@@ -42,16 +36,17 @@ private slots:
     void refreshModel();
 
 private:
-    QAbstractButton* b;
-    TableView* table_;
-    QComboBox* filterColumns_;
-    QComboBox* filterOperation_;
-    QLineEdit* filterText_;
-    QAbstractButton* filterRun_;
-    QAbstractButton* filterClear_;
-    QAbstractButton* prev_;
-    QAbstractButton* next_;
-    QLabel* pageNum_;
+    QStringList filterOperations() const;
+
+    TableView* table;
+    QComboBox* filterColumns;
+    QComboBox* filterOperation;
+    QLineEdit* filterText;
+    QAbstractButton* filterRun;
+    QAbstractButton* filterClear;
+    QAbstractButton* prev;
+    QAbstractButton* next;
+    QLabel* pageNum;
 };
 
 #endif // _SEQUELJOE_FILTEREDPAGEDTABLEVIEW_H_

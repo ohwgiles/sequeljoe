@@ -8,16 +8,15 @@
 #include "mainpanel.h"
 
 #include "connectionwidget.h"
-#include "sshdbconnection.h"
 #include "viewtoolbar.h"
 #include "querypanel.h"
 #include "filteredpagedtableview.h"
-#include "sqlindexmodel.h"
 #include "schemaview.h"
 #include "tablelist.h"
 #include "querylog.h"
-#include "querymodel.h"
 #include "loadingoverlay.h"
+#include "tablemodel.h"
+#include "schemamodel.h"
 
 #include <QSortFilterProxyModel>
 #include <QStringListModel>
@@ -32,51 +31,50 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QSettings>
-#include <QDebug>
 #include <QThread>
 
 MainPanel::MainPanel(QWidget* parent) :
     QWidget(parent),
-    db_(nullptr)
+    db(nullptr)
 {
-    backgroundWorker_ = new QThread;
-    backgroundWorker_->start();
+    backgroundWorker = new QThread;
+    backgroundWorker->start();
 
     QGridLayout* layout = new QGridLayout(this);
     layout->setContentsMargins(0,0,0,0);
     layout->setSpacing(0);
 
     { // content, structure, info, query toolbar
-        toolbar_ = new ViewToolBar(this);
-        connect(toolbar_, SIGNAL(panelChanged(ViewToolBar::Panel)), this, SLOT(openPanel(ViewToolBar::Panel)));
-        connect(toolbar_, SIGNAL(disconnect()), this, SLOT(disconnectDb()));
-        layout->addWidget(toolbar_);
+        toolbar = new ViewToolBar(this);
+        connect(toolbar, SIGNAL(panelChanged(ViewToolBar::Panel)), this, SLOT(openPanel(ViewToolBar::Panel)));
+        connect(toolbar, SIGNAL(disconnect()), this, SLOT(disconnectDb()));
+        layout->addWidget(toolbar);
     }
 
     { // the main (bottom) panel is either content/schema/query or setup
         { // widget for connection choosing/setup
-            settings_ = new ConnectionWidget(this);
-            layout->addWidget(settings_);
-            connect(settings_, SIGNAL(doConnect(QString)), this, SLOT(openConnection(QString)));
+            settingsPanel = new ConnectionWidget(this);
+            layout->addWidget(settingsPanel);
+            connect(settingsPanel, SIGNAL(doConnect(QString)), this, SLOT(openConnection(QString)));
         }
 
         { // content widget is encapsulated in a splitter for the query log
-            logSplit_ = new QSplitter(this);
-            logSplit_->setOrientation(Qt::Vertical);
+            splitLogViewer = new QSplitter(this);
+            splitLogViewer->setOrientation(Qt::Vertical);
             { // content/schema/query widgets (top half of splitter)
                 QWidget* actionPanel = new QWidget(this);
                 QLayout* actionLayout = new QVBoxLayout(actionPanel);
                 { // content and schema share a table selector in a splitter....
-                    contentSchemaSplit_ = new QSplitter(actionPanel);
-                    contentSchemaSplit_->setOrientation(Qt::Horizontal);
+                    splitTableChooser = new QSplitter(actionPanel);
+                    splitTableChooser->setOrientation(Qt::Horizontal);
                     //splitView_->setHandleWidth(2);
 
-                    tableChooser_ = new TableList(this);
-                    connect(tableChooser_, SIGNAL(tableSelected(QString)), this, SLOT(tableChanged(QString)));
-                    connect(tableChooser_, SIGNAL(addButtonClicked()), this, SLOT(addTable()));
-                    connect(tableChooser_, SIGNAL(delButtonClicked()), this, SLOT(deleteTable()));
-                    connect(tableChooser_, SIGNAL(refreshButtonClicked()), this, SLOT(refreshTables()));
-                    contentSchemaSplit_->addWidget(tableChooser_);
+                    tableChooser = new TableList(this);
+                    connect(tableChooser, SIGNAL(tableSelected(QString)), this, SLOT(tableChanged(QString)));
+                    connect(tableChooser, SIGNAL(addButtonClicked()), this, SLOT(addTable()));
+                    connect(tableChooser, SIGNAL(delButtonClicked()), this, SLOT(deleteTable()));
+                    connect(tableChooser, SIGNAL(refreshButtonClicked()), this, SLOT(refreshTables()));
+                    splitTableChooser->addWidget(tableChooser);
 
                     { // the contents and structure table views (sharing the table list)
                         QWidget* w = new QWidget(this);
@@ -84,40 +82,39 @@ MainPanel::MainPanel(QWidget* parent) :
                         vlayout->setContentsMargins(0,0,0,0);
                         //vlayout->setSpacing(0);
 
-                        content_ = new FilteredPagedTableView(w);
-                        connect(content_, SIGNAL(foreignQuery(QString,QString,QVariant)), this, SLOT(jumpToQuery(QString,QString,QVariant)));
-                        vlayout->addWidget(content_);
+                        contentView = new FilteredPagedTableView(w);
+                        vlayout->addWidget(contentView);
 
-                        structure_ = new SchemaView(w);
-                        structure_->hide(); // show only the contents by default
-                        vlayout->addWidget(structure_);
+                        schemaView = new SchemaView(w);
+                        schemaView->hide(); // show only the contents by default
+                        vlayout->addWidget(schemaView);
                         w->setLayout(vlayout);
-                        contentSchemaSplit_->addWidget(w);
+                        splitTableChooser->addWidget(w);
                     }
                     // end of splitter widget
-                    contentSchemaSplit_->setStretchFactor(1,4);
-                    actionLayout->addWidget(contentSchemaSplit_);
+                    splitTableChooser->setStretchFactor(1,4);
+                    actionLayout->addWidget(splitTableChooser);
 
                 }
                 { // ...but this doesn't appear in query mode
-                    queryWidget_ = new QueryPanel(this);
-                    queryWidget_->hide(); // it is of course still hidden by default
-                    actionLayout->addWidget(queryWidget_);
+                    queryWidget = new QueryPanel(this);
+                    queryWidget->hide(); // it is of course still hidden by default
+                    actionLayout->addWidget(queryWidget);
                 }
-                logSplit_->addWidget(actionPanel);
+                splitLogViewer->addWidget(actionPanel);
             }
             { // query log (bottom half of splitter)
-                queryLog_ = new QueryLog(this);
-                logSplit_->addWidget(queryLog_);
+                queryLog = new QueryLog(this);
+                splitLogViewer->addWidget(queryLog);
             }
-            layout->addWidget(logSplit_);
-            logSplit_->setStretchFactor(0,5);
-            logSplit_->setStretchFactor(1,1);
+            layout->addWidget(splitLogViewer);
+            splitLogViewer->setStretchFactor(0,5);
+            splitLogViewer->setStretchFactor(1,1);
         }
     }
 
-    loadingOverlay_ = new LoadingOverlay{this};
-    loadingOverlay_->hide();
+    loadingOverlay = new LoadingOverlay{this};
+    loadingOverlay->hide();
 
 
     //emit nameChanged(this, "New Connection");
@@ -125,228 +122,195 @@ MainPanel::MainPanel(QWidget* parent) :
 }
 
 MainPanel::~MainPanel() {
-    backgroundWorker_->exit();
-    backgroundWorker_->wait();
-    delete backgroundWorker_;
+    backgroundWorker->exit();
+    backgroundWorker->wait();
+    delete backgroundWorker;
 }
 
 void MainPanel::openPanel(ViewToolBar::Panel p) {
     if(p == ViewToolBar::PANEL_QUERY) {
-        contentSchemaSplit_->hide();
-        queryWidget_->show();
+        splitTableChooser->hide();
+        queryWidget->show();
     } else {
-        queryWidget_->hide();
-        contentSchemaSplit_->show();
-        content_->hide();
-        structure_->hide();
+        queryWidget->hide();
+        splitTableChooser->show();
+        contentView->hide();
+        schemaView->hide();
         switch(p) {
         case ViewToolBar::PANEL_CONTENT:
-            updateContentModel(tableChooser_->selectedTable());
-            content_->show();
+            updateContentModel(tableChooser->selectedTable());
+            contentView->show();
             break;
         case ViewToolBar::PANEL_STRUCTURE:
-            updateSchemaModel(tableChooser_->selectedTable());
-            structure_->show();
+            updateSchemaModel(tableChooser->selectedTable());
+            schemaView->show();
             break;
         default:
             break;
         }
     }
 }
-#include "sqlcontentmodel.h"
+
 void MainPanel::updateContentModel(QString tableName) {
-    bool isModelNew = false;
-    SqlContentModel* model;
-    QString key = db_->databaseName() + tableName;
-    if(!contentModels_.contains(key)) {
-        model = new SqlContentModel(*db_, tableName);
-        contentModels_[key] = model;
-        isModelNew = true;
+    QString key = db->databaseName() + tableName;
+    if(!contentModels.contains(key)) {
+        TableModel* model = new TableModel(*db, tableName);
+        contentModels[key] = model;
+        contentView->setModel(model);
+        model->describe();
     } else
-        model = contentModels_[key];
-    content_->setModel(model);
-    if(isModelNew) {
-        if(!jumpToTableFilter_.value.isNull())
-            model->describe(jumpToTableFilter_);
-        else
-            model->describe();
-    } else if(!jumpToTableFilter_.value.isNull())
-        model->setFilter(jumpToTableFilter_);
-    jumpToTableFilter_ = Filter{};
+        contentView->setModel(contentModels[key]);
 }
-#include "sqlschemamodel.h"
+
+
 void MainPanel::updateSchemaModel(QString tableName) {
-    bool isModelNew = false;
-    SchemaView::ModelGroup models;
-    QString key = db_->databaseName() + tableName;
-    if(!schemaModels_.contains(key)) {
-        models.columnModel = new SqlSchemaModel(*db_, tableName);
-        models.indexModel = new QueryModel(*db_);
-        schemaModels_[key] = models;
-        isModelNew = true;
-    }
-    models = schemaModels_[key];
-    structure_->setModel(models);
-    if(isModelNew) {
-        models.columnModel->describe();
-        static_cast<QueryModel*>(models.indexModel)->setQuery("show index from " + tableName);
-        static_cast<QueryModel*>(models.indexModel)->refresh();
-        //models.indexModel->describe();
+    QString key = db->databaseName() + tableName;
+    if(!schemaModels.contains(key)) {
+        SqlModel* schema = new SqlSchemaModel(*db, tableName);
+        SqlModel* index  = new SqlModel(*db);
+        index->setQuery("SHOW INDEX FROM " + tableName);
+        schemaModels[key] = {schema, index};
+        schemaView->setModels(schema, index);
+        schema->select();
+        index->select();
+    } else {
+        SchemaModels& models = schemaModels[key];
+        schemaView->setModels(models.schema, models.index);
     }
 }
+
 void MainPanel::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
-    loadingOverlay_->setGeometry(geometry());
+    loadingOverlay->setGeometry(geometry());
 }
 
 void MainPanel::openConnection(QString name) {
-    loadingOverlay_->show();
-    db_ = DbConnection::fromName(name);
-    db_->moveToThread(backgroundWorker_);
-    connect(db_, SIGNAL(queryExecuted(QString,QString)), queryLog_, SLOT(logQuery(QString,QString)));
-qDebug() << "out: " << QThread::currentThreadId();
-    connect(db_, SIGNAL(connectionSuccess()), this, SLOT(databaseConnected()));
-    connect(db_, SIGNAL(connectionFailed(QString)), this, SLOT(connectionFailed(QString)));
-    connect(db_, SIGNAL(confirmUnknownHost(QString,bool*)), this, SLOT(confirmUnknownHost(QString,bool*)), Qt::BlockingQueuedConnection);
-
-    // todo put in databesConnected
+    loadingOverlay->show();
     QSettings s;
     s.beginGroup(name);
+
+    db = new DbConnection(s);
+    db->moveToThread(backgroundWorker);
+
+    connect(db, SIGNAL(queryExecuted(QString,QString)), queryLog, SLOT(logQuery(QString,QString)));
+    connect(db, SIGNAL(connectionSuccess()), this, SLOT(databaseConnected()));
+    connect(db, SIGNAL(connectionFailed(QString)), this, SLOT(connectionFailed(QString)));
+    connect(db, SIGNAL(confirmUnknownHost(QString,bool*)), this, SLOT(confirmUnknownHost(QString,bool*)), Qt::BlockingQueuedConnection);
+
     QString label = s.value("Name").toString();
     s.endGroup();
 
     emit nameChanged(this, label);
 
+    connect(db, SIGNAL(databaseChanged(QString)), this, SLOT(tableListChanged()));
 
-
-
-
-
-    connect(db_, SIGNAL(databaseChanged(QString)), this, SLOT(tableListChanged()));
-
-    // todo show loading progress
-    //db_->connect();
-    QMetaObject::invokeMethod(db_, "connect", Qt::QueuedConnection);
-
+    QMetaObject::invokeMethod(db, "start", Qt::QueuedConnection);
 }
 
 void MainPanel::databaseConnected() {
-    loadingOverlay_->hide();
-    qDebug() << "in: " << QThread::currentThreadId();
-
-    toolbar_->enableAll();
-    queryWidget_->setDb(db_);
+    loadingOverlay->hide();
+    toolbar->enableAll();
 
     toggleEditSettings(false);
 
-    toolbar_->populateDatabases(db_->getDatabaseNames());
-    if(!db_->getDatabaseName().isEmpty()) {
-        toolbar_->setCurrentDatabase(db_->getDatabaseName());
+    toolbar->populateDatabases(db->databaseNames());
+    if(!db->databaseName().isEmpty()) {
+        toolbar->setCurrentDatabase(db->databaseName());
     }
-    tableChooser_->setTableNames(db_->tables());
+    tableChooser->setTableNames(db->tables());
 
-    connect(toolbar_, SIGNAL(dbChanged(QString)), this, SLOT(dbChanged(QString)));
+    connect(toolbar, SIGNAL(dbChanged(QString)), this, SLOT(dbChanged(QString)));
 
+    SqlModel* m = new SqlModel(*db);
+    queryWidget->setModel(m);
 }
 
 void MainPanel::connectionFailed(QString reason) {
     if(!reason.isNull())
         QMessageBox::critical(this, "Connection failed", reason);
-    loadingOverlay_->hide();
+    loadingOverlay->hide();
 }
+
 void MainPanel::confirmUnknownHost(QString fingerprint, bool* ok) {
     if(QMessageBox::warning(this, "Unknown Server Host Key", "Server host key with fingerprint " + fingerprint + " does not exist in known_hosts file. Would you like to continue and add it?", QMessageBox::Yes, QMessageBox::Abort) == QMessageBox::Yes)
         *ok = true;
 }
 
 void MainPanel::tableListChanged() {
-    tableChooser_->setTableNames(db_->tables());
+    tableChooser->setTableNames(db->tables());
 
 }
 
 void MainPanel::dbChanged(QString name) {
-    content_->setModel(nullptr);
-    structure_->setModel(SchemaView::ModelGroup{});
-    //db_->useDatabase(name);
-    QMetaObject::invokeMethod(db_, "useDatabase", Q_ARG(QString, name));
-    //tableChooser_->setTableNames(db_->tables());
+    contentView->setModel(nullptr);
+    schemaView->setModels(nullptr, nullptr);
+    QMetaObject::invokeMethod(db, "useDatabase", Q_ARG(QString, name));
 }
-
 
 void MainPanel::tableChanged(QString name) {
-    if(structure_->isVisible())
+    if(schemaView->isVisible())
         updateSchemaModel(name);
-    if(content_->isVisible())
+    if(contentView->isVisible())
         updateContentModel(name);
-    // todo this shouldn't be set for every change of table, maybe it can be done just once? Or functionality bought into class
-    //connect(content_->horizontalHeader(), SIGNAL(sortIndicatorChanged(int,Qt::SortOrder)), this, SLOT(changeSort(int,Qt::SortOrder)));
 }
 
-void MainPanel::changeSort(int col, Qt::SortOrder sort) {
-    QSqlTableModel* m = static_cast<QSqlTableModel*>(content_->model());
+void MainPanel::changeSort(int col, Qt::SortOrder sort) { // todo
+    QSqlTableModel* m = static_cast<QSqlTableModel*>(contentView->model());
     m->setSort(col, sort);
     m->select();
 }
 
 void MainPanel::toggleEditSettings(bool showSettings) {
-    queryWidget_->setVisible(false);
-    logSplit_->setVisible(!showSettings);
-    settings_->setVisible(showSettings);
-    toolbar_->enableAll(!showSettings);
+    queryWidget->setVisible(false);
+    splitLogViewer->setVisible(!showSettings);
+    settingsPanel->setVisible(showSettings);
+    toolbar->enableAll(!showSettings);
 }
 
 void MainPanel::disconnectDb() {
-    content_->setModel(0);
-    structure_->setModel({nullptr});
-    queryLog_->clear();
-    queryLog_->setRowCount(0);
-    tableChooser_->setTableNames(QStringList());
+    contentView->setModel(nullptr);
+    schemaView->setModels(nullptr, nullptr);
+    queryLog->clear();
+    queryLog->setRowCount(0);
+    tableChooser->setTableNames(QStringList());
     toggleEditSettings(true);
-    if(db_) {
-        disconnect(db_);
-        for(SqlContentModel* m : contentModels_)
+    if(db) {
+        disconnect(db);
+        for(SqlModel* m : contentModels)
             delete m;
-        for(SchemaView::ModelGroup& m : schemaModels_) {
-            delete m.columnModel;
-            delete m.indexModel;
+        for(SchemaModels m : schemaModels) {
+            delete m.schema;
+            delete m.index;
         }
-        contentModels_.clear();
-        schemaModels_.clear();
+        contentModels.clear();
+        schemaModels.clear();
 
-        QMetaObject::invokeMethod(db_, "cleanup", Qt::BlockingQueuedConnection);
+        QMetaObject::invokeMethod(db, "cleanup", Qt::BlockingQueuedConnection);
         //backgroundWorker_->exit();
-        delete db_;
-        db_ = 0;
+        delete db;
+        db = 0;
     }
 }
 
 void MainPanel::addTable() {
     QString name = QInputDialog::getText(this, "Create Table", "Enter a name for the new table");
     if(!name.isEmpty()) {
-        db_->createTable(name);
+        db->createTable(name);
         refreshTables();
     }
 }
 
 void MainPanel::deleteTable() {
-    QString current = tableChooser_->selectedTable();
+    QString current = tableChooser->selectedTable();
     if(!current.isNull() && QMessageBox::warning(this, QString("Delete Table"), "Are you sure? This action cannot be undone", QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
-        db_->deleteTable(current);
-        content_->setModel(nullptr);
-        structure_->setModel({nullptr,nullptr});
+        db->deleteTable(current);
+        contentView->setModel(nullptr);
+        schemaView->setModels(nullptr,nullptr);
         refreshTables();
     }
 }
 
 void MainPanel::refreshTables() {
-    tableChooser_->setTableNames(db_->tables());
+    tableChooser->setTableNames(db->tables());
 }
 
-void MainPanel::jumpToQuery(QString table, QString column, QVariant value) {
-qDebug() << "jump to " << table << " with " << column << " = " << value;
-    jumpToTableFilter_.column = column;
-    jumpToTableFilter_.operation = "=";
-    jumpToTableFilter_.value = value.toString();
-    //content_->setFilter(column, "=", value);
-    tableChooser_->setCurrentTable(table);
-}

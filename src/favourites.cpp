@@ -22,28 +22,27 @@ Favourites::Favourites(QWidget *parent) :
 {
     QBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
-    //layout->setSpacing(0);
 
     { // widget containing list of saved connections
-        list_ = new QListWidget(this);
+        list = new QListWidget(this);
 
-        connect(list_, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)), this, SLOT(indexChanged(QListWidgetItem*)));
-        layout->addWidget(list_);
+        connect(list, SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)), this, SLOT(indexChanged(QListWidgetItem*)));
+        layout->addWidget(list);
     }
 
     { // widget with "Add" and "Remove" actions
-        bar_ = new QHBoxLayout();
-        bar_->setContentsMargins(0,0,0,0);
+        bar = new QHBoxLayout();
+        bar->setContentsMargins(0,0,0,0);
 
         QPushButton* addFavourite = new QPushButton("New Favourite", this);
         connect(addFavourite, SIGNAL(clicked()), this, SLOT(addButtonClicked()));
-        bar_->addWidget(addFavourite);
+        bar->addWidget(addFavourite);
 
         QPushButton* delFavourite = new QPushButton("Delete Favourite", this);
         connect(delFavourite, SIGNAL(clicked()), this, SLOT(deleteButtonClicked()));
-        bar_->addWidget(delFavourite);
+        bar->addWidget(delFavourite);
 
-        layout->addLayout(bar_);
+        layout->addLayout(bar);
     }
 }
 
@@ -56,7 +55,7 @@ void Favourites::populateFromConfig() {
         s.beginGroup(c);
         QListWidgetItem* item = new QListWidgetItem(s.value("Name", "Unnamed").toString());
         item->setData(Qt::UserRole, c);
-        list_->addItem(item);
+        list->addItem(item);
         s.endGroup();
         count++;
     }
@@ -65,7 +64,7 @@ void Favourites::populateFromConfig() {
     if(count == 0)
         addButtonClicked();
     else // select the first one
-        list_->setCurrentRow(0);
+        list->setCurrentRow(0);
 }
 
 void Favourites::indexChanged(QListWidgetItem * item) {
@@ -74,20 +73,20 @@ void Favourites::indexChanged(QListWidgetItem * item) {
 }
 
 void Favourites::updateName(QString name) {
-    list_->currentItem()->setText(name);
+    list->currentItem()->setText(name);
 }
 
 void Favourites::addButtonClicked() {
     QListWidgetItem* item = new QListWidgetItem("New Connection");
     item->setData(Qt::UserRole, "Favourite_" + QString::number(QDateTime::currentMSecsSinceEpoch()));
-    list_->addItem(item);
-    list_->setCurrentItem(item);
+    list->addItem(item);
+    list->setCurrentItem(item);
 }
 
 void Favourites::deleteButtonClicked() {
     if(QMessageBox::warning(this, QString("Delete Favourite"), "Are you sure? This action cannot be undone", QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
         QSettings s;
-        QListWidgetItem* item = list_->currentItem();
+        QListWidgetItem* item = list->currentItem();
         s.remove(item->data(Qt::UserRole).toString());
         delete item;
     }

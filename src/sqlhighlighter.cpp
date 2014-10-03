@@ -17,32 +17,32 @@ SqlHighlighter::SqlHighlighter(QTextDocument *parent) : QSyntaxHighlighter(paren
     r.format.setForeground(Qt::blue);
     for(const char* keyword : SQL_KEYWORDS) {
         r.pattern = QRegExp(QString("\\b") + keyword + "\\b", Qt::CaseInsensitive);
-        rules_.append(r);
+        rules.append(r);
     }
     // types
     r.format.setForeground(Qt::darkRed);
     for(const char* type : SQL_TYPES) {
         r.pattern = QRegExp(QString("\\b") + type + "\\b", Qt::CaseInsensitive);
-        rules_.append(r);
+        rules.append(r);
     }
     // strings
     r.format.setForeground(Qt::darkGreen);
     r.pattern = QRegExp("\"(?:[^\"\\\\]|\\\\.)*\"");
-    rules_.append(r);
+    rules.append(r);
     r.pattern = QRegExp("'(?:[^'\\\\]|\\\\.)*'");
-    rules_.append(r);
+    rules.append(r);
 
     // comments
     r.pattern = QRegExp("--.*");
     r.format.setForeground(Qt::gray);
-    rules_.append(r);
-    commentStart_ = QRegExp("/\\*");
-    commentEnd_ = QRegExp("\\*/");
+    rules.append(r);
+    commentStart = QRegExp("/\\*");
+    commentEnd = QRegExp("\\*/");
 }
 
 void SqlHighlighter::highlightBlock(const QString &text)
 {
-    foreach (const Rule &rule, rules_) {
+    foreach (const Rule &rule, rules) {
         QRegExp expression(rule.pattern);
         int index = expression.indexIn(text);
         while (index >= 0) {
@@ -54,18 +54,18 @@ void SqlHighlighter::highlightBlock(const QString &text)
     setCurrentBlockState(0);
     int startIndex = 0;
     if (previousBlockState() != 1)
-        startIndex = commentStart_.indexIn(text);
+        startIndex = commentStart.indexIn(text);
     while (startIndex >= 0) {
-        int endIndex = commentEnd_.indexIn(text, startIndex);
+        int endIndex = commentEnd.indexIn(text, startIndex);
         int commentLength;
         if (endIndex == -1) {
             setCurrentBlockState(1);
             commentLength = text.length() - startIndex;
         } else {
             commentLength = endIndex - startIndex
-                            + commentEnd_.matchedLength();
+                            + commentEnd.matchedLength();
         }
         setFormat(startIndex, commentLength, Qt::gray);
-        startIndex = commentStart_.indexIn(text, startIndex + commentLength);
+        startIndex = commentStart.indexIn(text, startIndex + commentLength);
     }
 }

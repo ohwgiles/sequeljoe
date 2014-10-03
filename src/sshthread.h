@@ -8,68 +8,45 @@
 #ifndef _SEQUELJOE_SSHTHREAD_H_
 #define _SEQUELJOE_SSHTHREAD_H_
 
-// no headers: this must be included after sshdbconnection.h
 struct _LIBSSH2_SESSION;
 struct _LIBSSH2_CHANNEL;
 
 #include <QByteArray>
+#include <QObject>
 
-struct SshParameters {
-    QByteArray sshHost_;
-    QByteArray sshPort_;
-    QByteArray sshUser_;
-    bool useSshKey_;
-    QByteArray sshPass_;
-    QByteArray sshKeyPath_;
-    virtual QByteArray remoteHost() const = 0;
-    virtual short remotePort() const = 0;
-};
+class SshParams;
 
 class SshThread : public QObject
 {
     Q_OBJECT
 public:
-
-    struct Parameters {
-        const char* host;
-        short port;
-        const char* user;
-        const char* pass;
-        const char* remote_host;
-        short remote_port;
-    };
-
-    SshThread(SshParameters& params);
-    ~SshThread();
+    SshThread(SshParams& params);
+    virtual ~SshThread();
 
 public slots:
-    int connectToServer();
+    void connectToServer();
+
 signals:
     void sshTunnelOpened(int);
     void tunnelFailed(QString);
+    void confirmUnknownHost(QString fingerprint, bool* ok); //< should be blocked
 
-    // blocked
-    void confirmUnknownHost(QString fingerprint, bool* ok);
 private:
-
     bool createSocket();
     bool createSession();
     bool authenticate();
     bool setupTunnel();
     void routeTraffic();
 
+    int sock;
+    int sockFwd;
+    int sockListen;
 
-
-
-
-
-    int sock_, sock_fwd_, sock_listen_;
     _LIBSSH2_SESSION *session = nullptr;
     _LIBSSH2_CHANNEL *channel = nullptr;
 
-    int shutdown(const char *msg = nullptr, ...);
+    const SshParams& params;
 
-    const SshParameters& params_;
     static int nLibSshUsers;
     static int localBoundPort;
 };

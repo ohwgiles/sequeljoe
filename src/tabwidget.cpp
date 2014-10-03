@@ -10,18 +10,17 @@
 #include <QTabBar>
 #include <QApplication>
 #include <QStyle>
-#include <QDebug>
 
 TabWidget::TabWidget(QWidget *parent) :
     QTabWidget(parent)
 {
-    lastIndex_ = -1;
+    lastIndex = -1;
     setDocumentMode(true);
     setMovable(true);
     setTabsClosable(true);
 
-    empty_ = new QWidget(this);
-    QTabWidget::addTab(empty_,"+");
+    emptyTab = new QWidget(this);
+    QTabWidget::addTab(emptyTab, "+");
 
     QWidget* empty = new QWidget(this);
     empty->setMaximumSize(QSize(0,0));
@@ -32,12 +31,12 @@ TabWidget::TabWidget(QWidget *parent) :
 }
 
 void TabWidget::plusToEnd() {
-    tabBar()->moveTab(indexOf(empty_), count()-1);
+    tabBar()->moveTab(indexOf(emptyTab), count()-1);
 }
 
 void TabWidget::checkNewTab(int idx) {
-    if(widget(idx) == empty_)
+    if(widget(idx) == emptyTab)
         emit newTab();
     else
-        lastIndex_ = idx;
+        lastIndex = idx;
 }

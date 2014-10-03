@@ -21,7 +21,7 @@ public:
         return insertTab(0, widget, label);
     }
 
-    int lastActiveIndex() const { return lastIndex_; }
+    int lastActiveIndex() const { return lastIndex; }
 
 signals:
     void newTab();
@@ -31,8 +31,8 @@ private slots:
     void checkNewTab(int);
 
 private:
-    QWidget* empty_;
-    int lastIndex_;
+    QWidget* emptyTab;
+    int lastIndex;
 };
 
 #endif // _SEQUELJOE_TABWIDGET_H_

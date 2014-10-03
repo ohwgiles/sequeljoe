@@ -12,32 +12,18 @@
 
 class TableView;
 class QAbstractItemModel;
-class QBoxLayout;
-class QTreeView;
-class AbstractSqlModel;
 
 class SchemaView : public QWidget
 {
     Q_OBJECT
 public:
     explicit SchemaView(QWidget *parent = 0);
+    void setModels(QAbstractItemModel* schema, QAbstractItemModel* index);
 
-    struct ModelGroup {
-        AbstractSqlModel* columnModel;
-        AbstractSqlModel* indexModel;
-    };
-    void setModel(const ModelGroup& models);
-
-signals:
-
-public slots:
 private:
-    TableView* columns_;
-    //TableView* indexes_;
-    TableView* foreignKeys_;
-    TableView* triggers_;
-
-    TableView* indexes_;
+    TableView* columns;
+    TableView* indexes;
+    TableView* triggers;
 };
 
 #endif // _SEQUELJOE_SCHEMAVIEW_H_

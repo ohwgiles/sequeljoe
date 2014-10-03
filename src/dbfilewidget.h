@@ -17,11 +17,11 @@ class DbFileWidget : public QWidget {
     Q_OBJECT
 public:
     explicit DbFileWidget(QWidget* parent = 0);
-    QSize sizeHint() const;
+    virtual QSize sizeHint() const override;
     void setValue(bool file, QString value);
 
 signals:
-    void changed(bool, QString);
+    void changed(QString);
 
 protected slots:
     void browseButtonClicked();

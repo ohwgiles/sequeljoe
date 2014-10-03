@@ -1,8 +1,7 @@
 #include "notify.h"
 #include <libnotify/notify.h>
 
-Notifier::Notifier()
-{
+Notifier::Notifier() {
 	notify_init("SequelJoe");
 }
 

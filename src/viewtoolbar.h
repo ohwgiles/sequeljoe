@@ -43,8 +43,8 @@ private slots:
 
 private:
     QAction* addAction(QString icon, QString label, const char* slot);
-    QActionGroup* group_;
-    QComboBox* dbSelect_;
+    QActionGroup* group;
+    QComboBox* dbSelect;
 };
 
 #endif // _SEQUELJOE_VIEWTOOLBAR_H_

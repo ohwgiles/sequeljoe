@@ -33,8 +33,8 @@ private slots:
     void deleteButtonClicked();
 
 private:
-    QListWidget* list_;
-    QLayout* bar_;
+    QListWidget* list;
+    QLayout* bar;
 };
 
 #endif // _SEQUELJOE_FAVOURITES_H_

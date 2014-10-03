@@ -11,8 +11,7 @@
 #include <QWidget>
 
 class TableView;
-class QueryModel;
-
+class SqlModel;
 
 class QSqlQueryModel;
 class QPlainTextEdit;
@@ -25,18 +24,17 @@ class QueryPanel: public QWidget
     Q_OBJECT
 public:
     QueryPanel(QWidget* parent = 0);
-    void setDb(DbConnection* db);
+    void setModel(SqlModel *model);
 
 private slots:
     void executeQuery();
 
 private:
-    QPlainTextEdit* editor_;
-    QLabel* error_;
-    QLabel* status_;
-    TableView* results_;
-    QueryModel* model_;
-    QSqlQuery* query_;
+    QPlainTextEdit* editor;
+    QLabel* error;
+    QLabel* status;
+    TableView* results;
+    SqlModel* model;
 };
 
 #endif // _SEQUELJOE_QUERYPANL_H_

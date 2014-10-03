@@ -24,7 +24,7 @@ struct Index {
 
 typedef QVector<Index> Indices;
 
-struct TableData : QVector<QVector<QVariant>> {
+struct TableData : public QVector<QVector<QVariant>> {
     QVector<QString> columnNames;
 };
 
@@ -45,9 +45,14 @@ struct TableMetadata {
     QVector<QString> foreignKeyTables;
     QVector<QString> foreignKeyColumns;
 private:
-    int size_;
+    int size_ = 0;
 };
 
+struct Filter {
+    QString column;
+    QString operation;
+    QString value;
+};
 
 
 #endif // _SEQUELJOE_TABLEDATA_H_

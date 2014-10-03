@@ -8,9 +8,8 @@
 #include "tableview.h"
 
 #include "tablecell.h"
-#include "sqlcontentmodel.h"
+#include "tablemodel.h"
 #include "loadingoverlay.h"
-//#include "sqlmodel.h"
 
 #include <QHeaderView>
 #include <QMenu>
@@ -19,81 +18,62 @@
 #include <QResizeEvent>
 #include <QLineEdit>
 #include <QLabel>
+
 TableView::TableView(QWidget *parent) :
     QTreeView(parent)
 {
     setContentsMargins(0,0,0,0);
-
     setAlternatingRowColors(true);
-//    setSelectionBehavior(QAbstractItemView::SelectRows);
-//    setShowGrid(false);
+    setRootIsDecorated(false);
+    setIndentation(0);
 
-    TableCell* tc = new TableCell(*this, this);
-    connect(tc, SIGNAL(goToForeignEntry(QModelIndex)), this, SLOT(handleRequestForeignKey(QModelIndex)));
+    TableCell* tc = new TableCell(this);
+    connect(tc, SIGNAL(requestForeignKey(QModelIndex)), this, SLOT(toggleForeignTable(QModelIndex)));
     setItemDelegate(tc);
 
-    setRootIsDecorated(false);
-setIndentation(0);
-//setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
-//    horizontalHeader()->setSortIndicatorShown(true);
-//    horizontalHeader()->setFixedHeight(verticalHeader()->minimumSectionSize());
-//    horizontalHeader()->setHighlightSections(false);
-//    verticalHeader()->setDefaultSectionSize(verticalHeader()->minimumSectionSize());
-//    verticalHeader()->setVisible(false);
-connect(this, SIGNAL(collapsed(QModelIndex)), tc, SLOT(handleCollapse(QModelIndex)));
-connect(this, SIGNAL(expanded(QModelIndex)), tc, SLOT(handleExpand(QModelIndex)));
     // context menu
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(openMenu(QPoint)));
-    ctxMenu_ = new QMenu(this);
-    nullAction_ = new QAction("Set to NULL", ctxMenu_);
-    connect(nullAction_, SIGNAL(triggered()), this, SLOT(handleSetNull()));
-    deleteRowAction_ = new QAction("Delete row", ctxMenu_);
-    connect(deleteRowAction_, SIGNAL(triggered()), this, SLOT(handleDeleteRow()));
-    addRowAction_ = new QAction("Append row", ctxMenu_);
-    connect(addRowAction_, SIGNAL(triggered()), this, SLOT(handleAddRow()));
-    ctxMenu_->addAction(nullAction_);
-    ctxMenu_->addAction(deleteRowAction_);
-    ctxMenu_->addAction(addRowAction_);
+    contextMenu = new QMenu(this);
+    setNullAction = new QAction("Set to NULL", contextMenu);
+    connect(setNullAction, SIGNAL(triggered()), this, SLOT(handleSetNull()));
+    deleteRowAction = new QAction("Delete row", contextMenu);
+    connect(deleteRowAction, SIGNAL(triggered()), this, SLOT(handleDeleteRow()));
+    addRowAction = new QAction("Append row", contextMenu);
+    connect(addRowAction, SIGNAL(triggered()), this, SLOT(handleAddRow()));
+    contextMenu->addAction(setNullAction);
+    contextMenu->addAction(deleteRowAction);
+    contextMenu->addAction(addRowAction);
 
-    loadingOverlay_ = new LoadingOverlay{this};
-    loadingOverlay_->hide();
+    loadingOverlay = new LoadingOverlay{this};
+    loadingOverlay->hide();
 }
 
-void TableView::recalculateRowHeights() {
-     scheduleDelayedItemsLayout();
+void TableView::closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint hint) {
+    QTreeView::closeEditor(editor, hint);
+
+    QModelIndex idx = currentIndex();
+    QModelIndex nextIndex;
+
+    if(hint == QAbstractItemDelegate::EditNextItem)
+        nextIndex = model()->index(idx.row(), idx.column() + 1, idx.parent());
+
+    if(hint == QAbstractItemDelegate::EditPreviousItem)
+        nextIndex = model()->index(idx.row(), idx.column() - 1, idx.parent());
+
+    if(nextIndex.isValid()) {
+        if((model()->flags(nextIndex) & Qt::ItemIsEditable)) {
+            setCurrentIndex(nextIndex);
+            edit(nextIndex);
+        } else {
+            QTreeView::closeEditor(editor, QAbstractItemDelegate::SubmitModelCache);
+        }
+    }
 }
 
-#include <QDebug>
-QSize TableView::sizeHint() const {
-    QSize sz = QTreeView::sizeHint();
-//    QTreeView* area = qobject_cast<QTreeView*>(parent());
-
-//    if(area) {
-//        qDebug() << area->maximumHeight();
-//        sz.setHeight(area->maximumHeight());
-//    }
-    //int height = header()->height();
-    if(model()) {
-//    qDebug() << "rowheights:"<<rowHeight(model()->index(0,0));
-//    qDebug() << rowHeight(model()->index(1,0));
-}
-//    int height = sz.height();
-//    for(const QHash<int, QWidget*>& h : foreignTableWidgets_) {
-//        for(const QWidget* w: h) {
-//            qDebug() << "ADDING HEIGHT OF SUBWIDGET " << w->height();
-//            height += w->sizeHint().height();
-//        }
-//    }
-
-
-//    QModelIndex idx = rootIndex();
-//    while(idx.isValid()) {
-//        height += rowHeight(idx);
-//        idx = idx.child(0,0);
-//    }
-    //sz.setHeight(height);
-    return sz;
+void TableView::adjustColumnSizes(const QModelIndex &topLeft, const QModelIndex &bottomRight) {
+    for(int i = topLeft.column(); i < bottomRight.column(); ++i)
+        resizeColumnToContents(i);
 }
 
 void TableView::setModel(QAbstractItemModel *m) {
@@ -102,87 +82,67 @@ void TableView::setModel(QAbstractItemModel *m) {
 
     if(model()) {
         disconnect(model());
-        for(QHash<int, QWidget*>& h : foreignTableWidgets_)
+        for(QHash<int, QWidget*>& h : foreignTableViews)
             qDeleteAll(h);
-        foreignTableWidgets_.clear();
+        foreignTableViews.clear();
     }
-    auto resizeFn = [=](const QModelIndex& topLeft, const QModelIndex& bottomRight){
-            for(int i = topLeft.column(); i < bottomRight.column(); ++i)
-                resizeColumnToContents(i);
-        };
 
     if(m) {
-    connect(m, &QAbstractItemModel::modelAboutToBeReset, [=](){showLoadingOverlay(true);});
-    connect(m, &QAbstractItemModel::modelReset, [=](){
-        showLoadingOverlay(false);
-    });
-    connect(m, &QAbstractItemModel::dataChanged, resizeFn);
-}
+        connect(m, &QAbstractItemModel::rowsAboutToBeRemoved, [=](){showLoadingOverlay(true);});
+        connect(m, &QAbstractItemModel::rowsRemoved, [=](){showLoadingOverlay(false);});
+        connect(m, &QAbstractItemModel::modelAboutToBeReset, [=](){showLoadingOverlay(true);});
+        connect(m, &QAbstractItemModel::modelReset, [=](){showLoadingOverlay(false);});
+        connect(m, &QAbstractItemModel::dataChanged, this, &TableView::adjustColumnSizes);
+    }
+
     QTreeView::setModel(m);
-    if(m)
-    resizeFn(m->index(0,0),m->index(m->rowCount()-1,m->columnCount()-1));
-
-//    if(SqlContentModel* contentModel = dynamic_cast<SqlContentModel*>(m)) {
-//        contentModel->subwidgetFactory_ = this;
-//    }
+    if(m) // this maybe works better after the data has been loaded?
+        adjustColumnSizes(m->index(0,0),m->index(m->rowCount()-1,m->columnCount()-1));
 }
 
-QWidget* TableView::createTableView(const QModelIndex& index) {
-    //if(!foreignTableWidgets_.contains(index.row()) || !foreignTableWidgets_.value(index.row()).contains(index.column())) {
+QWidget* TableView::createChildTable(const QModelIndex& index) {
+    QFrame * frame = new QFrame(this);
+    frame->setLayout(new QVBoxLayout());
+    frame->layout()->setSpacing(0);
 
-        QFrame * f = new QFrame(this);
-        TableView* view = new TableView(f);
-        view->setMaximumHeight(QWIDGETSIZE_MAX);
-        view->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
-        //view->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
-        view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        //view->setMaximumHeight(99999);
-        qDebug() << "created view";
-        SqlContentModel* m = static_cast<SqlContentModel*>(model());
-        //setFirstColumnSpanned(index.row(), index, true);
-        SqlContentModel* childModel = new SqlContentModel(m->db(), index.data(ForeignKeyTableRole).toString());
+    QLabel* label = new QLabel(frame);
+    QFont fnt("monospace");
+    fnt.setBold(true);
+    fnt.setPixelSize(this->font().pixelSize() * 3/4);
+    label->setFont(fnt);
+    label->setText("SELECT * FROM `" + index.data(ForeignKeyTableRole).toString() + "` WHERE `" + index.data(ForeignKeyColumnRole).toString() + "` = '" + index.data().toString() + "'");
+    frame->layout()->addWidget(label);
+
+    TableView* view = new TableView(frame);
+    view->setMaximumHeight(QWIDGETSIZE_MAX);
+    view->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    TableModel* m = static_cast<TableModel*>(model());
+    if(m) {
+        TableModel* childModel = new TableModel(*m, index.data(ForeignKeyTableRole).toString());
         view->setModel(childModel);
-        qDebug() << index.data(ForeignKeyColumnRole).toString() << "=" << index.data().toString();
         childModel->describe(Filter{index.data(ForeignKeyColumnRole).toString(), "=", index.data().toString()});
-        qDebug() << "returning view";
-        f->setLayout(new QVBoxLayout());
-        //f->layout()->setContentsMargins(0,0,0,0);
-        f->layout()->setSpacing(0);
-        QLabel* label = new QLabel(f);
-        QFont fnt("monospace");
-        fnt.setBold(true);
-        fnt.setPixelSize(this->font().pixelSize() * 3/4);
-        label->setFont(fnt);
-        label->setText("SELECT * FROM `" + index.data(ForeignKeyTableRole).toString() + "` WHERE `" + index.data(ForeignKeyColumnRole).toString() + "` = '" + index.data().toString() + "'");
-        f->layout()->addWidget(label);
-        f->layout()->addWidget(view);
+    }
+    frame->layout()->addWidget(view);
 
-return f;
-        //foreignTableWidgets_[index.row()][index.column()] = f;
-//            QHash<int,QWidget*> h = foreignTableWidgets_[index.row()];
-//            h.insert(index.column(), subwidgetFactory_->createTableView(index));
-//            foreignTableWidgets_.insert(index.row(), h);
-        //foreignTableWidgets_[index.row()].insert(index.column(), subwidgetFactory_->createTableView(index));
-    //}
-
-    //return foreignTableWidgets_.value(index.row()).value(index.column());
-
+    return frame;
 }
 
 void TableView::resizeEvent(QResizeEvent *event) {
     QTreeView::resizeEvent(event);
-    loadingOverlay_->setGeometry(geometry());
+    loadingOverlay->setGeometry(geometry());
 }
 
 void TableView::showLoadingOverlay(bool show) {
-    loadingOverlay_->setVisible(show);
+    loadingOverlay->setVisible(show);
 }
 
 void TableView::openMenu(QPoint p) {
     QModelIndex index = indexAt(p);
-    ctxMenu_->popup(viewport()->mapToGlobal(p));
-    nullAction_->setEnabled(index.isValid());
-    deleteRowAction_->setEnabled(index.isValid());
+    contextMenu->popup(viewport()->mapToGlobal(p));
+    setNullAction->setEnabled(index.isValid());
+    deleteRowAction->setEnabled(index.isValid());
 }
 
 void TableView::handleSetNull() {
@@ -193,85 +153,42 @@ void TableView::handleDeleteRow() {
     QSet<int> rows;
     for(const QModelIndex& i : selectedIndexes())
         rows << i.row();
-    ((AbstractSqlModel*) model())->deleteRows(rows);
+    ((SqlModel*) model())->deleteRows(rows);
     clearSelection();
-//    QEvent event{QEvent::Type(RefreshEvent)};
-//    model()->event(&event);
 }
 
 void TableView::handleAddRow() {
     int newRow = model()->rowCount();
     model()->insertRow(newRow);
-    edit(model()->index(newRow, 0));
-}
-void TableView::paintEvent(QPaintEvent *event) {
-//    for(QHash<int, QWidget*>& h : foreignTableWidgets_) {
-//        for(QWidget* w : h) {
-//            if(w->isVisible() && )
-//            w->hide();
-//        }
-//    }
-    QTreeView::paintEvent(event);
+    QModelIndex newRowIndex = model()->index(newRow, 0);
+    setCurrentIndex(newRowIndex);
+    edit(newRowIndex);
 }
 
-void TableView::handleRequestForeignKey(const QModelIndex& index) {
-//    QString table = index.data(ForeignKeyTableRole).toString();
-//    QString column = index.data(ForeignKeyColumnRole).toString();
-//    QVariant value = index.data();
-    qDebug() << index;
+void TableView::toggleForeignTable(const QModelIndex& index) {
     QModelIndex first = index.sibling(index.row(), 0);
-    qDebug() << first;
-    qDebug() << "exanded:"<<isExpanded(first);
     if(isExpanded(first)) {
         collapse(first);
         model()->setData(first, -1, ExpandedColumnIndexRole);
-    }else {
+
+    } else {
         model()->setData(first, index.column(), ExpandedColumnIndexRole);
         QModelIndex child = model()->index(0, 0, first);
         setFirstColumnSpanned(child.row(), first, true);
-        QWidget* subTable = createTableView(index);
-
-
-
-
+        QWidget* subTable = createChildTable(index);
 
         if(indexWidget(child) != subTable)
             setIndexWidget(child, subTable);
-    expand(first);
-
-
-    //update();
+        expand(first);
     }
-    QWidget* p = this;// subTable->parentWidget();
-    while(p) {
+
+    // force the recursive resizing of any parent TableViews in response to this change
+    for(QWidget* p = this; p; p = p->parentWidget()) {
         TableView* tv = qobject_cast<TableView*>(p);
         if(tv) {
-            qDebug() << "----------updating tableview " << tv ;
             tv->updateGeometry();
-            tv->recalculateRowHeights();
+            tv->scheduleDelayedItemsLayout();
         }
-        //p->update();
-        //qDebug() << "next parent is " << p->parent();
-        p = p->parentWidget();//qobject_cast<TableView*>(p->parent());
     }
 
-#if 0
-    QWidget* w = createTableView(first);
-    QWidget* p = w->parentWidget();
-
-    //TableView* p = qobject_cast<TableView*>(w->parent());
-    while(p) {
-        TableView* tv = qobject_cast<TableView*>(p);
-        if(tv) {
-            qDebug() << "----------updating tableview " << tv ;
-            tv->updateGeometry();
-            tv->recalculateRowHeights();
-        }
-        //p->update();
-        //qDebug() << "next parent is " << p->parent();
-        p = p->parentWidget();//qobject_cast<TableView*>(p->parent());
-    }
-    this->setIndexWidget();
-#endif
-    //emit foreignQuery(table, column, value);
 }

@@ -14,7 +14,6 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
-#include <QDebug>
 
 TableList::TableList(QWidget *parent) :
     QWidget(parent)

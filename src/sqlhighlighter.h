@@ -10,25 +10,24 @@
 
 #include <QSyntaxHighlighter>
 
-class SqlHighlighter : public QSyntaxHighlighter
-{
+class SqlHighlighter : public QSyntaxHighlighter {
     Q_OBJECT
 public:
     explicit SqlHighlighter(QTextDocument* parent);
 
 protected:
-     void highlightBlock(const QString &text);
+    virtual void highlightBlock(const QString &text) override;
 
- private:
+private:
      struct Rule {
          QRegExp pattern;
          QTextCharFormat format;
      };
-     QVector<Rule> rules_;
-     QTextCharFormat comment_;
+     QVector<Rule> rules;
+     QTextCharFormat comment;
 
-     QRegExp commentStart_;
-     QRegExp commentEnd_;
+     QRegExp commentStart;
+     QRegExp commentEnd;
 };
 
 #endif // _SEQUELJOE_SQLHIGHLIGHTER_H_

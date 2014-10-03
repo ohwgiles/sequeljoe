@@ -56,25 +56,25 @@ LoadingOverlay::LoadingOverlay(QWidget *parent) :
     if(spinner == nullptr)
         spinner = new Spinner(60, 50);
 
-    timeline_ = new QTimeLine(1000);
-    timeline_->setFrameRange(0,360);
-    timeline_->setCurveShape(QTimeLine::LinearCurve);
-    connect(timeline_, SIGNAL(frameChanged(int)), this, SLOT(repaint()));
-    timeline_->setLoopCount(0); // loop forever
+    timeline = new QTimeLine(1000);
+    timeline->setFrameRange(0,360);
+    timeline->setCurveShape(QTimeLine::LinearCurve);
+    connect(timeline, SIGNAL(frameChanged(int)), this, SLOT(repaint()));
+    timeline->setLoopCount(0); // loop forever
 }
 
 LoadingOverlay::~LoadingOverlay() {
-    delete timeline_;
+    delete timeline;
 }
 
 void LoadingOverlay::showEvent(QShowEvent *e) {
     QWidget::showEvent(e);
-    timeline_->start();
+    timeline->start();
 }
 
 void LoadingOverlay::hideEvent(QHideEvent * e) {
     QWidget::hideEvent(e);
-    timeline_->stop();
+    timeline->stop();
 }
 
 void LoadingOverlay::paintEvent(QPaintEvent * e) {
@@ -86,7 +86,7 @@ void LoadingOverlay::paintEvent(QPaintEvent * e) {
 
     const QPixmap& px = spinner->pixmap();
     painter.translate(r.width()/2,r.height()/2);
-    painter.rotate(timeline_->currentFrame());
+    painter.rotate(timeline->currentFrame());
     painter.drawPixmap(-px.width()/2,-px.width()/2,spinner->pixmap());
 }
 

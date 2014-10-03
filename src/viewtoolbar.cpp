@@ -16,17 +16,17 @@
 ViewToolBar::ViewToolBar(QWidget *parent) :
     QToolBar(parent)
 {
-    group_ = new QActionGroup(this);
+    group = new QActionGroup(this);
     setIconSize(QSize(20,20));
     setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
     // adding a dummy space widget appears to even out the toolbar
     addWidget(new QWidget(this));
 
-    dbSelect_ = new QComboBox(this);
-    dbSelect_->setMinimumWidth(150);
-    connect(dbSelect_, SIGNAL(activated(int)), this, SLOT(dbComboModified(int)));
-    addWidget(dbSelect_);
+    dbSelect = new QComboBox(this);
+    dbSelect->setMinimumWidth(150);
+    connect(dbSelect, SIGNAL(activated(int)), this, SLOT(dbComboModified(int)));
+    addWidget(dbSelect);
 
     addAction(":content", "Content", SLOT(showContent()))->setChecked(true);
     addAction(":schema", "Schema", SLOT(showStructure()));
@@ -44,7 +44,7 @@ QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot) {
     a->setEnabled(false);
     a->setCheckable(true);
     // allows checkable exclusivity
-    group_->addAction(a);
+    group->addAction(a);
     return a;
 }
 
@@ -56,20 +56,20 @@ void ViewToolBar::enableAll(bool enabled) {
 }
 
 void ViewToolBar::populateDatabases(QStringList names) {
-    QString current = dbSelect_->currentText();
-    dbSelect_->clear();
-    dbSelect_->addItem("Choose Database...");
-    dbSelect_->insertSeparator(1);
-    dbSelect_->addItems(names);
+    QString current = dbSelect->currentText();
+    dbSelect->clear();
+    dbSelect->addItem("Choose Database...");
+    dbSelect->insertSeparator(1);
+    dbSelect->addItems(names);
     if(!current.isEmpty())
-        dbSelect_->setCurrentText(current);
+        dbSelect->setCurrentText(current);
 }
 
 void ViewToolBar::setCurrentDatabase(QString name) {
-    dbSelect_->setCurrentText(name);
+    dbSelect->setCurrentText(name);
 }
 
 void ViewToolBar::dbComboModified(int indx) {
     if(indx > 0)
-        emit dbChanged(dbSelect_->currentText());
+        emit dbChanged(dbSelect->currentText());
 }

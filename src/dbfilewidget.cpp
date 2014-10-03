@@ -26,6 +26,7 @@ DbFileWidget::DbFileWidget(QWidget *parent) :
     browseButton_ = new QToolButton(this);
     browseButton_->setIconSize(QSize(sz-6,sz-6));
     browseButton_->setFixedSize(sz,sz);
+    // hacky fine-tuning adjustment
     browseButton_->setStyleSheet("QToolButton{margin-left: -1px}");
     layout->addWidget(browseButton_);
 
@@ -45,7 +46,7 @@ void DbFileWidget::browseButtonClicked() {
         return;
     field_->clear();
     field_->setText(file);
-    changed(true, field_->text());
+    changed(field_->text());
 }
 
 void DbFileWidget::toggleMode(bool asFile, bool doEmit) {
@@ -54,10 +55,10 @@ void DbFileWidget::toggleMode(bool asFile, bool doEmit) {
         browseButton_->setIcon(QIcon(":browse"));
         browseButton_->show();
         if(doEmit)
-            emit changed(true, field_->text());
+            emit changed(field_->text());
     } else { // name mode
         browseButton_->hide();
-        if(doEmit) emit changed(false, field_->text());
+        if(doEmit) emit changed(field_->text());
     }
 }
 
@@ -67,5 +68,5 @@ void DbFileWidget::setValue(bool file, QString value) {
 }
 
 void DbFileWidget::textEdited(QString v) {
-    emit changed(false, field_->text());
+    emit changed(field_->text());
 }

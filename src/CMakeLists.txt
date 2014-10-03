@@ -15,13 +15,13 @@ qt5_add_resources(SRC_RESOURCES icons.qrc)
 
 configure_file(../osxbundle.sh.in osxbundle.sh @ONLY)
 
-set(SOURCES main.cpp mainwindow.cpp sshdbconnection.cpp dbconnection.cpp
+set(SOURCES main.cpp mainwindow.cpp dbconnection.cpp
 sshthread.cpp mainpanel.cpp connectionwidget.cpp filteredpagedtableview.cpp
 favourites.cpp viewtoolbar.cpp tablecell.cpp tableview.cpp tabwidget.cpp
-querypanel.cpp sqlcontentmodel.cpp sqlhighlighter.cpp sqlschemamodel.cpp
-tablelist.cpp passkeywidget.cpp querylog.cpp loadingoverlay.cpp querymodel.cpp
-dbfilewidget.cpp schemaview.cpp sqlindexmodel.cpp editablesqlmodel.cpp
-textcelleditor.cpp)
+querypanel.cpp sqlmodel.cpp sqlhighlighter.cpp schemamodel.cpp
+tablelist.cpp passkeywidget.cpp querylog.cpp loadingoverlay.cpp
+dbfilewidget.cpp schemaview.cpp
+textcelleditor.cpp driver.cpp tablemodel.cpp)
 
 if(APPLE OR WIN32)
     set(exe "SequelJoe")
@@ -43,10 +43,9 @@ elseif(UNIX)
     # linux
     # libnotify depends on glib
     find_package(PkgConfig REQUIRED)
-	pkg_check_modules(GLIB2 REQUIRED glib-2.0)
-	pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
+    pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+    pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
     include_directories(${GLIB2_INCLUDE_DIRS} ${LIBNOTIFY_INCLUDE_DIRS})
-    message(${LIBNOTIFY_LIBRARIES})
     set(SOURCES ${SOURCES} notify_libnotify.cpp)
     set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBNOTIFY_LIBRARIES})
 endif(APPLE)

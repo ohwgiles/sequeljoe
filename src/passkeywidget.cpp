@@ -18,61 +18,61 @@ PassKeyWidget::PassKeyWidget(QWidget *parent) :
     QBoxLayout* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
     layout->setSpacing(0);
-    field_ = new QLineEdit(this);
-    layout->addWidget(field_);
+    field = new QLineEdit(this);
+    layout->addWidget(field);
 
-    int sz = field_->sizeHint().height();
+    int sz = field->sizeHint().height();
 
-    keyButton_ = new QToolButton(this);
-    keyButton_->setIconSize(QSize(sz-6,sz-6));
-    keyButton_->setFixedSize(sz,sz);
-    keyButton_->setStyleSheet("QToolButton{margin-left: -1px}");
-    layout->addWidget(keyButton_);
+    keyButton = new QToolButton(this);
+    keyButton->setIconSize(QSize(sz-6,sz-6));
+    keyButton->setFixedSize(sz,sz);
+    keyButton->setStyleSheet("QToolButton{margin-left: -1px}");
+    layout->addWidget(keyButton);
 
-    connect(keyButton_, SIGNAL(clicked()), this, SLOT(keyButtonClicked()));
-    connect(field_, SIGNAL(textEdited(QString)), this, SLOT(textEdited(QString)));
+    connect(keyButton, SIGNAL(clicked()), this, SLOT(keyButtonClicked()));
+    connect(field, SIGNAL(textEdited(QString)), this, SLOT(textEdited(QString)));
 
     toggleMode(false);
 }
 
 QSize PassKeyWidget::sizeHint() const {
-    return field_->sizeHint();
+    return field->sizeHint();
 }
 
 void PassKeyWidget::keyButtonClicked() {
-    bool isKeyMode = field_->isReadOnly();
+    bool isKeyMode = field->isReadOnly();
     if(isKeyMode) {
-        field_->clear();
+        field->clear();
     } else {
         QString file = QFileDialog::getOpenFileName(this, "Select Key");
         if(file.isNull()) return;
-        field_->clear();
-        field_->setText(file);
+        field->clear();
+        field->setText(file);
     }
     toggleMode(!isKeyMode);
 }
 
 void PassKeyWidget::toggleMode(bool key, bool doEmit) {
     if(key) { // key mode
-        field_->setEchoMode(QLineEdit::Normal);
-        field_->setReadOnly(true);
-        field_->end(false);
-        keyButton_->setIcon(QIcon(":remove"));
+        field->setEchoMode(QLineEdit::Normal);
+        field->setReadOnly(true);
+        field->end(false);
+        keyButton->setIcon(QIcon(":remove"));
         if(doEmit)
-            emit changed(true, field_->text());
+            emit changed(true, field->text());
     } else { // password mode
-        field_->setEchoMode(QLineEdit::Password);
-        field_->setReadOnly(false);
-        keyButton_->setIcon(QIcon(":key"));
-        if(doEmit) emit changed(false, field_->text());
+        field->setEchoMode(QLineEdit::Password);
+        field->setReadOnly(false);
+        keyButton->setIcon(QIcon(":key"));
+        if(doEmit) emit changed(false, field->text());
     }
 }
 
 void PassKeyWidget::setValue(bool key, QString value) {
-    field_->setText(value);
+    field->setText(value);
     toggleMode(key, false);
 }
 
 void PassKeyWidget::textEdited(QString v) {
-    emit changed(false, field_->text());
+    emit changed(false, field->text());
 }

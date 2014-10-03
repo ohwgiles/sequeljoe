@@ -7,19 +7,16 @@
  */
 #include "mainwindow.h"
 
-
-#include "sshdbconnection.h"
 #include "tabwidget.h"
 #include "mainpanel.h"
 
-#include <libssh2.h>
 #include <QSqlTableModel>
 #include <QSettings>
 #include <QMenuBar>
 #include <QVBoxLayout>
 #include <QPushButton>
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
 {
     setWindowIcon(QIcon(":icon"));
@@ -36,22 +33,22 @@ MainWindow::MainWindow(QWidget *parent) :
     layout->setContentsMargins(0, 0, 0, 0);
 
     { // tab bar
-        tabs_ = new TabWidget(centralWidget);
-        connect(tabs_, SIGNAL(currentChanged(int)), this, SLOT(handleTabChanged(int)));
-        tabs_->setCurrentIndex(0);
-        layout->addWidget(tabs_);
-        connect(tabs_, SIGNAL(tabCloseRequested(int)), this, SLOT(handleTabClosed(int)));
-        connect(tabs_, SIGNAL(newTab()), this, SLOT(newTab()));
+        tabs = new TabWidget(centralWidget);
+        connect(tabs, SIGNAL(currentChanged(int)), this, SLOT(handleTabChanged(int)));
+        tabs->setCurrentIndex(0);
+        layout->addWidget(tabs);
+        connect(tabs, SIGNAL(tabCloseRequested(int)), this, SLOT(handleTabClosed(int)));
+        connect(tabs, SIGNAL(newTab()), this, SLOT(newTab()));
     }
 
     setCentralWidget(centralWidget);
     newTab();
 
     QSettings s;
-    this->restoreGeometry(s.value("geometry").toByteArray());
+    restoreGeometry(s.value("geometry").toByteArray());
 }
 
-void MainWindow::closeEvent(QCloseEvent *) {
+void MainWindow::closeEvent(QCloseEvent*) {
     QSettings s;
     s.setValue("geometry", saveGeometry());
 }
@@ -59,31 +56,31 @@ void MainWindow::closeEvent(QCloseEvent *) {
 void MainWindow::newTab() {
     MainPanel* w = new MainPanel(this);
     connect(w, SIGNAL(nameChanged(QWidget*,QString)), this, SLOT(updateTabName(QWidget*,QString)));
-    tabs_->insertTab(tabs_->lastActiveIndex()+1, w, QString("New Connection"));
-    tabs_->setCurrentWidget(w);
+    tabs->insertTab(tabs->lastActiveIndex()+1, w, QString("New Connection"));
+    tabs->setCurrentWidget(w);
 }
 
 void MainWindow::handleTabChanged(int index) {
-    setWindowTitle(tabs_->tabText(index) + " - SequelJoe");
+    setWindowTitle(tabs->tabText(index) + " - SequelJoe");
 }
 
 void MainWindow::handleTabClosed(int index) {
-    MainPanel* panel = (MainPanel*) tabs_->widget(index);
+    MainPanel* panel = (MainPanel*) tabs->widget(index);
     panel->disconnectDb();
-    if(tabs_->count() > 1) {
+    if(tabs->count() > 1) {
         // if this is the last real tab (not including the + tab), we have to select
         // the previous tab first, so that the + tab is not auto-selected, creating
         // a new tab
         if(index == 0)
             newTab();
-        if(index > 0 && index + 2 == tabs_->count()) {
-            tabs_->setCurrentIndex(index-1);
+        if(index > 0 && index + 2 == tabs->count()) {
+            tabs->setCurrentIndex(index-1);
         }
         delete panel;
     }
 }
 
-void MainWindow::updateTabName(QWidget * tab, QString name) {
-    tabs_->setTabText(tabs_->indexOf(tab), name);
-    handleTabChanged(tabs_->indexOf(tab));
+void MainWindow::updateTabName(QWidget* tab, QString name) {
+    tabs->setTabText(tabs->indexOf(tab), name);
+    handleTabChanged(tabs->indexOf(tab));
 }

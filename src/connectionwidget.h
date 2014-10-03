@@ -5,8 +5,8 @@
  * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
  * for more information
  */
-#ifndef _SEQUELJOE_CONNECTION_WIDGET_H_
-#define _SEQUELJOE_CONNECTION_WIDGET_H_
+#ifndef _SEQUELJOE_CONNECTIONWIDGET_H_
+#define _SEQUELJOE_CONNECTIONWIDGET_H_
 
 #include <QWidget>
 
@@ -34,14 +34,14 @@ signals:
     void nameChanged(QString);
 
 public slots:
-    void loadSettings(QString);
+    void loadSettings(QString groupName);
 
 private slots:
     void setupNameChanged(QString);
     void setupHostChanged(QString);
     void setupPortChanged(QString);
-    void setupSqlTypeChanged(QString);
-    void setupDbChanged(bool, QString);
+    void setupSqlTypeChanged(int);
+    void setupDbChanged(QString);
     void setupUserChanged(QString);
     void setupPassChanged(QString);
     void setupUseSshChanged(bool);
@@ -52,20 +52,22 @@ private slots:
     void connectButtonClicked();
 
 private:
-    QString group_;
-    QLineEdit* name_;
-    QLineEdit* host_;
-    QLineEdit* port_;
-    QComboBox* sqlType_;
-    DbFileWidget* dbName_;
-    QLineEdit* username_;
-    QLineEdit* password_;
-    QCheckBox* chkUseSsh_;
-    QLineEdit* sshHost_;
-    QLineEdit* sshPort_;
-    QLineEdit* sshUsername_;
-    PassKeyWidget* sshPassKey_;
-    Favourites* favourites_;
+    bool dbTypeIsFile(int type) const;
+
+    QString group;
+    QLineEdit* name;
+    QLineEdit* host;
+    QLineEdit* port;
+    QComboBox* sqlType;
+    DbFileWidget* dbName;
+    QLineEdit* username;
+    QLineEdit* password;
+    QCheckBox* chkUseSsh;
+    QLineEdit* sshHost;
+    QLineEdit* sshPort;
+    QLineEdit* sshUsername;
+    PassKeyWidget* sshPassKey;
+    Favourites* favourites;
 };
 
-#endif // _SEQUELJOE_CONNECTION_WIDGET_H_
+#endif // _SEQUELJOE_CONNECTIONWIDGET_H_

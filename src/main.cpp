@@ -8,12 +8,14 @@
 #include "mainwindow.h"
 #include "notify.h"
 #include "dbconnection.h"
+#include "tabledata.h"
+
 #include <QApplication>
 #include <QProxyStyle>
 #include <QMenu>
 #include <QSqlQuery>
-#include <QVector>
-#include "tabledata.h"
+
+#ifdef __APPLE__
 class MacFontStyle : public QProxyStyle {
 protected:
     void polish(QWidget *w) {
@@ -22,24 +24,24 @@ protected:
             w->setAttribute(Qt::WA_MacSmallSize);
     }
 };
+#endif // __APPLE__
 
 int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain("sequeljoe.org");
     notify = new Notifier();
 
     QApplication a(argc, argv);
+
     qRegisterMetaType<QSqlQuery*>("QSqlQuery*");
-
     qRegisterMetaType<const char*>("const char*");
-
-qRegisterMetaType<TableMetadata>("TableMetadata");
-qRegisterMetaType<TableData>("TableData");
-qRegisterMetaType<Indices>("Indices");
+    qRegisterMetaType<TableMetadata>("TableMetadata");
+    qRegisterMetaType<TableData>("TableData");
+    qRegisterMetaType<Indices>("Indices");
 
 #ifdef __APPLE__
     // prevents the font size from appearing overly large on OSX
     a.setStyle(new MacFontStyle);
-#endif
+#endif // __APPLE__
 
     MainWindow w;
     w.show();    

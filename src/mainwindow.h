@@ -25,10 +25,11 @@ private slots:
     void handleTabChanged(int);
     void newTab();
     void handleTabClosed(int index);
+
     virtual void closeEvent(QCloseEvent *);
 
 private:
-    TabWidget* tabs_;
+    TabWidget* tabs;
 };
 
 #endif // _SEQUELJOE_MAINWINDOW_H_

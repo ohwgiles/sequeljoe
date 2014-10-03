@@ -17,7 +17,8 @@ class PassKeyWidget : public QWidget {
     Q_OBJECT
 public:
     explicit PassKeyWidget(QWidget* parent = 0);
-    QSize sizeHint() const;
+    virtual QSize sizeHint() const override;
+
     void setValue(bool key, QString value);
 
 signals:
@@ -29,8 +30,8 @@ protected slots:
     void textEdited(QString);
 
 private:
-    QLineEdit* field_;
-    QToolButton* keyButton_;
+    QLineEdit* field;
+    QToolButton* keyButton;
 };
 
 #endif // _SEQUELJOE_PASSKEYWIDGET_H_

@@ -9,12 +9,10 @@
 #define _SEQUELJOE_MAINPANEL_H_
 
 #include "viewtoolbar.h"
+
 #include <QWidget>
 #include <QModelIndex>
 #include <QHash>
-#include "sqlcontentmodel.h" // for filter, move to own class
-
-#include "schemaview.h" // for ModelGroup, move out?
 
 class ConnectionWidget;
 class FilteredPagedTableView;
@@ -22,7 +20,7 @@ class SchemaView;
 class DbConnection;
 class TableList;
 class QueryLog;
-class SqlContentModel;
+class TableModel;
 class SqlSchemaModel;
 
 class QTableView;
@@ -48,53 +46,51 @@ signals:
 
 public slots:
     void toggleEditSettings(bool showSettings = true);
-
     void openConnection(QString name);
-
     void tableChanged(QString name);
-
     void changeSort(int, Qt::SortOrder);
-
     void openPanel(ViewToolBar::Panel);
-
     void disconnectDb();
-
     void dbChanged(QString);
+
+protected:
+    void resizeEvent(QResizeEvent *) override;
 
 private slots:
     void addTable();
     void deleteTable();
     void refreshTables();
-    void jumpToQuery(QString table, QString column, QVariant value);
 
     void databaseConnected();
     void connectionFailed(QString reason);
     void confirmUnknownHost(QString fingerprint, bool* ok);
 
     void tableListChanged();
-protected:
-    void resizeEvent(QResizeEvent *) override;
+
 private:
     void updateContentModel(QString tableName);
     void updateSchemaModel(QString tableName);
 
-    DbConnection* db_;
-    ConnectionWidget* settings_;
-    QSplitter* contentSchemaSplit_;
-    QSplitter* logSplit_;
-    TableList* tableChooser_;
-    FilteredPagedTableView* content_;
-    SchemaView* structure_;
-    ViewToolBar* toolbar_;
-    QueryPanel* queryWidget_;
-    QueryLog* queryLog_;
-    QThread* backgroundWorker_;
-    Filter jumpToTableFilter_;
-    QWidget* loadingOverlay_;
+    DbConnection* db;
+    QThread* backgroundWorker;
+    QWidget* loadingOverlay;
 
-    QHash<QString, SqlContentModel*> contentModels_;
-    QHash<QString, SchemaView::ModelGroup> schemaModels_;
+    QHash<QString, TableModel*> contentModels;
+    struct SchemaModels {
+        QAbstractItemModel* index;
+        QAbstractItemModel* schema;
+    };
+    QHash<QString, SchemaModels> schemaModels;
 
+    ConnectionWidget* settingsPanel;
+    QSplitter* splitTableChooser;
+    QSplitter* splitLogViewer;
+    TableList* tableChooser;
+    FilteredPagedTableView* contentView;
+    SchemaView* schemaView;
+    ViewToolBar* toolbar;
+    QueryPanel* queryWidget;
+    QueryLog* queryLog;
 };
 
 #endif // _SEQUELJOE_MAINPANEL_H_

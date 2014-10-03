@@ -11,23 +11,20 @@
 #include <QHeaderView>
 #include <QSqlError>
 #include <QDateTime>
-#include <QDebug>
 
 QueryLog::QueryLog(QWidget *parent) :
     QTableWidget(parent)
 {
     setColumnCount(1);
     setAlternatingRowColors(true);
+    setEditTriggers(QTableWidget::NoEditTriggers);
     setSelectionMode(QAbstractItemView::NoSelection);
-    //setSelectionBehavior(QAbstractItemView::SelectRows);
     setShowGrid(false);
-    //setItemDelegate(new TableCell());
 
     verticalHeader()->setDefaultSectionSize(verticalHeader()->minimumSectionSize());
     verticalHeader()->setVisible(false);
     horizontalHeader()->setStretchLastSection(true);
     horizontalHeader()->setVisible(false);
-
 }
 
 

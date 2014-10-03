@@ -18,8 +18,6 @@ class QueryLog : public QTableWidget
 public:
     explicit QueryLog(QWidget *parent = 0);
 
-signals:
-
 public slots:
     void logQuery(QString query, QString status);
 };

@@ -1,24 +1,29 @@
+/*
+ * Copyright 2014 Oliver Giles
+ *
+ * This file is part of SequelJoe. SequelJoe is licensed under the
+ * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
+ * for more information
+ */
 #include "textcelleditor.h"
 
 #include <QVBoxLayout>
 #include <QPlainTextEdit>
-#include <QDebug>
+
 TextCellEditor::TextCellEditor(QWidget *parent) :
     QDialog(parent)
 {
-    this->setModal(true);
-    qDebug() << parent;
+    setModal(true);
     QBoxLayout* l = new QVBoxLayout(this);
-    editor_ = new QPlainTextEdit(this);
+    editor = new QPlainTextEdit(this);
     setWindowTitle("Edit Text");
-//setGeometry(parent->geometry());
-    l->addWidget(editor_);
-    //setLayout(l);
+    l->addWidget(editor);
 }
+
 void TextCellEditor::setContent(const QString& txt) {
-    editor_->document()->setPlainText(txt);
+    editor->document()->setPlainText(txt);
 }
 
 QString TextCellEditor::content() const {
-    return editor_->document()->toPlainText();
+    return editor->document()->toPlainText();
 }

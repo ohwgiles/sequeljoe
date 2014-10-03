@@ -7,10 +7,9 @@
  */
 #include "querypanel.h"
 
-#include "dbconnection.h"
 #include "tableview.h"
 #include "sqlhighlighter.h"
-#include "querymodel.h"
+#include "sqlmodel.h"
 
 #include <QSplitter>
 #include <QTableView>
@@ -21,12 +20,11 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QLabel>
-#include <QDebug>
 #include <QAction>
 
 QueryPanel::QueryPanel(QWidget* parent) :
     QWidget(parent),
-    model_(0)
+    model(nullptr)
 {
     QBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
@@ -39,21 +37,20 @@ QueryPanel::QueryPanel(QWidget* parent) :
         QWidget* top = new QWidget(splitter);
         QBoxLayout* editorLayout = new QVBoxLayout(top);
         editorLayout->setContentsMargins(0,0,0,0);
-        //editorLayout->setSpacing(0);
 
-        editor_ = new QPlainTextEdit(this);
+        editor = new QPlainTextEdit(this);
         QFont f;
         f.setStyleHint(QFont::Monospace);
-        new SqlHighlighter(editor_->document());
-        editor_->setFont(f);
-        editorLayout->addWidget(editor_);
+        new SqlHighlighter(editor->document());
+        editor->setFont(f);
+        editorLayout->addWidget(editor);
 
-        error_ = new QLabel(this);
-        error_->setWordWrap(true);
-        error_->hide();
-        error_->setStyleSheet("QLabel{color:red;}");
-        error_->setContentsMargins(8,8,8,8);
-        editorLayout->addWidget(error_);
+        error = new QLabel(this);
+        error->setWordWrap(true);
+        error->hide();
+        error->setStyleSheet("QLabel{color:red;}");
+        error->setContentsMargins(8,8,8,8);
+        editorLayout->addWidget(error);
 
         QAction* runQueryAction = new QAction(this);
         QKeySequence ctrlEnter(Qt::CTRL + Qt::Key_Return);
@@ -62,15 +59,12 @@ QueryPanel::QueryPanel(QWidget* parent) :
 
         QBoxLayout* toolbar = new QHBoxLayout();
         QPushButton* run = new QPushButton("Run Query (" + ctrlEnter.toString(QKeySequence::NativeText) + ")", this);
-        //run->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         toolbar->addWidget(run);
         editorLayout->addLayout(toolbar);
 
         splitter->addWidget(top);
 
-
-        //run->addAction(runQueryAction);
-        connect(editor_, SIGNAL(textChanged()), error_, SLOT(hide()));
+        connect(editor, SIGNAL(textChanged()), error, SLOT(hide()));
         connect(runQueryAction, SIGNAL(triggered()), this, SLOT(executeQuery()));
         connect(run, SIGNAL(clicked()), runQueryAction, SIGNAL(triggered()));
     }
@@ -81,36 +75,30 @@ QueryPanel::QueryPanel(QWidget* parent) :
         v->setContentsMargins(0,0,0,0);
         v->setSpacing(0);
 
-        results_ = new TableView(this);
-        results_->setModel(model_);
-        v->addWidget(results_);
+        results = new TableView(this);
+        results->setModel(model);
+        v->addWidget(results);
 
-        status_ = new QLabel(bottom);
-        status_->hide();
-        v->addWidget(status_);
+        status = new QLabel(bottom);
+        status->hide();
+        v->addWidget(status);
 
         bottom->setLayout(v);
         splitter->addWidget(bottom);
     }
     layout->addWidget(splitter);
 }
-void QueryPanel::setDb(DbConnection *db) {
-    model_ = new QueryModel(*db);
-    results_->setModel(model_);
+
+void QueryPanel::setModel(SqlModel *m) {
+    if(model)
+        delete model;
+    model = m;
+    results->setModel(m);
 }
 
 void QueryPanel::executeQuery() {
-    error_->hide();
-    status_->hide();
-    model_->setQuery(editor_->document()->toPlainText());
-model_->refresh();
-return;
-#if 0
-//begin
-//    results_->showLoadingOverlay(true);
-    query_->prepare(editor_->document()->toPlainText());
-    QMetaObject::invokeMethod(db_, "execQuery", Q_ARG(QSqlQuery*, query_),
-                              Q_ARG(QObject*, this), Q_ARG(const char*, "queryFinished"));
-#endif
-    //db_->execQuery(q);
+    error->hide();
+    status->hide();
+    model->setQuery(editor->document()->toPlainText());
+    model->select();
 }

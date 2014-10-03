@@ -8,11 +8,12 @@
 #include "schemaview.h"
 
 #include "tableview.h"
-#include "abstractsqlmodel.h"
+#include "sqlmodel.h"
 #include <QSplitter>
 #include <QVBoxLayout>
 #include <QTreeView>
 #include <QLabel>
+
 SchemaView::SchemaView(QWidget *parent) :
     QWidget(parent)
 {
@@ -22,35 +23,18 @@ SchemaView::SchemaView(QWidget *parent) :
     QSplitter* splitter = new QSplitter(this);
     splitter->setOrientation(Qt::Vertical);
 
-    columns_ = new TableView(this);
-    splitter->addWidget(columns_);
+    columns = new TableView(this);
+    columns->setUniformRowHeights(true);
+    splitter->addWidget(columns);
 
-    indexes_ = new TableView(this);
-    //indexes_->setUniformRowHeights(true);
-    splitter->addWidget(indexes_);
+    indexes = new TableView(this);
+    indexes->setUniformRowHeights(true);
+    splitter->addWidget(indexes);
 
     layout->addWidget(splitter);
-//    layout->addWidget(indexes_);
 }
 
-void SchemaView::setModel(const ModelGroup &models) {
-    columns_->setModel(models.columnModel);
-    indexes_->setModel(models.indexModel);
-//    auto fn = [=](){
-//        if(models.indexModel) {
-//        for(int i = 0; i < models.indexModel->rowCount(); ++i)
-//        indexes_->setFirstColumnSpanned(i, QModelIndex{}, true);//models.indexModel->index(0,0)
-//        indexes_->expandAll();
-//        }
-//    };
-//    fn();
-//    connect(models.indexModel, &AbstractSqlModel::modelReset, fn);
-
-//    QLayoutItem* i;
-//    while((i = indexes_->takeAt(0))) {
-//        delete i->widget();
-//        delete i;
-//    }
-//    indexes_->addWidget(new QLabel("test"));
-
+void SchemaView::setModels(QAbstractItemModel* schema, QAbstractItemModel* index) {
+    columns->setModel(schema);
+    indexes->setModel(index);
 }

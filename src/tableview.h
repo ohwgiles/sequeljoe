@@ -10,21 +10,14 @@
 
 #include <QTreeView>
 
-#include "tablecell.h" // for subwidgetfactory, move
-
 class QMenu;
 class QAction;
-class TableView : public QTreeView, public SubwidgetFactory
+
+class TableView : public QTreeView
 {
     Q_OBJECT
 public:
     explicit TableView(QWidget *parent = 0);
-    virtual QWidget* createTableView(const QModelIndex& index) override;
-
-    virtual QSize sizeHint() const;
-void recalculateRowHeights();
-signals:
-    void foreignQuery(QString table, QString column, QVariant value);
 
 public slots:
     void openMenu(QPoint);
@@ -35,23 +28,25 @@ public slots:
 
     void setModel(QAbstractItemModel *model);
 
-
+protected slots:
+    void closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint hint) override;
 
 protected:
-    void resizeEvent(QResizeEvent *event);
-    void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
-    void handleRequestForeignKey(const QModelIndex&);
+    void toggleForeignTable(const QModelIndex&);
+    void adjustColumnSizes(const QModelIndex& topLeft, const QModelIndex& bottomRight);
 
 private:
-    QMenu* ctxMenu_;
-    QAction* nullAction_;
-    QAction* deleteRowAction_;
-    QAction* addRowAction_;
-    QWidget* loadingOverlay_;
-    QHash<int,QHash<int,QWidget*>> foreignTableWidgets_;
+    virtual QWidget* createChildTable(const QModelIndex& index);
 
+    QMenu* contextMenu;
+    QAction* setNullAction;
+    QAction* deleteRowAction;
+    QAction* addRowAction;
+    QWidget* loadingOverlay;
+    QHash<int,QHash<int,QWidget*>> foreignTableViews;
 };
 
 #endif // _SEQUELJOE_TABLEVIEW_H_
