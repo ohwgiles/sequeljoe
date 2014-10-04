@@ -25,10 +25,9 @@ protected:
     }
 };
 #endif // __APPLE__
-
+#include <QMessageBox>
 int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain("sequeljoe.org");
-    notify = new Notifier();
 
     QApplication a(argc, argv);
 
@@ -45,7 +44,8 @@ int main(int argc, char *argv[]) {
 
     MainWindow w;
     w.show();    
-
-    return a.exec();
+    a.exec();
+    Notifier::cleanup();
+    return 0;
 }
 

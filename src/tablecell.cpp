@@ -73,7 +73,7 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
             opt.rect.setWidth(indicatorWidth);
             QStyle* s = QApplication::style();
             if(index.sibling(index.row(), 0).data(ExpandedColumnIndexRole).toInt() == index.column()) {
-                opt.state = QStyle::State_Open;
+                opt.state = QStyle::State_Children | QStyle::State_Open;
                 s->drawPrimitive(QStyle::PE_IndicatorBranch, &opt, painter);
             } else {
                 opt.state = QStyle::State_Children;

@@ -92,7 +92,7 @@ bool DbConnection::execQuery(QSqlQuery& q) const {
         msg = QString::number(q.numRowsAffected()) + " rows affected";
 
     if(qApp->focusWindow() == 0) {
-        notify->send("Query complete", msg.toLocal8Bit().constData());
+        Notifier::instance()->send("Query complete", msg.toLocal8Bit().constData());
     }
     emit queryExecuted(q.lastQuery(), msg);
     return result;

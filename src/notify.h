@@ -8,12 +8,18 @@
 #ifndef _SEQUELJOE_NOTIFY_H_
 #define _SEQUELJOE_NOTIFY_H_
 
+class QMainWindow;
+
 class Notifier {
 public:
-    Notifier();
-    void send(const char* title, const char* msg);
-};
+    static Notifier* instance();
+    static void cleanup();
 
-extern Notifier* notify;
+    virtual void send(const char* title, const char* msg) = 0;
+
+protected:
+    Notifier() {}
+    virtual ~Notifier() {}
+};
 
 #endif

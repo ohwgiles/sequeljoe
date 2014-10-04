@@ -180,7 +180,7 @@ public:
     }
 
     virtual Indices indices(QString table) override {
-        Q_ASSERT("Not implemented" = 0);
+        // not implemented
         return Indices{};
     }
 

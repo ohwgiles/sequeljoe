@@ -5,9 +5,9 @@
  * GNU GPL version 3. See LICENSE or <http://www.gnu.org/licenses/>
  * for more information
  */
-#ifdef WIN32
-#include <windows.h>
+#ifdef _WIN32
 #include <winsock2.h>
+#include <windows.h>
 #include <ws2tcpip.h>
 #else
 #include <sys/socket.h>
@@ -68,7 +68,7 @@ SshThread::SshThread(SshParams &params) :
     sockListen = -1;
     sockFwd = -1;
     if(nLibSshUsers == 0) {
-#ifdef WIN32
+#ifdef _WIN32
         WSADATA wsadata;
         WSAStartup(MAKEWORD(2,0), &wsadata);
 #endif
@@ -95,7 +95,11 @@ bool SshThread::createSocket() {
         hints.ai_protocol = IPPROTO_TCP;
         int rc = getaddrinfo(params.sshHost.constData(), params.sshPort.constData(), &hints, &res);
         if(rc != 0) {
+#ifdef _WIN32
+            emit tunnelFailed(gai_strerror(rc));
+#else
             emit tunnelFailed(rc == EAI_SYSTEM ? strerror(errno) : gai_strerror(rc));
+#endif
             return false;
         }
     }
@@ -258,7 +262,7 @@ bool SshThread::authenticate() {
 }
 
 bool SshThread::setupTunnel() {
-#ifdef WIN32
+#ifdef _WIN32
     char sockopt;
 #else
     int sockopt;
@@ -408,9 +412,9 @@ void SshThread::connectToServer() {
     if(channel)
         libssh2_channel_free(channel);
 
-#ifdef WIN32
-    closesocket(sock_fwd_);
-    closesocket(sock_listen_);
+#ifdef _WIN32
+    closesocket(sockFwd);
+    closesocket(sockListen);
 #else
     close(sockFwd);
     close(sockListen);
@@ -421,8 +425,8 @@ void SshThread::connectToServer() {
         libssh2_session_free(session);
     }
 
-#ifdef WIN32
-    closesocket(sock_);
+#ifdef _WIN32
+    closesocket(sock);
 #else
     close(sock);
 #endif
