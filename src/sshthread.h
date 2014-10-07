@@ -27,7 +27,7 @@ public slots:
     void connectToServer();
 
 signals:
-    void sshTunnelOpened(QString,int);
+    void sshTunnelOpened(QString,short);
     void tunnelFailed(QString);
     void confirmUnknownHost(QString fingerprint, bool* ok); //< should be blocked
 

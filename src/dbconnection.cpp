@@ -167,7 +167,7 @@ void DbConnection::start() {
         tunnel.ssh = new SshThread(sshParams);
         tunnel.ssh->moveToThread(tunnel.thread);
         connect(tunnel.thread, SIGNAL(started()), tunnel.ssh, SLOT(connectToServer()));
-        connect(tunnel.ssh, SIGNAL(sshTunnelOpened(QString,int)), this, SLOT(openDatabase(QString,int)));
+        connect(tunnel.ssh, SIGNAL(sshTunnelOpened(QString,short)), this, SLOT(openDatabase(QString,short)));
         connect(tunnel.ssh, SIGNAL(tunnelFailed(QString)), this, SIGNAL(connectionFailed(QString)));
         connect(tunnel.ssh, SIGNAL(confirmUnknownHost(QString,bool*)), this, SIGNAL(confirmUnknownHost(QString,bool*)), Qt::BlockingQueuedConnection);
         tunnel.thread->start();
