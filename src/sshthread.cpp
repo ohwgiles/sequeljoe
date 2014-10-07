@@ -299,7 +299,7 @@ bool SshThread::setupTunnel() {
     qDebug() << "Waiting for TCP connection on" << inet_ntoa(sin.sin_addr) << "port" << ntohs(sin.sin_port);
 
     // actually we shouldn't emit until after accept, but that's tricky
-    emit sshTunnelOpened(localListenPort);
+    emit sshTunnelOpened("127.0.0.1", localListenPort);
 
     sockFwd = accept(sockListen, (struct sockaddr *)&sin, &sinlen);
     if(sockFwd < 0) {
