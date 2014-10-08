@@ -38,7 +38,7 @@ struct SshParams {
     QByteArray sshHost;
     QByteArray sshPort;
     QByteArray remoteHost;
-    short remotePort;
+    int remotePort;
     QByteArray sshUser;
     bool useSshKey;
     QByteArray sshPass;
@@ -88,7 +88,7 @@ signals:
 protected:
 
 private slots:
-    void openDatabase(QString host, short port);
+    void openDatabase(QString host, int port);
 
 private:
     void newConnection();

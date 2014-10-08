@@ -47,6 +47,8 @@ DbConnection::DbConnection(const QSettings &settings) {
         sshParams.sshPort = settings.value(SavedConfig::KEY_SSH_PORT).toInt() == 0 ?
                     QString::number(SavedConfig::DEFAULT_SSH_PORT).toLocal8Bit() :
                     settings.value(SavedConfig::KEY_SSH_PORT).toByteArray();
+        sshParams.remoteHost = sqlParams.host;
+        sshParams.remotePort = sqlParams.port;
         sshParams.sshUser = settings.value(SavedConfig::KEY_SSH_USER).toByteArray();
         sshParams.useSshKey = settings.contains(SavedConfig::KEY_SSH_KEY);
         sshParams.sshKeyPath = settings.value(SavedConfig::KEY_SSH_KEY).toByteArray();
@@ -167,7 +169,7 @@ void DbConnection::start() {
         tunnel.ssh = new SshThread(sshParams);
         tunnel.ssh->moveToThread(tunnel.thread);
         connect(tunnel.thread, SIGNAL(started()), tunnel.ssh, SLOT(connectToServer()));
-        connect(tunnel.ssh, SIGNAL(sshTunnelOpened(QString,short)), this, SLOT(openDatabase(QString,short)));
+        connect(tunnel.ssh, SIGNAL(sshTunnelOpened(QString,int)), this, SLOT(openDatabase(QString,int)));
         connect(tunnel.ssh, SIGNAL(tunnelFailed(QString)), this, SIGNAL(connectionFailed(QString)));
         connect(tunnel.ssh, SIGNAL(confirmUnknownHost(QString,bool*)), this, SIGNAL(confirmUnknownHost(QString,bool*)), Qt::BlockingQueuedConnection);
         tunnel.thread->start();
@@ -180,7 +182,7 @@ QString DbConnection::databaseName() const {
     return driver->databaseName();
 }
 
-void DbConnection::openDatabase(QString host, short port) {
+void DbConnection::openDatabase(QString host, int port) {
     QString name = "connection_" + QString::number(nConnections++);
     *((QSqlDatabase*) driver) = QSqlDatabase::addDatabase(driver->driverCode(), name);
     driver->setHostName(host);
