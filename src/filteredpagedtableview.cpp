@@ -74,6 +74,8 @@ FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
 
         layout->addLayout(bar);
     }
+
+    setDisabled(true);
 }
 
 QStringList FilteredPagedTableView::filterOperations() const {
@@ -103,6 +105,8 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
         connect(last, SIGNAL(clicked()), m, SLOT(lastPage()));
         connect(m, SIGNAL(selectFinished()), this, SLOT(populateFilter()));
     }
+
+    setEnabled(m);
 }
 
 QAbstractItemModel* FilteredPagedTableView::model() const {
