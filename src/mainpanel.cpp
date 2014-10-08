@@ -242,9 +242,11 @@ void MainPanel::tableListChanged() {
 }
 
 void MainPanel::dbChanged(QString name) {
-    contentView->setModel(nullptr);
-    schemaView->setModels(nullptr, nullptr);
-    QMetaObject::invokeMethod(db, "useDatabase", Q_ARG(QString, name));
+    if(db->databaseName() != name) {
+        contentView->setModel(nullptr);
+        schemaView->setModels(nullptr, nullptr);
+        QMetaObject::invokeMethod(db, "useDatabase", Q_ARG(QString, name));
+    }
 }
 
 void MainPanel::tableChanged(QString name) {
