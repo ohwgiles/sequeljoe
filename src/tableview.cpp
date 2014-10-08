@@ -108,7 +108,6 @@ QWidget* TableView::createChildTable(const QModelIndex& index) {
     QLabel* label = new QLabel(frame);
     QFont fnt("monospace");
     fnt.setBold(true);
-    fnt.setPixelSize(this->font().pixelSize() * 3/4);
     label->setFont(fnt);
     label->setText("SELECT * FROM `" + index.data(ForeignKeyTableRole).toString() + "` WHERE `" + index.data(ForeignKeyColumnRole).toString() + "` = '" + index.data().toString() + "'");
     frame->layout()->addWidget(label);
