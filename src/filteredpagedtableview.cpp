@@ -59,6 +59,7 @@ FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
         connect(filterClear, SIGNAL(clicked()), this, SLOT(clearFilter()));
 
         filterOperation->addItems(filterOperations());
+        bar->addWidget(new QLabel("Where: ", this));
         bar->addWidget(filterColumns);
         bar->addWidget(filterOperation);
         bar->addWidget(filterText);
