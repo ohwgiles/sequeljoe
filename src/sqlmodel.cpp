@@ -76,10 +76,9 @@ QVariant SqlModel::data(const QModelIndex &index, int role) const {
     } else {
         if(index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) && index.row() < rowCount() && index.column() < columnCount()) {
             QVariant d;
-            if(index.row() == updatingRow) {
-                if(currentRowModifications.contains(index.column()))
-                    d = currentRowModifications[index.column()];
-            } else
+            if(index.row() == updatingRow && currentRowModifications.contains(index.column()))
+                d = currentRowModifications[index.column()];
+            else if(index.row() < content.count())
                 d = content.at(index.row()).at(index.column());
 
             if(role == Qt::EditRole)

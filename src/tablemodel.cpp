@@ -96,7 +96,7 @@ bool TableModel::submit() {
                 f.setValue(it.value());
                 values << db.sqlDriver()->driver()->formatValue(f);
             }
-            QString query = "INSERT INTO " + tableName + "(`" + columns.join("`,`") + "`) VALUES('" + values.join("','") + "')";
+            QString query = "INSERT INTO `" + tableName + "` (`" + columns.join("`,`") + "`) VALUES('" + values.join("','") + "')";
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
         } else {
             QStringList updates;
@@ -105,7 +105,7 @@ bool TableModel::submit() {
                 f.setValue(it.value());
                 updates << "`" + content.columnNames[it.key()] + "` = '" + db.sqlDriver()->driver()->formatValue(f) + "'";
             }
-            QString query = "UPDATE " + tableName + " SET " + updates.join(", ") + " WHERE " +
+            QString query = "UPDATE `" + tableName + "` SET " + updates.join(", ") + " WHERE `" +
                     metadata.columnNames.at(metadata.primaryKeyColumn) +"` = '" + data(index(updatingRow, metadata.primaryKeyColumn)).toString() + "'";
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
         }
