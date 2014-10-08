@@ -122,6 +122,7 @@ public:
         if(q.first()) {
             int i = 0;
             metadata.resize(q.size());
+            metadata.numRows = q.value(5).toInt();
             do {
                 if(q.value(2).toBool())
                     metadata.primaryKeyColumn = i;

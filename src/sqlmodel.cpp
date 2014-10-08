@@ -20,7 +20,7 @@ SqlModel::SqlModel(DbConnection &db, QObject *parent) :
     db(db),
     dataSafe(false),
     updatingRow(-1),
-    totalRecords(0),
+    totalRecords(-1),
     rowsFrom(0),
     rowsLimit(0)
 {
@@ -162,7 +162,12 @@ void SqlModel::selectComplete(TableData data) {
     dataSafe = true;
     endResetModel();
     emit selectFinished();
-    emit pagesChanged(rowsFrom, rowsLimit, totalRecords);
+    emit pagesChanged(rowsFrom, rowCount(), totalRecords);
+}
+
+void SqlModel::firstPage() {
+    rowsFrom = 0;
+    select();
 }
 
 void SqlModel::nextPage() {
@@ -172,6 +177,11 @@ void SqlModel::nextPage() {
 
 void SqlModel::prevPage() {
     rowsFrom -= rowsPerPage();
+    select();
+}
+
+void SqlModel::lastPage() {
+    rowsFrom = totalRecords - rowsPerPage();
     select();
 }
 

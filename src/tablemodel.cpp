@@ -30,6 +30,7 @@ void TableModel::describe(const Filter& f) {
 
 void TableModel::describeComplete(TableMetadata metadata) {
     this->metadata = metadata;
+    totalRecords = metadata.numRows;
     select();
 }
 

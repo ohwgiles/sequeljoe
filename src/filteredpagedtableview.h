@@ -44,8 +44,10 @@ private:
     QLineEdit* filterText;
     QAbstractButton* filterRun;
     QAbstractButton* filterClear;
+    QAbstractButton* first;
     QAbstractButton* prev;
     QAbstractButton* next;
+    QAbstractButton* last;
     QLabel* pageNum;
 };
 

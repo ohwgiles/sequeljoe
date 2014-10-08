@@ -39,6 +39,7 @@ struct TableMetadata {
     }
     int count() const { return size_; }
     int primaryKeyColumn = -1;
+    int numRows = -1;
     QVector<QString> columnNames;
     QVector<QString> columnTypes;
     QVector<QString> columnComments;

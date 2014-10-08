@@ -34,8 +34,15 @@ FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
         QHBoxLayout* bar = new QHBoxLayout();
         bar->setContentsMargins(0,0,0,0);
 
+
+        first = new QPushButton("<<", this);
+        first->setMaximumWidth(first->sizeHint().height());
         prev = new QPushButton("<", this);
+        prev->setMaximumWidth(prev->sizeHint().height());
         next = new QPushButton(">", this);
+        next->setMaximumWidth(next->sizeHint().height());
+        last = new QPushButton(">>", this);
+        last->setMaximumWidth(last->sizeHint().height());
         pageNum = new QLabel(this);
 
         QWidget* spacer = new QWidget(this);
@@ -58,9 +65,11 @@ FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
         bar->addWidget(filterRun);
         bar->addWidget(filterClear);
         bar->addWidget(spacer);
+        bar->addWidget(first);
         bar->addWidget(prev);
         bar->addWidget(pageNum);
         bar->addWidget(next);
+        bar->addWidget(last);
 
         layout->addLayout(bar);
     }
@@ -87,8 +96,10 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
 
     if(m) {
         connect(m, SIGNAL(pagesChanged(int,int,int)), this, SLOT(updatePagination(int,int,int)));
+        connect(first, SIGNAL(clicked()), m, SLOT(firstPage()));
         connect(prev, SIGNAL(clicked()), m, SLOT(prevPage()));
         connect(next, SIGNAL(clicked()), m, SLOT(nextPage()));
+        connect(last, SIGNAL(clicked()), m, SLOT(lastPage()));
         connect(m, SIGNAL(selectFinished()), this, SLOT(populateFilter()));
     }
 }
@@ -98,11 +109,15 @@ QAbstractItemModel* FilteredPagedTableView::model() const {
 }
 
 void FilteredPagedTableView::updatePagination(int firstRow, int rowsInPage, int totalRecords) {
+    first->setDisabled(firstRow == 0);
     prev->setDisabled(firstRow == 0);
-    next->setDisabled(firstRow + rowsInPage >= totalRecords);
-    int last = (firstRow + rowsInPage < totalRecords ? firstRow+rowsInPage : totalRecords);
+    next->setDisabled(totalRecords != -1 && firstRow + rowsInPage >= totalRecords);
+    last->setDisabled(totalRecords == -1 || firstRow + rowsInPage >= totalRecords);
+    int last = firstRow + rowsInPage;
     if(totalRecords == 0)
         pageNum->setText("No Records");
+    else if(totalRecords == -1)
+        pageNum->setText("Rows " + QString::number(firstRow+1) + " to " + QString::number(last));
     else
         pageNum->setText("Rows " + QString::number(firstRow+1) + " to " + QString::number(last) + " of " + QString::number(totalRecords));
 }

@@ -55,8 +55,10 @@ signals:
     void selectFinished();
 
 public slots:
+    void firstPage();
     void nextPage();
     void prevPage();
+    void lastPage();
 
 protected slots:
     virtual void selectComplete(TableData data);
