@@ -79,13 +79,14 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
                 opt.state = QStyle::State_Children;
                 s->drawPrimitive(QStyle::PE_IndicatorBranch, &opt, painter);
             }
-        } else
+        } else {
+            if(index.data().isNull() && index.data(Qt::CheckStateRole).isNull()) {
+                opt.palette.setColor(QPalette::Text, Qt::lightGray);
+                opt.text = "null";
+            }
             QStyledItemDelegate::paint(painter, opt, index);
-
-        if(index.data().isNull() && index.data(Qt::CheckStateRole).isNull()) {
-            painter->setPen(Qt::lightGray);
-            painter->drawText(opt.rect, "null");
         }
+
     }
 }
 
