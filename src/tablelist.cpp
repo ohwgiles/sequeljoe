@@ -83,7 +83,10 @@ void TableList::filterTextChanged(QString text) {
 }
 
 void TableList::setTableNames(QStringList names) {
+    QString current = tables_->currentIndex().data().toString();
     tableItems_->setStringList(names);
+    if(names.contains(current))
+        setCurrentTable(current);
 }
 
 void TableList::setCurrentTable(QString name) {
