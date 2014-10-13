@@ -24,7 +24,7 @@ TableCell::TableCell(QObject *parent) :
 }
 
 QWidget* TableCell::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const {
-    if(index.data(SqlTypeRole).toString() == "text")
+    if(index.data(SqlTypeRole).toString().contains("text"))
         return new TextCellEditor(parent);
     else
         return QStyledItemDelegate::createEditor(parent, option, index);
