@@ -49,10 +49,10 @@ void TableCell::setModelData(QWidget *editor, QAbstractItemModel *model, const Q
 
 void TableCell::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const {
     TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
-    if(tce)
-        // todo: these are just a guess
-        editor->setGeometry(0,0,350,500);
-    else
+    if(tce) {
+        QRect g = qobject_cast<QWidget*>(parent())->window()->geometry();
+        editor->setGeometry(g.x()+g.width()/8, g.y()+g.height()/8,g.width()*3/4,g.height()*3/4);
+    } else
         QStyledItemDelegate::updateEditorGeometry(editor, option, index);
 
 }
