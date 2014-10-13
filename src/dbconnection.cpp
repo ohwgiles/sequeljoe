@@ -114,11 +114,11 @@ void DbConnection::queryTableContent(QString query, QObject* callbackOwner, cons
     data.reserve(q.size());
     q.prepare(query);
     execQuery(q);
+    data.columnNames.resize(q.record().count());
+    for(int i = 0; i < q.record().count(); ++i) {
+        data.columnNames[i] = q.record().fieldName(i).trimmed();
+    }
     if(q.first()) {
-        data.columnNames.resize(q.record().count());
-        for(int i = 0; i < q.record().count(); ++i) {
-            data.columnNames[i] = q.record().fieldName(i).trimmed();
-        }
         do {
             QVector<QVariant> row;
             row.resize(q.record().count());
