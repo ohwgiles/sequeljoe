@@ -69,7 +69,7 @@ DbConnection::~DbConnection() {
 }
 
 QStringList DbConnection::tables() const {
-    return driver->tableNames();
+    return tableNames;
 }
 
 void DbConnection::cleanup() {

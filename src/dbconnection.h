@@ -70,6 +70,7 @@ public slots:
     void queryTableUpdate(QString query, QObject* callbackOwner, const char* callbackName = "updateComplete");
     void deleteTable(QString tableName);
     void createTable(QString tableName);
+    void populateTables();
     void useDatabase(QString dbName);
 
     void start();
@@ -95,7 +96,6 @@ private:
 
     void populateDatabases();
 
-    void populateTables();
 
     static int nConnections;
     bool useSshTunnel;

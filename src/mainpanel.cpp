@@ -127,7 +127,7 @@ MainPanel::~MainPanel() {
     delete backgroundWorker;
 }
 
-void MainPanel::openPanel(ViewToolBar::Panel p) {
+void MainPanel::openPanel(ViewToolBar::Panel p, QString table) {
     if(p == ViewToolBar::PANEL_QUERY) {
         splitTableChooser->hide();
         queryWidget->show();
@@ -138,17 +138,21 @@ void MainPanel::openPanel(ViewToolBar::Panel p) {
         schemaView->hide();
         switch(p) {
         case ViewToolBar::PANEL_CONTENT:
-            updateContentModel(tableChooser->selectedTable());
+            updateContentModel(table);
             contentView->show();
             break;
         case ViewToolBar::PANEL_STRUCTURE:
-            updateSchemaModel(tableChooser->selectedTable());
+            updateSchemaModel(table);
             schemaView->show();
             break;
         default:
             break;
         }
     }
+}
+
+QString MainPanel::currentTable() const {
+    return tableChooser->selectedTable();
 }
 
 void MainPanel::updateContentModel(QString tableName) {
@@ -297,15 +301,18 @@ void MainPanel::disconnectDb() {
 void MainPanel::addTable() {
     QString name = QInputDialog::getText(this, "Create Table", "Enter a name for the new table");
     if(!name.isEmpty()) {
-        db->createTable(name);
-        refreshTables();
+        QMetaObject::invokeMethod(db, "createTable", Qt::BlockingQueuedConnection, Q_ARG(QString, name));
+        refreshTables(); // todo fake it?
+        tableChooser->setCurrentTable(name);
+        toolbar->triggerPanelOpen(ViewToolBar::PANEL_STRUCTURE);
+        //openPanel(ViewToolBar::PANEL_STRUCTURE, name);
     }
 }
 
 void MainPanel::deleteTable() {
     QString current = tableChooser->selectedTable();
     if(!current.isNull() && QMessageBox::warning(this, QString("Delete Table"), "Are you sure? This action cannot be undone", QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
-        db->deleteTable(current);
+        QMetaObject::invokeMethod(db, "deleteTable", Qt::BlockingQueuedConnection, Q_ARG(QString, current));
         contentView->setModel(nullptr);
         schemaView->setModels(nullptr,nullptr);
         refreshTables();
@@ -313,6 +320,7 @@ void MainPanel::deleteTable() {
 }
 
 void MainPanel::refreshTables() {
+    QMetaObject::invokeMethod(db, "populateTables", Qt::BlockingQueuedConnection);
     tableChooser->setTableNames(db->tables());
 }
 

@@ -25,6 +25,7 @@ public:
 
     ViewToolBar(QWidget* parent = 0);
     void setCurrentDatabase(QString);
+    void triggerPanelOpen(Panel);
 
 public slots:
     void enableAll(bool enabled = true);

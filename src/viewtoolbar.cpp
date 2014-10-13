@@ -29,7 +29,7 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
     addWidget(dbSelect);
 
     addAction(":content", "Content", SLOT(showContent()))->setChecked(true);
-    addAction(":schema", "Schema", SLOT(showStructure()));
+    addAction(":schema", "Schema", SLOT(showStructure()))->setCheckable(true);
     addAction(":query", "Query", SLOT(showQuery()));
 
     QWidget* spacer = new QWidget(this);
@@ -37,6 +37,11 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
     addWidget(spacer);
 
     addAction(":disconnect", "Disconnect", SIGNAL(disconnect()))->setCheckable(false);
+}
+
+void ViewToolBar::triggerPanelOpen(Panel p) {
+    int i = 2 + int(p - PANEL_CONTENT);
+    actions().at(i)->trigger();
 }
 
 QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot) {

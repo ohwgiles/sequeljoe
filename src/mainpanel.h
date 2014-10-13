@@ -49,7 +49,10 @@ public slots:
     void openConnection(QString name);
     void tableChanged(QString name);
     void changeSort(int, Qt::SortOrder);
-    void openPanel(ViewToolBar::Panel);
+    void openPanel(ViewToolBar::Panel p) {
+        openPanel(p, currentTable());
+    }
+    void openPanel(ViewToolBar::Panel, QString table);
     void disconnectDb();
     void dbChanged(QString);
 
@@ -68,6 +71,7 @@ private slots:
     void tableListChanged();
 
 private:
+    QString currentTable() const;
     void updateContentModel(QString tableName);
     void updateSchemaModel(QString tableName);
 
