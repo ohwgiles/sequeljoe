@@ -68,6 +68,10 @@ DbConnection::~DbConnection() {
     }
 }
 
+QStringList DbConnection::tables() const {
+    return driver->tableNames();
+}
+
 void DbConnection::cleanup() {
     QString name = driver->connectionName();
     driver->close();

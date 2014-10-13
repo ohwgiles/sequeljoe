@@ -58,7 +58,7 @@ public:
 
     QString databaseName() const;
 
-    QStringList tables() const { return tableNames; }
+    QStringList tables() const;
 
 public slots:
     virtual bool execQuery(QSqlQuery &q) const;
