@@ -68,6 +68,7 @@ public slots:
     void queryTableMetadata(QString tableName, QObject* callbackOwner, const char *callbackName = "describeComplete");
     void queryTableContent(QString query, QObject* callbackOwner, const char* callbackName = "selectComplete");
     void queryTableUpdate(QString query, QObject* callbackOwner, const char* callbackName = "updateComplete");
+    QString queryCreateTable(QString tableName);
     void deleteTable(QString tableName);
     void createTable(QString tableName);
     void populateTables();

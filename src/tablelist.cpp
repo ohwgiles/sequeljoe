@@ -14,6 +14,8 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
+#include <QAction>
+#include <QMenu>
 
 TableList::TableList(QWidget *parent) :
     QWidget(parent)
@@ -39,6 +41,16 @@ TableList::TableList(QWidget *parent) :
         tables_->setEditTriggers(QListView::NoEditTriggers);
         tables_->setSelectionMode(QAbstractItemView::SingleSelection);
         tables_->setModel(proxy);
+
+        tables_->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(tables_, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(openContextMenu(QPoint)));
+        contextMenu = new QMenu(this);
+        dropTableAction = new QAction("Drop table", contextMenu);
+        connect(dropTableAction, SIGNAL(triggered()), this, SIGNAL(delButtonClicked()));
+        showCreateAction = new QAction("Show CREATE TABLE", contextMenu);
+        connect(showCreateAction, SIGNAL(triggered()), this, SIGNAL(showTableRequested()));
+        contextMenu->addAction(dropTableAction);
+        contextMenu->addAction(showCreateAction);
 
         connect(filterInput_, SIGNAL(textChanged(QString)), this, SLOT(filterTextChanged(QString)));
         connect(tables_->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(selectionChanged(QModelIndex)));
@@ -94,4 +106,11 @@ void TableList::setCurrentTable(QString name) {
     QModelIndex idx{tableItems_->index(tableItems_->stringList().indexOf(name))};
     tables_->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::Select);
     tables_->scrollTo(idx);
+}
+
+void TableList::openContextMenu(QPoint p) {
+    QModelIndex index = tables_->indexAt(p);
+    contextMenu->popup(tables_->viewport()->mapToGlobal(p));
+    dropTableAction->setEnabled(index.isValid());
+    showCreateAction->setEnabled(index.isValid());
 }

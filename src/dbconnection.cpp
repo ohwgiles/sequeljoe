@@ -154,6 +154,12 @@ void DbConnection::populateDatabases() {
         dbNames << query.value(0).toString();
     }
 }
+QString DbConnection::queryCreateTable(QString tableName) {
+    QSqlQuery query(*driver);
+    query.exec("SHOW CREATE TABLE `" + tableName + "`");
+    query.next();
+    return query.value(1).toString();
+}
 
 void DbConnection::createTable(QString tableName) {
     QSqlQuery query(*driver);

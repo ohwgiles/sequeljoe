@@ -17,6 +17,7 @@
 #include "loadingoverlay.h"
 #include "tablemodel.h"
 #include "schemamodel.h"
+#include "sqlhighlighter.h"
 
 #include <QSortFilterProxyModel>
 #include <QStringListModel>
@@ -32,6 +33,8 @@
 #include <QInputDialog>
 #include <QSettings>
 #include <QThread>
+#include <QDialog>
+#include <QPlainTextEdit>
 
 MainPanel::MainPanel(QWidget* parent) :
     QWidget(parent),
@@ -74,6 +77,7 @@ MainPanel::MainPanel(QWidget* parent) :
                     connect(tableChooser, SIGNAL(addButtonClicked()), this, SLOT(addTable()));
                     connect(tableChooser, SIGNAL(delButtonClicked()), this, SLOT(deleteTable()));
                     connect(tableChooser, SIGNAL(refreshButtonClicked()), this, SLOT(refreshTables()));
+                    connect(tableChooser, SIGNAL(showTableRequested()), this, SLOT(showCreateTable()));
                     splitTableChooser->addWidget(tableChooser);
 
                     { // the contents and structure table views (sharing the table list)
@@ -316,6 +320,27 @@ void MainPanel::deleteTable() {
         contentView->setModel(nullptr);
         schemaView->setModels(nullptr,nullptr);
         refreshTables();
+    }
+}
+
+void MainPanel::showCreateTable() {
+    QString current = tableChooser->selectedTable();
+    if(!current.isNull()) {
+        QString res;
+        QMetaObject::invokeMethod(db, "queryCreateTable", Qt::BlockingQueuedConnection, Q_RETURN_ARG(QString, res), Q_ARG(QString, current));
+        QDialog* dialog = new QDialog(this);
+        dialog->setWindowTitle("SHOW CREATE TABLE `" + current + "`");
+        dialog->setLayout(new QVBoxLayout(dialog));
+        QPlainTextEdit* txt = new QPlainTextEdit(dialog);
+        dialog->layout()->addWidget(txt);
+        new SqlHighlighter(txt->document());
+        txt->document()->setPlainText(res);
+        txt->setReadOnly(true);
+        QRect g = window()->geometry();
+        dialog->setGeometry(g.x()+g.width()/8, g.y()+g.height()/8,g.width()*3/4,g.height()*3/4);
+        dialog->setModal(true);
+        dialog->exec();
+        delete dialog;
     }
 }
 

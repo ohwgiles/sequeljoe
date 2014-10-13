@@ -13,6 +13,7 @@
 class QListView;
 class QLineEdit;
 class QStringListModel;
+class QMenu;
 
 class TableList : public QWidget
 {
@@ -28,15 +29,20 @@ signals:
     void addButtonClicked();
     void delButtonClicked();
     void refreshButtonClicked();
+    void showTableRequested();
 
 private slots:
     void filterTextChanged(QString text);
     void selectionChanged(QModelIndex index);
+    void openContextMenu(QPoint);
 
 private:
     QListView* tables_;
     QLineEdit* filterInput_;
     QStringListModel* tableItems_;
+    QMenu* contextMenu;
+    QAction* dropTableAction;
+    QAction* showCreateAction;
 };
 
 #endif // _SEQUELJOE_TABLELIST_H_

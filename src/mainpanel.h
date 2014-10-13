@@ -62,6 +62,7 @@ protected:
 private slots:
     void addTable();
     void deleteTable();
+    void showCreateTable();
     void refreshTables();
 
     void databaseConnected();
