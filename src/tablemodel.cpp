@@ -107,7 +107,7 @@ bool TableModel::submit() {
                 updates << "`" + content.columnNames[it.key()] + "` = '" + db.sqlDriver()->driver()->formatValue(f) + "'";
             }
             QString query = "UPDATE `" + tableName + "` SET " + updates.join(", ") + " WHERE `" +
-                    metadata.columnNames.at(metadata.primaryKeyColumn) +"` = '" + data(index(updatingRow, metadata.primaryKeyColumn)).toString() + "'";
+                    metadata.columnNames.at(metadata.primaryKeyColumn) +"` = '" + data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole).toString() + "'";
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
         }
         return true;

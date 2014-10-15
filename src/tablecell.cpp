@@ -33,7 +33,7 @@ QWidget* TableCell::createEditor(QWidget *parent, const QStyleOptionViewItem &op
 void TableCell::setEditorData(QWidget *editor, const QModelIndex &index) const {
     TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
     if(tce)
-        tce->setContent(index.data().toString());
+        tce->setContent(index.data(Qt::EditRole).toString());
     else
         QStyledItemDelegate::setEditorData(editor, index);
 }
