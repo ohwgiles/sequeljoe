@@ -37,7 +37,6 @@
 
 #include <QThread>
 #include <QByteArray>
-#include <QDebug>
 #include <QException>
 #include <QFileInfo>
 #include <QApplication>
@@ -154,7 +153,7 @@ bool SshThread::createSession() {
     if(!dataDir.exists())
         dataDir.mkpath(dataDir.path());
     QByteArray knownHostsFile = dataDir.filePath("known_hosts").toLocal8Bit();
-    qDebug() << libssh2_knownhost_readfile(knownHosts, knownHostsFile.constData(), LIBSSH2_KNOWNHOST_FILE_OPENSSH);
+
     int type;
     size_t len;
     const char* fingerprint = libssh2_session_hostkey(session, &len, &type);
@@ -163,14 +162,8 @@ bool SshThread::createSession() {
 
     if(fingerprint) {
         struct libssh2_knownhost *host;
-        qDebug() << params.sshHost.constData();
-        qDebug() << QString(params.sshPort).toInt();
         int check = libssh2_knownhost_checkp(knownHosts, params.sshHost.constData(), QString(params.sshPort).toInt(),
                         fingerprint, len, LIBSSH2_KNOWNHOST_TYPE_PLAIN|LIBSSH2_KNOWNHOST_KEYENC_RAW, &host);
-
-        fprintf(stderr, "Host check: %d, key: %s\n", check,
-                (check <= LIBSSH2_KNOWNHOST_CHECK_MISMATCH)?
-                host->key:"<none>");
 
         char readableFingerprint[41];
         for(int i = 0; i < 20; i++)
@@ -284,7 +277,6 @@ bool SshThread::setupTunnel() {
     setsockopt(sockListen, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
 
     socklen_t sinlen = sizeof(sin);
-    qDebug() << "attempting to bind to local port " << localListenPort;
 
     if(bind(sockListen, (struct sockaddr *)&sin, sinlen) < 0) {
         emit tunnelFailed(strerror(errno));
@@ -295,8 +287,6 @@ bool SshThread::setupTunnel() {
         emit tunnelFailed(strerror(errno));
         return false;
     }
-
-    qDebug() << "Waiting for TCP connection on" << inet_ntoa(sin.sin_addr) << "port" << ntohs(sin.sin_port);
 
     // actually we shouldn't emit until after accept, but that's tricky
     emit sshTunnelOpened("127.0.0.1", localListenPort);
@@ -309,8 +299,6 @@ bool SshThread::setupTunnel() {
 
     const char* shost = inet_ntoa(sin.sin_addr);
     unsigned int sport = ntohs(sin.sin_port);
-
-    qDebug() << "Forwarding connection from" << shost << ":" << sport << "to remote" << params.remoteHost.constData() << ":" << params.remotePort;
 
     channel = libssh2_channel_direct_tcpip_ex(session, params.remoteHost.constData(), params.remotePort, shost, sport);
     if (!channel) {
