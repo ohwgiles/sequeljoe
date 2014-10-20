@@ -125,7 +125,7 @@ bool TableModel::deleteRows(QSet<int> rows) {
         rowIds << data(index(i, metadata.primaryKeyColumn)).toString();
         content.remove(i);
     }
-    QString query("DELETE FROM `" + tableName + "` WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) + "` IN ("+rowIds.join(",")+")");
+    QString query("DELETE FROM `" + tableName + "` WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) + "` IN ('"+rowIds.join("','")+"')");
 
     QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
     return true;
