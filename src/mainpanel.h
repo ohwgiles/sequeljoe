@@ -70,6 +70,7 @@ private slots:
     void confirmUnknownHost(QString fingerprint, bool* ok);
 
     void tableListChanged();
+    void deleteContentModel(QString table);
 
 private:
     QString currentTable() const;

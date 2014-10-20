@@ -107,6 +107,7 @@ bool SqlSchemaModel::submit() {
             originalColumnName.clear(); //< actually should probably be done after this was successful
         }
 
+        emit schemaModified(tableName);
         return true;
     }
 

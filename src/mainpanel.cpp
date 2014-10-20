@@ -175,6 +175,7 @@ void MainPanel::updateSchemaModel(QString tableName) {
     QString key = db->databaseName() + tableName;
     if(!schemaModels.contains(key)) {
         SqlModel* schema = new SqlSchemaModel(*db, tableName);
+        connect(schema, SIGNAL(schemaModified(QString)), this, SLOT(deleteContentModel(QString)));
         SqlModel* index  = new SqlModel(*db);
         index->setQuery("SHOW INDEX FROM " + tableName);
         schemaModels[key] = {schema, index};
@@ -190,6 +191,15 @@ void MainPanel::updateSchemaModel(QString tableName) {
 void MainPanel::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
     loadingOverlay->setGeometry(geometry());
+}
+
+void MainPanel::deleteContentModel(QString table) {
+    QString key = db->databaseName() + table;
+    if(contentModels.contains(key)) {
+        contentView->setModel(nullptr);
+        delete contentModels[key];
+        contentModels.remove(key);
+    }
 }
 
 void MainPanel::openConnection(QString name) {

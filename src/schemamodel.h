@@ -28,6 +28,9 @@ public:
 
     void select() override;
 
+signals:
+    void schemaModified(QString);
+
 protected:
     virtual void selectComplete(TableData data) override;
     virtual bool columnIsBoolType(int col) const override;
