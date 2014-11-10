@@ -22,6 +22,7 @@ TextCellEditor::TextCellEditor(QWidget *parent) :
 
 void TextCellEditor::setContent(const QString& txt) {
     editor->document()->setPlainText(txt);
+    editor->moveCursor(QTextCursor::Start);
 }
 
 QString TextCellEditor::content() const {
