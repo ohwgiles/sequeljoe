@@ -104,6 +104,7 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
         connect(next, SIGNAL(clicked()), m, SLOT(nextPage()));
         connect(last, SIGNAL(clicked()), m, SLOT(lastPage()));
         connect(m, SIGNAL(selectFinished()), this, SLOT(populateFilter()));
+        populateFilter();
     }
 
     setEnabled(m);
