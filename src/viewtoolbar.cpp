@@ -28,15 +28,25 @@ ViewToolBar::ViewToolBar(QWidget *parent) :
     connect(dbSelect, SIGNAL(activated(int)), this, SLOT(dbComboModified(int)));
     addWidget(dbSelect);
 
-    addAction(":content", "Content", SLOT(showContent()))->setChecked(true);
-    addAction(":schema", "Schema", SLOT(showStructure()))->setCheckable(true);
-    addAction(":query", "Query", SLOT(showQuery()));
+    viewActions.append(addExclusiveAction(":content", "Content", SLOT(showContent())));
+    viewActions.append(addExclusiveAction(":schema", "Schema", SLOT(showStructure())));
+    viewActions.append(addExclusiveAction(":query", "Query", SLOT(showQuery())));
 
     QWidget* spacer = new QWidget(this);
     spacer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
     addWidget(spacer);
 
-    addAction(":disconnect", "Disconnect", SIGNAL(disconnect()))->setCheckable(false);
+    back = QToolBar::addAction("<", this, SIGNAL(historyBack()));
+    back->setEnabled(false);
+    forward = QToolBar::addAction(">", this, SIGNAL(historyForward()));
+    forward->setEnabled(false);
+
+    viewActions.append(addAction(QIcon(":disconnect"), "Disconnect", this, SIGNAL(disconnect())));
+}
+
+void ViewToolBar::setHistoryButtonsEnabled(bool aback, bool aforward) {
+    back->setEnabled(aback);
+    forward->setEnabled(aforward);
 }
 
 void ViewToolBar::triggerPanelOpen(Panel p) {
@@ -44,7 +54,7 @@ void ViewToolBar::triggerPanelOpen(Panel p) {
     actions().at(i)->trigger();
 }
 
-QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot) {
+QAction* ViewToolBar::addExclusiveAction(QString icon, QString label, const char* slot) {
     QAction* a = QToolBar::addAction(QIcon(icon), label, this, slot);
     a->setEnabled(false);
     a->setCheckable(true);
@@ -53,9 +63,9 @@ QAction* ViewToolBar::addAction(QString icon, QString label, const char* slot) {
     return a;
 }
 
-void ViewToolBar::enableAll(bool enabled) {
+void ViewToolBar::enableViewActions(bool enabled) {
     actions().first()->setChecked(true);
-    for(QAction* a : actions())
+    for(QAction* a : viewActions)
         a->setEnabled(enabled);
     populateDatabases(QStringList());
 }

@@ -28,13 +28,16 @@ public:
     void triggerPanelOpen(Panel);
 
 public slots:
-    void enableAll(bool enabled = true);
+    void enableViewActions(bool enabled = true);
     void populateDatabases(QStringList names);
+    void setHistoryButtonsEnabled(bool back, bool forward);
 
 signals:
     void panelChanged(ViewToolBar::Panel);
     void disconnect();
     void dbChanged(QString);
+    void historyBack();
+    void historyForward();
 
 private slots:
     void showContent() { emit panelChanged(PANEL_CONTENT); }
@@ -43,9 +46,12 @@ private slots:
     void dbComboModified(int);
 
 private:
-    QAction* addAction(QString icon, QString label, const char* slot);
+    QAction* addExclusiveAction(QString icon, QString label, const char* slot);
     QActionGroup* group;
     QComboBox* dbSelect;
+    QVector<QAction*> viewActions;
+    QAction* back;
+    QAction* forward;
 };
 
 #endif // _SEQUELJOE_VIEWTOOLBAR_H_

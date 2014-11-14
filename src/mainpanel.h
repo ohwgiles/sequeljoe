@@ -52,6 +52,8 @@ public slots:
     void openPanel(ViewToolBar::Panel p) {
         openPanel(p, currentTable());
     }
+    void historyBack();
+    void historyForward();
     void openPanel(ViewToolBar::Panel, QString table);
     void disconnectDb();
     void dbChanged(QString);
@@ -97,6 +99,14 @@ private:
     ViewToolBar* toolbar;
     QueryPanel* queryWidget;
     QueryLog* queryLog;
+
+    struct HistoryEntry {
+        QString table;
+        ViewToolBar::Panel panel;
+    };
+    QVector<HistoryEntry> locationStack;
+    int locationStackPosition = -1;
+    bool tableChangedManually = true;
 };
 
 #endif // _SEQUELJOE_MAINPANEL_H_

@@ -51,6 +51,8 @@ MainPanel::MainPanel(QWidget* parent) :
         toolbar = new ViewToolBar(this);
         connect(toolbar, SIGNAL(panelChanged(ViewToolBar::Panel)), this, SLOT(openPanel(ViewToolBar::Panel)));
         connect(toolbar, SIGNAL(disconnect()), this, SLOT(disconnectDb()));
+        connect(toolbar, SIGNAL(historyBack()), this, SLOT(historyBack()));
+        connect(toolbar, SIGNAL(historyForward()), this, SLOT(historyForward()));
         layout->addWidget(toolbar);
     }
 
@@ -227,7 +229,7 @@ void MainPanel::openConnection(QString name) {
 
 void MainPanel::databaseConnected() {
     loadingOverlay->hide();
-    toolbar->enableAll();
+    toolbar->enableViewActions();
 
     toggleEditSettings(false);
 
@@ -268,10 +270,36 @@ void MainPanel::dbChanged(QString name) {
 }
 
 void MainPanel::tableChanged(QString name) {
-    if(schemaView->isVisible())
+    ViewToolBar::Panel p;
+    if(schemaView->isVisible()) {
         updateSchemaModel(name);
-    if(contentView->isVisible())
+        p = ViewToolBar::PANEL_STRUCTURE;
+    }
+    if(contentView->isVisible()) {
         updateContentModel(name);
+        p = ViewToolBar::PANEL_CONTENT;
+    }
+    if(tableChangedManually) {
+        locationStack.resize(++locationStackPosition);
+        locationStack.append({name,p});
+        toolbar->setHistoryButtonsEnabled(locationStackPosition>0, false);
+    }
+}
+
+void MainPanel::historyBack() {
+    HistoryEntry he = locationStack[--locationStackPosition];
+    toolbar->setHistoryButtonsEnabled(locationStackPosition>0, true);
+    tableChangedManually = false;
+    tableChooser->setCurrentTable(he.table);
+    tableChangedManually = true;
+}
+
+void MainPanel::historyForward() {
+    HistoryEntry he = locationStack[++locationStackPosition];
+    toolbar->setHistoryButtonsEnabled(true, locationStackPosition<locationStack.count()-1);
+    tableChangedManually = false;
+    tableChooser->setCurrentTable(he.table);
+    tableChangedManually = true;
 }
 
 void MainPanel::changeSort(int col, Qt::SortOrder sort) { // todo
@@ -284,7 +312,7 @@ void MainPanel::toggleEditSettings(bool showSettings) {
     queryWidget->setVisible(false);
     splitLogViewer->setVisible(!showSettings);
     settingsPanel->setVisible(showSettings);
-    toolbar->enableAll(!showSettings);
+    toolbar->enableViewActions(!showSettings);
 }
 
 void MainPanel::disconnectDb() {
