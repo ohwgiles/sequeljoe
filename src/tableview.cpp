@@ -130,7 +130,7 @@ QWidget* TableView::createChildTable(const QModelIndex& index) {
 
 void TableView::resizeEvent(QResizeEvent *event) {
     QTreeView::resizeEvent(event);
-    loadingOverlay->setGeometry(geometry());
+    loadingOverlay->setGeometry(viewport()->geometry());
 }
 
 void TableView::showLoadingOverlay(bool show) {
