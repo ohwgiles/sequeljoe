@@ -33,6 +33,8 @@ public:
     static QAbstractListModel *driverListModel();
     static Driver* createDriver(DriverType type);
 
+    virtual QString quote(QVariant value);
+
     virtual TableData columns(QString table) = 0;
     virtual Indices indices(QString table) = 0;
     virtual TableMetadata metadata(QString table) = 0;

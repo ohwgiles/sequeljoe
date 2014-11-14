@@ -5,6 +5,8 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlRecord>
+#include <QSqlDriver>
+#include <QSqlField>
 
 class SqlDriverList : public QAbstractListModel {
 public:
@@ -232,4 +234,11 @@ Driver* Driver::createDriver(DriverType type) {
         return new SqliteDriver();
     }
     return nullptr;
+}
+
+QString Driver::quote(QVariant value) {
+    QSqlField f;
+    f.setType(value.type());
+    f.setValue(value);
+    return driver()->formatValue(f);
 }

@@ -36,9 +36,7 @@ void TableModel::describeComplete(TableMetadata metadata) {
 
 QString TableModel::prepareQuery() const {
     if(!where.value.isEmpty()) {
-        QSqlField f;
-        f.setValue(where.value);
-        return query + " WHERE `" + where.column + "` " + where.operation + " '" + db.sqlDriver()->driver()->formatValue(f) + "'";
+        return query + " WHERE `" + where.column + "` " + where.operation + " " + db.sqlDriver()->quote(where.value);
     } else
         return query;
 }
@@ -93,21 +91,17 @@ bool TableModel::submit() {
             QStringList values;
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it) {
                 columns << content.columnNames[it.key()];
-                QSqlField f;
-                f.setValue(it.value());
-                values << db.sqlDriver()->driver()->formatValue(f);
+                values << db.sqlDriver()->quote(it.value());
             }
-            QString query = "INSERT INTO `" + tableName + "` (`" + columns.join("`,`") + "`) VALUES('" + values.join("','") + "')";
+            QString query = "INSERT INTO `" + tableName + "` (`" + columns.join("`,`") + "`) VALUES(" + values.join(",") + ")";
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
         } else {
             QStringList updates;
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it) {
-                QSqlField f;
-                f.setValue(it.value());
-                updates << "`" + content.columnNames[it.key()] + "` = '" + db.sqlDriver()->driver()->formatValue(f) + "'";
+                updates << "`" + content.columnNames[it.key()] + "` = " + db.sqlDriver()->quote(it.value());
             }
             QString query = "UPDATE `" + tableName + "` SET " + updates.join(", ") + " WHERE `" +
-                    metadata.columnNames.at(metadata.primaryKeyColumn) +"` = '" + data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole).toString() + "'";
+                    metadata.columnNames.at(metadata.primaryKeyColumn) +"` = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
         }
         return true;
@@ -122,10 +116,10 @@ void TableModel::revert() {
 bool TableModel::deleteRows(QSet<int> rows) {
     QStringList rowIds;
     for(int i : rows) {
-        rowIds << data(index(i, metadata.primaryKeyColumn)).toString();
+        rowIds << db.sqlDriver()->quote(data(index(i, metadata.primaryKeyColumn)).toString());
         content.remove(i);
     }
-    QString query("DELETE FROM `" + tableName + "` WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) + "` IN ('"+rowIds.join("','")+"')");
+    QString query("DELETE FROM `" + tableName + "` WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) + "` IN ("+rowIds.join(",")+")");
 
     QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
     return true;
