@@ -83,8 +83,8 @@ private:
 
     QHash<QString, TableModel*> contentModels;
     struct SchemaModels {
-        QAbstractItemModel* index;
         QAbstractItemModel* schema;
+        QAbstractItemModel* index;
     };
     QHash<QString, SchemaModels> schemaModels;
 
