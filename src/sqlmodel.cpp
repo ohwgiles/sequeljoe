@@ -99,14 +99,13 @@ bool SqlModel::insertRows(int row, int count, const QModelIndex &parent) {
     return true;
 }
 
-bool SqlModel::hasChildren(const QModelIndex &parent) const {return true;
+bool SqlModel::hasChildren(const QModelIndex &parent) const {
     if(!parent.isValid())
         return true;
     if(parent.parent().isValid())
         return false;
-    if(metadata.foreignKeyTables[parent.column()].isNull())
+    if(dataSafe && parent.column() < metadata.foreignKeyTables.count() && metadata.foreignKeyTables[parent.column()].isNull())
         return true;
-    return true; ///???
     return false;
 }
 
