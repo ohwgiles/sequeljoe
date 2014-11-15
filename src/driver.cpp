@@ -1,5 +1,6 @@
 #include "driver.h"
 #include "roles.h"
+#include "foreignkey.h"
 
 #include <QAbstractListModel>
 #include <QSqlDatabase>
@@ -16,7 +17,7 @@ public:
         QStringList availableDrivers = db.drivers();
         if(availableDrivers.contains("QSQLITE"))
             typeLabels.append({Driver::SQLITE, "SQLite"});
-        if(availableDrivers.contains("QMYSQL3"))
+        if(availableDrivers.contains("QMYSQL"))
             typeLabels.append({Driver::MYSQL, "MySQL"});
     }
 
@@ -48,7 +49,7 @@ public:
         TableData data;
         QSqlQuery q{*this};
 
-        q.prepare("select c.column_name, c.column_type, c.is_nullable, c.column_key, c.column_default, c.extra, c.column_comment, k.referenced_table_name, k.referenced_column_name "
+        q.prepare("select c.column_name, c.column_type, c.is_nullable, c.column_key, c.column_default, c.extra, c.column_comment, k.referenced_table_name, k.referenced_column_name, k.constraint_name "
                   "from information_schema.columns as c "
                   "left join information_schema.key_column_usage as k "
                   "on c.table_schema = k.table_schema and c.table_name = k.table_name and c.column_name = k.column_name and referenced_column_name is not null "
@@ -73,7 +74,13 @@ public:
             c[SCHEMA_DEFAULT] = q.value(4).toString();
             c[SCHEMA_EXTRA] = q.value(5).toString();
             c[SCHEMA_COMMENT] = q.value(6).toString();
-            c[SCHEMA_FOREIGNKEY] = q.value(8).isNull() ? QVariant() : (q.value(7).toString() + '.' + q.value(8).toString());
+//QVariant v;
+//ForeignKey fk;
+//fk.table = q.value(7).toString();
+//fk.column = q.value(8).toString();
+//v.setValue(fk);
+//c[SCHEMA_FOREIGNKEY] = v;
+            c[SCHEMA_FOREIGNKEY] = QVariant::fromValue<ForeignKey>({q.value(7).toString(),q.value(8).toString(),q.value(9).toString()});
             data.append(c);
         }
         return data;
@@ -111,7 +118,7 @@ public:
         QSqlQuery q{*this};
         TableMetadata metadata;
         q.prepare(
-            "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.referenced_table_name, k.referenced_column_name, t.table_rows, c.data_type "
+            "select c.column_name, c.column_comment, c.column_key = 'PRI' as is_primary, k.constraint_name, k.referenced_table_name, k.referenced_column_name, t.table_rows, c.data_type "
             "from information_schema.columns as c "
             "inner join information_schema.tables as t "
             "on c.table_schema = t.table_schema and c.table_name = t.table_name "
@@ -124,15 +131,14 @@ public:
         if(q.first()) {
             int i = 0;
             metadata.resize(q.size());
-            metadata.numRows = q.value(5).toInt();
+            metadata.numRows = q.value(6).toInt();
             do {
                 if(q.value(2).toBool())
                     metadata.primaryKeyColumn = i;
                 metadata.columnNames[i] = q.value(0).toString();
-                metadata.columnTypes[i] = q.value(6).toString();
+                metadata.columnTypes[i] = q.value(7).toString();
                 metadata.columnComments[i] = q.value(1).toString();
-                metadata.foreignKeyTables[i] = q.value(3).toString();
-                metadata.foreignKeyColumns[i] = q.value(4).toString();
+                metadata.foreignKeys[i] = {q.value(4).toString(), q.value(5).toString(), q.value(3).toString() };
                 i++;
 
             } while(q.next());

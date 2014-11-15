@@ -52,8 +52,8 @@ QVariant TableModel::data(const QModelIndex &index, int role) const {
         return expandedColumns.value(index.row());
     }
 
-    if(role == SqlTypeRole) // used by TableCell to know to use the popup editor
-        return metadata.columnTypes[index.column()];
+    if(role == EditorTypeRole) // used by TableCell to know to use the popup editor
+        return metadata.columnTypes[index.column()].toLower().contains("text") ? SJCellEditLongText : SJCellEditDefault;
 
     if(role == FilterColumnRole)
         return where.column;
@@ -62,10 +62,8 @@ QVariant TableModel::data(const QModelIndex &index, int role) const {
     if(role == FilterValueRole)
         return where.value;
 
-    if(role == ForeignKeyTableRole)
-        return metadata.foreignKeyTables[index.column()];
-    if(role == ForeignKeyColumnRole)
-        return metadata.foreignKeyColumns[index.column()];
+    if(role == ForeignKeyRole)
+        return QVariant::fromValue<ForeignKey>(metadata.foreignKeys[index.column()]);
 
     return SqlModel::data(index, role);
 }

@@ -12,6 +12,7 @@ set(SOURCES
     driver.cpp
     favourites.cpp
     filteredpagedtableview.cpp
+    foreignkeyeditor.cpp
     loadingoverlay.cpp
     main.cpp
     mainpanel.cpp

@@ -109,7 +109,8 @@ QWidget* TableView::createChildTable(const QModelIndex& index) {
     QFont fnt("monospace");
     fnt.setBold(true);
     label->setFont(fnt);
-    label->setText("SELECT * FROM `" + index.data(ForeignKeyTableRole).toString() + "` WHERE `" + index.data(ForeignKeyColumnRole).toString() + "` = '" + index.data().toString() + "'");
+    ForeignKey fk = index.data(ForeignKeyRole).value<ForeignKey>();
+    label->setText("SELECT * FROM `" + fk.table + "` WHERE `" + fk.column + "` = '" + index.data().toString() + "'");
     frame->layout()->addWidget(label);
 
     TableView* view = new TableView(frame);
@@ -119,9 +120,9 @@ QWidget* TableView::createChildTable(const QModelIndex& index) {
 
     TableModel* m = static_cast<TableModel*>(model());
     if(m) {
-        TableModel* childModel = new TableModel(*m, index.data(ForeignKeyTableRole).toString());
+        TableModel* childModel = new TableModel(*m, fk.table);
         view->setModel(childModel);
-        childModel->describe(Filter{index.data(ForeignKeyColumnRole).toString(), "=", index.data().toString()});
+        childModel->describe(Filter{fk.column, "=", index.data().toString()});
     }
     frame->layout()->addWidget(view);
 

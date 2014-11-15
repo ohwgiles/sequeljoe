@@ -67,11 +67,10 @@ QVariant SqlModel::data(const QModelIndex &index, int role) const {
 
     if(columnIsBoolType(index.column())) {
         if(role == Qt::CheckStateRole) {
-            if(index.row() == updatingRow)
+            if(index.row() == updatingRow && !currentRowModifications[index.column()].isNull())
                 return currentRowModifications[index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
             if(index.row() < content.count())
                 return content.at(index.row()).at(index.column()).toBool() ? Qt::Checked : Qt::Unchecked;
-
         }
     } else {
         if(index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) && index.row() < rowCount() && index.column() < columnCount()) {
@@ -83,8 +82,10 @@ QVariant SqlModel::data(const QModelIndex &index, int role) const {
 
             if(role == Qt::EditRole)
                 return d;
-            else // Qt::DisplayRole
+            else if(d.type() == QVariant::String)
                 return d.toString().replace("\n","");
+            else // Qt::DisplayRole
+                return d;
         }
     }
 
@@ -104,7 +105,7 @@ bool SqlModel::hasChildren(const QModelIndex &parent) const {
         return true;
     if(parent.parent().isValid())
         return false;
-    if(dataSafe && parent.column() < metadata.foreignKeyTables.count() && metadata.foreignKeyTables[parent.column()].isNull())
+    if(dataSafe && parent.column() < metadata.foreignKeys.count() && metadata.foreignKeys[parent.column()].constraint.isNull())
         return true;
     return false;
 }

@@ -9,6 +9,7 @@
 #include "sqlmodel.h"
 #include "tableview.h"
 #include "textcelleditor.h"
+#include "foreignkeyeditor.h"
 
 #include <QPainter>
 #include <QApplication>
@@ -24,35 +25,43 @@ TableCell::TableCell(QObject *parent) :
 }
 
 QWidget* TableCell::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const {
-    if(index.data(SqlTypeRole).toString().contains("text"))
+    switch(index.data(EditorTypeRole).toInt()) {
+    case SJCellEditLongText:
         return new TextCellEditor(parent);
-    else
+    case SJCellEditForeignKey:
+        // todo fix this horrible hack
+        return new ForeignKeyEditor(qobject_cast<SqlModel*>(qobject_cast<TableView*>(this->parent())->model())->driver(), parent);
+    default:
         return QStyledItemDelegate::createEditor(parent, option, index);
+    }
 }
 
 void TableCell::setEditorData(QWidget *editor, const QModelIndex &index) const {
-    TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
-    if(tce)
+    if(TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor))
         tce->setContent(index.data(Qt::EditRole).toString());
+    else if(ForeignKeyEditor* fke = qobject_cast<ForeignKeyEditor*>(editor))
+        fke->setForeignKey(index.data(Qt::EditRole));
     else
         QStyledItemDelegate::setEditorData(editor, index);
 }
 
 void TableCell::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const {
-    TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
-    if(tce)
+    if(TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor))
         model->setData(index, tce->content());
+    else if(ForeignKeyEditor* fke = qobject_cast<ForeignKeyEditor*>(editor))
+        model->setData(index, fke->foreignKey());
     else
         QStyledItemDelegate::setModelData(editor, model, index);
 
 }
 
 void TableCell::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const {
-    TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor);
-    if(tce) {
-        QRect g = qobject_cast<QWidget*>(parent())->window()->geometry();
+    QRect g = qobject_cast<QWidget*>(parent())->window()->geometry();
+    if(qobject_cast<TextCellEditor*>(editor))
         editor->setGeometry(g.x()+g.width()/8, g.y()+g.height()/8,g.width()*3/4,g.height()*3/4);
-    } else
+    else if(qobject_cast<ForeignKeyEditor*>(editor))
+        editor->setGeometry(g.x()+(g.width()-editor->width())/2, g.y()+(g.height()-editor->height())/2,editor->width(),editor->height());
+    else
         QStyledItemDelegate::updateEditorGeometry(editor, option, index);
 
 }
@@ -65,7 +74,7 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
         opt.rect.setLeft(0);
         opt.features &= ~QStyleOptionViewItem::HasDecoration;
     } else {
-        if(!index.data(ForeignKeyTableRole).toString().isNull()) {
+        if(!index.data(ForeignKeyRole).value<ForeignKey>().isNull()) {
             int indicatorWidth = opt.rect.height() * 2 / 3;
             opt.decorationSize = QSize(indicatorWidth,indicatorWidth);
             opt.features |= QStyleOptionViewItem::HasDecoration;
@@ -91,7 +100,7 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
 }
 
 bool TableCell::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) {
-    if(event->type() == QEvent::MouseButtonPress && !index.data(ForeignKeyTableRole).toString().isNull()) {
+    if(event->type() == QEvent::MouseButtonPress && !index.data(ForeignKeyRole).value<ForeignKey>().isNull()) {
         QMouseEvent* me = static_cast<QMouseEvent*>(event);
         QRect r = option.rect.adjusted(0,0,-option.rect.width() + option.rect.height() * 2 /3,0);
         if(r.contains(me->pos())) {

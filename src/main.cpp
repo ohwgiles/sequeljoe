@@ -9,6 +9,7 @@
 #include "notify.h"
 #include "dbconnection.h"
 #include "tabledata.h"
+#include "foreignkey.h"
 
 #include <QApplication>
 #include <QProxyStyle>
@@ -25,12 +26,13 @@ protected:
     }
 };
 #endif // __APPLE__
-#include <QMessageBox>
+
 int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain("sequeljoe.org");
 
     QApplication a(argc, argv);
 
+    qRegisterMetaType<ForeignKey>("ForeignKey");
     qRegisterMetaType<QSqlQuery*>("QSqlQuery*");
     qRegisterMetaType<const char*>("const char*");
     qRegisterMetaType<TableMetadata>("TableMetadata");

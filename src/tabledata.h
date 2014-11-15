@@ -10,6 +10,7 @@
 
 #include <QVector>
 #include <QVariant>
+#include "foreignkey.h"
 
 struct Index {
     QString name;
@@ -33,8 +34,7 @@ struct TableMetadata {
         columnNames.resize(nColumns);
         columnTypes.resize(nColumns);
         columnComments.resize(nColumns);
-        foreignKeyTables.resize(nColumns);
-        foreignKeyColumns.resize(nColumns);
+        foreignKeys.resize(nColumns);
         size_ = nColumns;
     }
     int count() const { return size_; }
@@ -43,8 +43,7 @@ struct TableMetadata {
     QVector<QString> columnNames;
     QVector<QString> columnTypes;
     QVector<QString> columnComments;
-    QVector<QString> foreignKeyTables;
-    QVector<QString> foreignKeyColumns;
+    QVector<ForeignKey> foreignKeys;
 private:
     int size_ = 0;
 };

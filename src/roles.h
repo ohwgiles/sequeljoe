@@ -3,15 +3,20 @@
 
 #include <qnamespace.h>
 
+enum SequelJoeCellEditors {
+    SJCellEditDefault = 0,
+    SJCellEditLongText,
+    SJCellEditForeignKey
+};
+
 enum SequelJoeCustomRoles {
     DatabaseIsFileRole = Qt::UserRole,
     FilterColumnRole,
     FilterOperationRole,
     FilterValueRole,
-    ForeignKeyTableRole,
-    ForeignKeyColumnRole,
+    ForeignKeyRole,
     ExpandedColumnIndexRole,
-    SqlTypeRole
+    EditorTypeRole
 };
 
 

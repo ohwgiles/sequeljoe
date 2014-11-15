@@ -49,6 +49,7 @@ public:
     virtual bool hasChildren(const QModelIndex &parent) const override;
 
     bool insertRows(int row, int count, const QModelIndex &parent) override;
+Driver* driver() const { return db.sqlDriver(); }
 
 signals:
     void pagesChanged(int,int,int);
