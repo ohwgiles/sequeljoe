@@ -20,7 +20,8 @@
 #include <QAbstractScrollArea>
 
 TableCell::TableCell(QObject *parent) :
-    QStyledItemDelegate(parent)
+    QStyledItemDelegate(parent),
+    firstColumnIsHeader(false)
 {
 }
 
@@ -73,8 +74,19 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
     if(index.parent().isValid()) {
         opt.rect.setLeft(0);
         opt.features &= ~QStyleOptionViewItem::HasDecoration;
+    } else if(firstColumnIsHeader && index.column() == 0) {
+        QStyleOptionHeader hopt;
+        hopt.rect = opt.rect;
+        hopt.state = QStyle::State_None;
+        hopt.orientation = Qt::Vertical;
+        hopt.textAlignment = Qt::AlignVCenter;
+        hopt.text = index.data().toString();
+        if (option.widget->isEnabled())
+            hopt.state |= QStyle::State_Enabled;
+        hopt.state |= QStyle::State_Active;
+        QApplication::style()->drawControl(QStyle::CE_Header, &hopt, painter);
     } else {
-        if(!index.data(ForeignKeyRole).value<ForeignKey>().isNull()) {
+        if(!firstColumnIsHeader && !index.data(ForeignKeyRole).value<ForeignKey>().isNull()) {
             int indicatorWidth = opt.rect.height() * 2 / 3;
             opt.decorationSize = QSize(indicatorWidth,indicatorWidth);
             opt.features |= QStyleOptionViewItem::HasDecoration;
@@ -97,6 +109,11 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
         }
 
     }
+}
+
+QSize TableCell::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const {
+    QSize sz = QStyledItemDelegate::sizeHint(option, index);
+    return firstColumnIsHeader ? QSize(sz.width(), sz.height() * index.data(HeightMultiple).toInt()) : sz;
 }
 
 bool TableCell::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) {

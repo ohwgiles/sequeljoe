@@ -16,6 +16,7 @@ enum SequelJoeCustomRoles {
     FilterValueRole,
     ForeignKeyRole,
     ExpandedColumnIndexRole,
+    HeightMultiple,
     EditorTypeRole
 };
 

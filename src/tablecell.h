@@ -21,12 +21,18 @@ public:
     void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
 
+    void setFirstColumnIsHeader(bool v) { firstColumnIsHeader = v; }
+
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+
 signals:
     void requestForeignKey(const QModelIndex& index);
 
 protected:
     bool editorEvent(QEvent *event, QAbstractItemModel *model,
                      const QStyleOptionViewItem &option, const QModelIndex &index);
+private:
+    bool firstColumnIsHeader;
 };
 
 #endif // _SEQUELJOE_TABLECELL_H_

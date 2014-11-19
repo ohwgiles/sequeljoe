@@ -27,6 +27,7 @@ public slots:
     void showLoadingOverlay(bool show);
 
     void setModel(QAbstractItemModel *model);
+    void adjustColumnSizes();
 
 protected slots:
     void closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint hint) override;
@@ -36,7 +37,7 @@ protected:
 
 private slots:
     void toggleForeignTable(const QModelIndex&);
-    void adjustColumnSizes(const QModelIndex& topLeft, const QModelIndex& bottomRight);
+    void handleModelReset();
 
 private:
     virtual QWidget* createChildTable(const QModelIndex& index);

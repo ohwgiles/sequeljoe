@@ -59,6 +59,17 @@ int SqlModel::rowCount(const QModelIndex &parent) const {
 }
 
 QVariant SqlModel::data(const QModelIndex &index, int role) const {
+    if(role == HeightMultiple) {
+        if(dataSafe && index.column() < metadata.count()) {
+            QString type = metadata.columnTypes.at(index.column());
+            if(type.contains("text", Qt::CaseInsensitive))
+                return 4;
+            if(type.contains("varchar", Qt::CaseInsensitive))
+                return 2;
+        }
+        return 1;
+    }
+
     if(!dataSafe)
         return QVariant();
 
@@ -160,9 +171,9 @@ void SqlModel::select() {
 void SqlModel::selectComplete(TableData data) {
     content = data;
     dataSafe = true;
-    endResetModel();
     emit selectFinished();
     emit pagesChanged(rowsFrom, rowCount(), totalRecords);
+    endResetModel();
 }
 
 void SqlModel::firstPage() {

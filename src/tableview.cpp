@@ -71,9 +71,12 @@ void TableView::closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint 
     }
 }
 
-void TableView::adjustColumnSizes(const QModelIndex &topLeft, const QModelIndex &bottomRight) {
-    for(int i = topLeft.column(); i < bottomRight.column(); ++i)
-        resizeColumnToContents(i);
+void TableView::adjustColumnSizes() {
+    for(int i = 0; i < model()->columnCount(); ++i) {
+        int sh = sizeHintForColumn(i);
+        int cw = sh < 0 ? header()->sectionSizeHint(i) : qMax(sh, header()->sectionSizeHint(i));
+        header()->resizeSection(i, qMin(cw, 250));
+    }
 }
 
 void TableView::setModel(QAbstractItemModel *m) {
@@ -86,18 +89,22 @@ void TableView::setModel(QAbstractItemModel *m) {
             qDeleteAll(h);
         foreignTableViews.clear();
     }
+    QTreeView::setModel(m);
 
     if(m) {
         connect(m, &QAbstractItemModel::rowsAboutToBeRemoved, [=](){showLoadingOverlay(true);});
         connect(m, &QAbstractItemModel::rowsRemoved, [=](){showLoadingOverlay(false);});
         connect(m, &QAbstractItemModel::modelAboutToBeReset, [=](){showLoadingOverlay(true);});
-        connect(m, &QAbstractItemModel::modelReset, [=](){showLoadingOverlay(false);});
-        connect(m, &QAbstractItemModel::dataChanged, this, &TableView::adjustColumnSizes);
+        connect(m, SIGNAL(modelReset()), this, SLOT(handleModelReset()), Qt::QueuedConnection);
     }
 
-    QTreeView::setModel(m);
     if(m) // this maybe works better after the data has been loaded?
-        adjustColumnSizes(m->index(0,0),m->index(m->rowCount()-1,m->columnCount()-1));
+        adjustColumnSizes();
+}
+
+void TableView::handleModelReset() {
+    showLoadingOverlay(false);
+    adjustColumnSizes();
 }
 
 QWidget* TableView::createChildTable(const QModelIndex& index) {

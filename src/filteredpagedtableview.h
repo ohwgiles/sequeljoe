@@ -12,6 +12,7 @@
 #include <QAbstractItemModel>
 
 class TableView;
+class QAbstractProxyModel;
 
 class QAbstractButton;
 class QLabel;
@@ -34,11 +35,14 @@ private slots:
     void clearFilter();
     void runFilter();
     void refreshModel();
+    void setPivotView(bool);
 
 private:
     QStringList filterOperations() const;
 
     TableView* table;
+    bool isPivot;
+    QAbstractProxyModel* pivotModel;
     QComboBox* filterColumns;
     QComboBox* filterOperation;
     QLineEdit* filterText;
@@ -48,6 +52,7 @@ private:
     QAbstractButton* prev;
     QAbstractButton* next;
     QAbstractButton* last;
+    QAbstractButton* view;
     QLabel* pageNum;
 };
 
