@@ -10,3 +10,7 @@ So!
 Here is something I slapped together for the 90% of the time I'm not on a Mac.
 
 It's still missing a lot of features, and I don't have a lot of time for this project; so please do fork/contribute/steal
+
+Qt
+--
+SequelJoe is built against Qt5, but in theory doesn't use any Qt5-specific features, so some tweaks to the CMakeLists.txt should allow it to build and run with Qt4
