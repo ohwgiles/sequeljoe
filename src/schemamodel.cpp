@@ -88,9 +88,9 @@ QString SqlSchemaModel::schemaQuery(const QVector<QVariant> def) {
     (!def[SCHEMA_LENGTH].toString().isEmpty() ? "(" + def[SCHEMA_LENGTH].toString() + ")" : "") +
     (def[SCHEMA_UNSIGNED].toBool() ? " UNSIGNED" : "") +
     (!def[SCHEMA_NULL].toBool() ? " NOT NULL" : "") +
-    (!def[SCHEMA_DEFAULT].isNull() ? " DEFAULT " + def[SCHEMA_DEFAULT].toString() : "") +
-    (!def[SCHEMA_EXTRA].isNull() ? " " + def[SCHEMA_EXTRA].toString() : "") +
-    (!def[SCHEMA_COMMENT].isNull() ? " COMMENT '" + def[SCHEMA_COMMENT].toString() + "'" : "") +
+    (!def[SCHEMA_DEFAULT].toString().isEmpty() ? " DEFAULT " + def[SCHEMA_DEFAULT].toString() : "") +
+    (!def[SCHEMA_EXTRA].toString().isEmpty() ? " " + def[SCHEMA_EXTRA].toString() : "") +
+    (!def[SCHEMA_COMMENT].toString().isEmpty() ? " COMMENT '" + def[SCHEMA_COMMENT].toString() + "'" : "") +
     fkq;
 }
 
