@@ -16,7 +16,7 @@ TableModel::TableModel(DbConnection &db, QString table, QObject *parent) :
     tableName(table),
     where(Filter{})
 {
-    setQuery("SELECT * FROM " + table);
+    setQuery("SELECT * FROM `" + table + "`");
      //todo move all row limiting into this class?
     rowsLimit = rowsPerPage();
 }
