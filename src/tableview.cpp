@@ -50,24 +50,40 @@ TableView::TableView(QWidget *parent) :
 }
 
 void TableView::closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint hint) {
-    QTreeView::closeEditor(editor, hint);
-
     QModelIndex idx = currentIndex();
-    QModelIndex nextIndex;
+    QModelIndex nextIndex = idx;
 
-    if(hint == QAbstractItemDelegate::EditNextItem)
-        nextIndex = model()->index(idx.row(), idx.column() + 1, idx.parent());
+    // submit if the user clicks away
+    if(hint == QAbstractItemDelegate::NoHint) {
+        return QTreeView::closeEditor(editor, QAbstractItemDelegate::SubmitModelCache);
+    }
 
-    if(hint == QAbstractItemDelegate::EditPreviousItem)
-        nextIndex = model()->index(idx.row(), idx.column() - 1, idx.parent());
+    // don't allow custom editors to be popped up during tabbing,
+    // it's more trouble than it's worth
+    auto canEditThroughTabbing = [&](QModelIndex i) {
+        return (model()->flags(i) & Qt::ItemIsEditable) && model()->data(i, EditorTypeRole) == SJCellEditDefault;
+    };
 
-    if(nextIndex.isValid()) {
-        if((model()->flags(nextIndex) & Qt::ItemIsEditable)) {
+    // find next editible cell if user tabs
+    if(hint == QAbstractItemDelegate::EditNextItem) do {
+        nextIndex = model()->index(nextIndex.row(), nextIndex.column() + 1, nextIndex.parent());
+    } while(nextIndex.isValid() && !canEditThroughTabbing(nextIndex));
+
+    if(hint == QAbstractItemDelegate::EditPreviousItem) do {
+        nextIndex = model()->index(nextIndex.row(), nextIndex.column() - 1, nextIndex.parent());
+    } while(nextIndex.isValid() && !canEditThroughTabbing(nextIndex));
+
+    if(idx != nextIndex) { // EditNextItem || EditPreviousItem
+        if(nextIndex.isValid()) {
+            QTreeView::closeEditor(editor, QAbstractItemDelegate::NoHint);
             setCurrentIndex(nextIndex);
             edit(nextIndex);
-        } else {
+        } else { // end of row, submit
             QTreeView::closeEditor(editor, QAbstractItemDelegate::SubmitModelCache);
         }
+    } else {
+        // parent behaviour for SubmitModelCache and RevertModelCache
+        QTreeView::closeEditor(editor, hint);
     }
 }
 

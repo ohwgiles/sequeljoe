@@ -59,6 +59,9 @@ int SqlModel::rowCount(const QModelIndex &parent) const {
 }
 
 QVariant SqlModel::data(const QModelIndex &index, int role) const {
+    if(role == EditorTypeRole)
+        return SJCellEditDefault;
+
     if(role == HeightMultiple) {
         if(dataSafe && index.column() < metadata.count()) {
             QString type = metadata.columnTypes.at(index.column());
