@@ -110,16 +110,32 @@ bool TableModel::submit() {
 void TableModel::revert() {
     select();
 }
-
+#include <QDebug>
 bool TableModel::deleteRows(QSet<int> rows) {
-    QStringList rowIds;
-    for(int i : rows) {
-        rowIds << db.sqlDriver()->quote(data(index(i, metadata.primaryKeyColumn)).toString());
-        content.remove(i);
-    }
-    QString query("DELETE FROM `" + tableName + "` WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) + "` IN ("+rowIds.join(",")+")");
+    // if we have a primary key, we can delete just by this id, which efficiently allows
+    // us to delete multiple rows in a single query
+    if(metadata.primaryKeyColumn > -1) {
+        QStringList rowIds;
+        for(int i : rows) {
+            rowIds << db.sqlDriver()->quote(data(index(i, metadata.primaryKeyColumn)).toString());
+            content.remove(i);
+        }
+        QString query("DELETE FROM `" + tableName + "` WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) + "` IN ("+rowIds.join(",")+")");
 
-    QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
+        QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
+    } else {
+        // otherwise we have to compare every column
+        QString columnNames = "`" + QStringList(metadata.columnNames.toList()).join("`,`") + "`";
+        for(int i : rows) {
+            QStringList values;
+            for(int j = 0; j < metadata.count(); ++j)
+                values << db.sqlDriver()->quote(data(index(i,j)).toString());
+            QString query("DELETE FROM `" + tableName + "` WHERE (" + columnNames + ") = (" + values.join(",") + ")");
+            content.remove(i);
+            QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
+        }
+
+    }
     return true;
 }
 
