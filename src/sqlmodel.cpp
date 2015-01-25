@@ -197,10 +197,7 @@ void SqlModel::lastPage() {
 }
 
 Qt::ItemFlags SqlModel::flags(const QModelIndex &index) const {
-    Qt::ItemFlags f = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-    if(metadata.primaryKeyColumn != -1)
-        f |= Qt::ItemIsEditable;
-    return f;
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
 }
 
 bool SqlModel::setData(const QModelIndex &index, const QVariant &value, int role) {
