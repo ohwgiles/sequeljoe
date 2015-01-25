@@ -51,9 +51,11 @@ Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
             flags |= Qt::ItemIsEditable;
             break;
         case SCHEMA_UNSIGNED:
-        case SCHEMA_NULL:
             if(data(this->index(index.row(), SCHEMA_TYPE)).toString().contains("int", Qt::CaseInsensitive))
                 flags |= Qt::ItemIsUserCheckable;
+            break;
+        case SCHEMA_NULL:
+            flags |= Qt::ItemIsUserCheckable;
             break;
         default: break;
         }
