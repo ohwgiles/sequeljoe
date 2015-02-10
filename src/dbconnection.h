@@ -30,7 +30,7 @@ struct SqlParams {
     short port;
     QByteArray user;
     QByteArray pass;
-    int type;
+    QString driverName;
     QByteArray dbName;
 };
 

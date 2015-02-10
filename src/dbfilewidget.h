@@ -18,14 +18,14 @@ class DbFileWidget : public QWidget {
 public:
     explicit DbFileWidget(QWidget* parent = 0);
     virtual QSize sizeHint() const override;
-    void setValue(bool file, QString value);
+    void setFile(bool);
+    void setValue(QString value);
 
 signals:
     void changed(QString);
 
 protected slots:
     void browseButtonClicked();
-    void toggleMode(bool file, bool doEmit = true);
     void textEdited(QString);
 
 private:

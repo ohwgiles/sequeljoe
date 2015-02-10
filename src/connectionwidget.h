@@ -53,8 +53,11 @@ private slots:
 
 private:
     bool dbTypeIsFile(int type) const;
+    bool dbTypeHasCipher(int type) const;
 
     QString group;
+    QGroupBox* boxSetup;
+    QFormLayout* form;
     QLineEdit* name;
     QLineEdit* host;
     QLineEdit* port;
@@ -63,10 +66,12 @@ private:
     QLineEdit* username;
     QLineEdit* password;
     QCheckBox* chkUseSsh;
+    QGroupBox* boxSsh;
     QLineEdit* sshHost;
     QLineEdit* sshPort;
     QLineEdit* sshUsername;
     PassKeyWidget* sshPassKey;
+    QPushButton* connectButton;
     Favourites* favourites;
 };
 

@@ -44,43 +44,43 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
     { // widget for configuring a connection
         QWidget* cfgWidget = new QWidget(this);
         QBoxLayout* cfgLayout = new QVBoxLayout(cfgWidget);
-        QGroupBox* boxSetup = new QGroupBox("Connection Setup", cfgWidget);
+        boxSetup = new QGroupBox("Connection Setup", cfgWidget);
 
         // hacky, but seems to look good on most platforms. without this, the forms look too loose
         boxSetup->setStyleSheet("QGroupBox{border:1px solid #bbb;border-radius:2px;margin-top:3ex;}QGroupBox::title{subcontrol-origin:margin;}");
 
-        QFormLayout* form = new QFormLayout(boxSetup);
+        form = nullptr;
 
         name = new QLineEdit(boxSetup);
-        form->addRow("Name", name);
+        //name->hide();
+
+        sqlType = new QComboBox(boxSetup);
+        sqlType->setModel(Driver::driverListModel());
+        sqlType->hide();
 
         host = new QLineEdit(boxSetup);
-        form->addRow("Host", host);
+        //host->hide();
 
         port = new QLineEdit(boxSetup);
         port->setPlaceholderText(QString::number(SavedConfig::DEFAULT_SQL_PORT));
         port->setValidator(new QIntValidator);
-        form->addRow("Port", port);
-
-        sqlType = new QComboBox(boxSetup);
-        sqlType->setModel(Driver::driverListModel());
-        form->addRow("Connection Type", sqlType);
+        //port->hide();
 
         dbName = new DbFileWidget(boxSetup);
-        form->addRow("Database", dbName);
+        //dbName->hide();
 
         username = new QLineEdit(boxSetup);
-        form->addRow("Username", username);
+        //username->hide();
 
         password = new QLineEdit(boxSetup);
         password->setEchoMode(QLineEdit::Password);
-        form->addRow("Password", password);
+        //password->hide();
 
         chkUseSsh = new QCheckBox("SSH Tunnel", boxSetup);
-        form->addWidget(chkUseSsh);
+        //chkUseSsh->hide();
 
         { // widget for configuring the SSH tunnel
-            QGroupBox* boxSsh = new QGroupBox("SSH", boxSetup);
+            boxSsh = new QGroupBox("SSH", boxSetup);
             boxSsh->setEnabled(false);
             connect(chkUseSsh, SIGNAL(toggled(bool)), boxSsh, SLOT(setEnabled(bool)));
 
@@ -100,20 +100,19 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
             sshPassKey = new PassKeyWidget(boxSsh);
             sshForm->addRow("Password", sshPassKey);
 
-            form->setWidget(8, QFormLayout::SpanningRole, boxSsh);
+            //boxSsh->hide();
         }
 
-        QPushButton* pushButton = new QPushButton("Connect", boxSetup);
-        form->addWidget(pushButton);
-        connect(pushButton, &QPushButton::clicked, this, &ConnectionWidget::connectButtonClicked);
+        connectButton = new QPushButton("Connect", boxSetup);
+        connectButton->hide();
+        //form->addWidget(pushButton);
+        connect(connectButton, &QPushButton::clicked, this, &ConnectionWidget::connectButtonClicked);
 
         cfgLayout->addWidget(boxSetup);
         cfgLayout->setAlignment(boxSetup, Qt::AlignCenter);
 
         layout->addWidget(cfgWidget,4);
     }
-
-    favourites->populateFromConfig();
 
     connect(name, SIGNAL(textEdited(QString)), this, SLOT(setupNameChanged(QString)));
     connect(host, SIGNAL(textEdited(QString)), this, SLOT(setupHostChanged(QString)));
@@ -127,6 +126,8 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
     connect(sshPort, SIGNAL(textEdited(QString)), this, SLOT(setupSshPortChanged(QString)));
     connect(sshUsername, SIGNAL(textEdited(QString)), this, SLOT(setupSshUserChanged(QString)));
     connect(sshPassKey, SIGNAL(changed(bool,QString)), this, SLOT(setupSshPassKeyChanged(bool,QString)));
+
+    favourites->populateFromConfig();
 }
 
 void ConnectionWidget::connectButtonClicked() {
@@ -158,13 +159,63 @@ void ConnectionWidget::setupPortChanged(QString port) {
 void ConnectionWidget::setupSqlTypeChanged(int type) {
     QSettings s;
     s.beginGroup(group);
-    s.setValue(SavedConfig::KEY_TYPE, type);
-    // changing the type invalidates the database name
+    s.setValue(SavedConfig::KEY_TYPE, sqlType->model()->data(sqlType->model()->index(type,0),Qt::EditRole).toString());
+
     bool isFile = dbTypeIsFile(type);
-    host->setEnabled(!isFile);
-    port->setEnabled(!isFile);
-    dbName->setValue(isFile, "");
-    s.setValue(SavedConfig::KEY_DBNM, "");
+    bool hasCipher = dbTypeHasCipher(type);
+
+    for(QObject* obj: boxSetup->children()) {
+        if(QWidget* w = qobject_cast<QWidget*>(obj))
+            w->hide();
+    }
+
+    if(form) {
+        delete form->labelForField(name);
+        delete form->labelForField(sqlType);
+        delete form->labelForField(host);
+        delete form->labelForField(port);
+        delete form->labelForField(dbName);
+        delete form->labelForField(username);
+        delete form->labelForField(password);
+        delete form;
+        form = 0;
+    }
+
+    form = new QFormLayout(boxSetup);
+
+    form->addRow("Name", name);
+    name->show();
+    form->addRow("Connection Type", sqlType);
+    sqlType->show();
+    if(!isFile) {
+        form->addRow("Host", host);
+        host->show();
+        form->addRow("Port", port);
+        port->show();
+    }
+    form->addRow("Database", dbName);
+    dbName->show();
+    if(hasCipher) {
+        form->addRow("Cipher Key", password);
+        password->show();
+    }
+    if(!isFile) {
+        form->addRow("Username", username);
+        username->show();
+        form->addRow("Password", password);
+        password->show();
+        form->addWidget(chkUseSsh);
+        chkUseSsh->show();
+        form->setWidget(form->rowCount(), QFormLayout::SpanningRole, boxSsh);
+        boxSsh->show();
+    }
+    form->addWidget(connectButton);
+    connectButton->show();
+
+    boxSetup->setLayout(form);
+    dbName->setFile(isFile);
+    // changing the type invalidates the database name
+    dbName->setValue("");
     s.endGroup();
 }
 
@@ -229,18 +280,24 @@ bool ConnectionWidget::dbTypeIsFile(int type) const {
     return sqlType->model()->data(sqlType->model()->index(type,0), DatabaseIsFileRole).toBool();
 }
 
+bool ConnectionWidget::dbTypeHasCipher(int type) const {
+    return sqlType->model()->data(sqlType->model()->index(type,0), DatabaseHasCipherRole).toBool();
+}
+
 void ConnectionWidget::loadSettings(QString groupName) {
     group = groupName;
     QSettings s;
     s.beginGroup(group);
     name->setText(s.value("Name").toString());
     host->setText(s.value(SavedConfig::KEY_HOST).toString());
-    sqlType->setCurrentIndex(s.value(SavedConfig::KEY_TYPE).toInt());
-    // actually save back the value, for the case when the config value doesn't exist in the combo box (i.e. "" new entry)
-    s.setValue(SavedConfig::KEY_TYPE, sqlType->currentIndex());
+
+    sqlType->model()->setData(QModelIndex(), s.value(SavedConfig::KEY_TYPE).toString());
+    int sqlTypeRow = sqlType->model()->data(QModelIndex{},Qt::EditRole).toInt();
+    sqlType->setCurrentIndex(sqlTypeRow);
+    setupSqlTypeChanged(sqlTypeRow);
 
     port->setText(s.value(SavedConfig::KEY_PORT).toString());
-    dbName->setValue(dbTypeIsFile(s.value(SavedConfig::KEY_TYPE).toInt()), s.value(SavedConfig::KEY_DBNM).toString());
+    dbName->setValue(s.value(SavedConfig::KEY_DBNM).toString());
     username->setText(s.value(SavedConfig::KEY_USER).toString());
     password->setText(s.value(SavedConfig::KEY_PASS).toString());
     chkUseSsh->setChecked(s.value(SavedConfig::KEY_USE_SSH).toBool());

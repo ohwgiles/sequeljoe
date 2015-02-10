@@ -25,21 +25,17 @@ class Driver : public QSqlDatabase {
 public:
     virtual ~Driver(){}
 
-    enum DriverType {
-        SQLITE,
-        MYSQL
-    };
-
     static QAbstractListModel *driverListModel();
-    static Driver* createDriver(DriverType type);
+    static Driver* createDriver(QString type);
 
     virtual QString quote(QVariant value);
+    // fix non-virtualness of QSqlDatabase::open
+    virtual bool open() { return QSqlDatabase::open(); }
 
     virtual TableData columns(QString table) = 0;
     virtual Indices indices(QString table) = 0;
     virtual TableMetadata metadata(QString table) = 0;
     virtual QStringList tableNames() = 0;
-    virtual QString driverCode() const = 0;
 };
 
 #endif // SQLDRIVER_H

@@ -8,39 +8,58 @@
 #include <QSqlRecord>
 #include <QSqlDriver>
 #include <QSqlField>
+#include <QSet>
 
 class SqlDriverList : public QAbstractListModel {
 public:
     SqlDriverList() : QAbstractListModel()
     {
         QSqlDatabase db;
-        QStringList availableDrivers = db.drivers();
-        if(availableDrivers.contains("QSQLITE"))
-            typeLabels.append({Driver::SQLITE, "SQLite"});
-        if(availableDrivers.contains("QMYSQL"))
-            typeLabels.append({Driver::MYSQL, "MySQL"});
+        drivers = db.drivers().toSet().intersect({"QSQLITE","QSQLCIPHER","QMYSQL"}).toList();
     }
 
     int rowCount(const QModelIndex &parent) const {
-        return typeLabels.count();
+        return drivers.count();
+    }
+
+    QString label(QString driver) const {
+        if(driver == "QSQLITE") return "SQLite";
+        if(driver == "QSQLCIPHER") return "SQLite/Cipher";
+        if(driver == "QMYSQL") return "MySQL/MariaDB";
+        return "Unknown";
+    }
+
+
+    bool setData(const QModelIndex &index, const QVariant &value, int role) {
+        savedDriver = value.toString();
+        return true;
     }
 
     QVariant data(const QModelIndex &index, int role) const {
+
         if(index.isValid()) {
             if(role == Qt::DisplayRole)
-                return typeLabels.at(index.row()).second;
+                return label(drivers.at(index.row()));
 
-            if(role == Qt::EditRole)
-                return typeLabels.at(index.row()).first;
+            if(role == Qt::EditRole) // hacky :D
+                return drivers.at(index.row());
 
             if(role == DatabaseIsFileRole)
-                return typeLabels.at(index.row()).first == Driver::SQLITE;
-        }
+                return drivers.at(index.row()) == "QSQLITE" ||
+                        drivers.at(index.row()) == "QSQLCIPHER";
+
+            if(role == DatabaseHasCipherRole)
+                return drivers.at(index.row()) == "QSQLCIPHER";
+
+        } else if(role == Qt::EditRole)
+            return drivers.indexOf(savedDriver);
+
         return QVariant();
     }
 
 private:
-    QVector<QPair<Driver::DriverType, QString>> typeLabels;
+    QString savedDriver;
+    QStringList drivers;
 };
 
 class MySqlDriver : public Driver {
@@ -156,10 +175,6 @@ public:
         return result;
     }
 
-    virtual QString driverCode() const override {
-        return "QMYSQL";
-    }
-
 };
 
 class SqliteDriver : public Driver {
@@ -222,23 +237,28 @@ public:
         return result;
     }
 
-    virtual QString driverCode() const override {
-        return "QSQLITE";
-    }
 };
 
+class SqlcipherDriver : public SqliteDriver
+{
+    virtual bool open() {
+        bool ret = QSqlDatabase::open();
+        QSqlQuery q(*this);
+        return ret && q.exec("PRAGMA key = '" + password() + "'");
+    }
+};
 
 QAbstractListModel* Driver::driverListModel() {
     return new SqlDriverList();
 }
 
-Driver* Driver::createDriver(DriverType type) {
-    switch(type) {
-    case DriverType::MYSQL:
+Driver* Driver::createDriver(QString type) {
+    if(type == "QMYSQL")
         return new MySqlDriver();
-    case DriverType::SQLITE:
+    else if(type == "QSQLITE")
         return new SqliteDriver();
-    }
+    else if(type == "QSQLCIPHER")
+        return new SqlcipherDriver();
     return nullptr;
 }
 

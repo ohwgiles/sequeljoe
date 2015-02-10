@@ -11,6 +11,7 @@ enum SequelJoeCellEditors {
 
 enum SequelJoeCustomRoles {
     DatabaseIsFileRole = Qt::UserRole,
+    DatabaseHasCipherRole,
     FilterColumnRole,
     FilterOperationRole,
     FilterValueRole,

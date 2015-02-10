@@ -33,7 +33,7 @@ DbFileWidget::DbFileWidget(QWidget *parent) :
     connect(browseButton_, SIGNAL(clicked()), this, SLOT(browseButtonClicked()));
     connect(field_, SIGNAL(textEdited(QString)), this, SLOT(textEdited(QString)));
 
-    toggleMode(false);
+    setFile(false);
 }
 
 QSize DbFileWidget::sizeHint() const {
@@ -49,22 +49,19 @@ void DbFileWidget::browseButtonClicked() {
     changed(field_->text());
 }
 
-void DbFileWidget::toggleMode(bool asFile, bool doEmit) {
+
+void DbFileWidget::setFile(bool asFile) {
     if(asFile) { // file mode
         field_->end(false);
         browseButton_->setIcon(QIcon(":browse"));
         browseButton_->show();
-        if(doEmit)
-            emit changed(field_->text());
     } else { // name mode
         browseButton_->hide();
-        if(doEmit) emit changed(field_->text());
     }
 }
 
-void DbFileWidget::setValue(bool file, QString value) {
+void DbFileWidget::setValue(QString value) {
     field_->setText(value);
-    toggleMode(file, false);
 }
 
 void DbFileWidget::textEdited(QString v) {

@@ -37,7 +37,7 @@ DbConnection::DbConnection(const QSettings &settings) {
         sqlParams.port = SavedConfig::DEFAULT_SQL_PORT;
     sqlParams.user = settings.value(SavedConfig::KEY_USER).toByteArray();
     sqlParams.pass = settings.value(SavedConfig::KEY_PASS).toByteArray();
-    sqlParams.type = settings.value(SavedConfig::KEY_TYPE).toInt();
+    sqlParams.driverName = settings.value(SavedConfig::KEY_TYPE).toString();
     sqlParams.dbName = settings.value(SavedConfig::KEY_DBNM).toByteArray();
 
 
@@ -55,7 +55,7 @@ DbConnection::DbConnection(const QSettings &settings) {
         sshParams.sshPass = settings.value(SavedConfig::KEY_SSH_PASS).toByteArray();
     }
 
-    driver = Driver::createDriver(Driver::DriverType(sqlParams.type));
+    driver = Driver::createDriver(sqlParams.driverName);
 }
 
 DbConnection::~DbConnection() {
@@ -194,7 +194,7 @@ QString DbConnection::databaseName() const {
 
 void DbConnection::openDatabase(QString host, int port) {
     QString name = "connection_" + QString::number(nConnections++);
-    *((QSqlDatabase*) driver) = QSqlDatabase::addDatabase(driver->driverCode(), name);
+    *((QSqlDatabase*) driver) = QSqlDatabase::addDatabase(sqlParams.driverName, name);
     driver->setHostName(host);
     driver->setPort(port);
     driver->setDatabaseName(sqlParams.dbName);
