@@ -15,19 +15,34 @@ class SqlHighlighter : public QSyntaxHighlighter {
 public:
     explicit SqlHighlighter(QTextDocument* parent);
 
+    enum {
+        STATE_NONE      = 0x00,
+        STATE_DBLSTR    = 0x01,
+        STATE_SNGSTR    = 0x02,
+        STATE_COMMENT   = 0x04,
+        STATE_CURRENT   = 0x08
+    };
+
+    union State {
+        struct {
+            char mode;
+            char idx;
+            char col;
+        } s;
+        int opaque;
+    };
+
 protected:
     virtual void highlightBlock(const QString &text) override;
 
 private:
-     struct Rule {
-         QRegExp pattern;
-         QTextCharFormat format;
-     };
-     QVector<Rule> rules;
-     QTextCharFormat comment;
 
-     QRegExp commentStart;
-     QRegExp commentEnd;
+    struct Rule {
+        QRegExp pattern;
+        QColor fg;
+    };
+    QVector<Rule> rules;
+    QColor defaultFg;
 };
 
 #endif // _SEQUELJOE_SQLHIGHLIGHTER_H_

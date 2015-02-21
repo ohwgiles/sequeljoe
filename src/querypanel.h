@@ -28,8 +28,10 @@ public:
 
 private slots:
     void executeQuery();
+    void executeAll();
 
 private:
+    QString getActiveStatement(int b,int c);
     QPlainTextEdit* editor;
     QLabel* error;
     QLabel* status;

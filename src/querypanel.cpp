@@ -22,6 +22,7 @@
 #include <QLabel>
 #include <QAction>
 
+
 QueryPanel::QueryPanel(QWidget* parent) :
     QWidget(parent),
     model(nullptr)
@@ -57,9 +58,21 @@ QueryPanel::QueryPanel(QWidget* parent) :
         runQueryAction->setShortcut(ctrlEnter);
         addAction(runQueryAction);
 
+        QAction* runAllAction = new QAction(this);
+        QKeySequence ctrlShiftEnter(Qt::CTRL + Qt::SHIFT + Qt::Key_Return);
+        runAllAction->setShortcut(ctrlShiftEnter);
+        addAction(runAllAction);
+
+
         QBoxLayout* toolbar = new QHBoxLayout();
-        QPushButton* run = new QPushButton("Run Query (" + ctrlEnter.toString(QKeySequence::NativeText) + ")", this);
+        toolbar->addStretch();
+
+        QPushButton* run = new QPushButton("Execute statement under cursor (" + ctrlEnter.toString(QKeySequence::NativeText) + ")", this);
         toolbar->addWidget(run);
+
+        QPushButton* runall = new QPushButton("Execute all (" + ctrlShiftEnter.toString(QKeySequence::NativeText) + ")", this);
+        toolbar->addWidget(runall);
+
         editorLayout->addLayout(toolbar);
 
         splitter->addWidget(top);
@@ -67,6 +80,9 @@ QueryPanel::QueryPanel(QWidget* parent) :
         connect(editor, SIGNAL(textChanged()), error, SLOT(hide()));
         connect(runQueryAction, SIGNAL(triggered()), this, SLOT(executeQuery()));
         connect(run, SIGNAL(clicked()), runQueryAction, SIGNAL(triggered()));
+        connect(runAllAction, SIGNAL(triggered()), this, SLOT(executeAll()));
+        connect(runall, SIGNAL(clicked()), runAllAction, SIGNAL(triggered()));
+
     }
 
     { // bottom half: results table
@@ -95,10 +111,61 @@ void QueryPanel::setModel(SqlModel *m) {
     model = m;
     results->setModel(m);
 }
+union State {
+    struct {
+        char mode;
+        char idx;
+        char col;
+    } s;
+    int opaque;
+};
+QString QueryPanel::getActiveStatement(int block, int col) {
+
+    int from = 0, to = -1;
+    State st;
+
+    QTextBlock b = editor->document()->findBlockByNumber(block);
+    int scol = col;
+    while(b.isValid()) {
+        st.opaque = b.userState();
+        if(st.s.col != -1 && st.s.col < scol) {
+            from = b.position() + st.s.col + 1;
+            break;
+        }
+        scol = INT_MAX;
+        b = b.previous();
+    }
+
+    b = editor->document()->findBlockByNumber(block);
+    scol = col;
+    while(b.isValid()) {
+        st.opaque = b.userState();
+        if(st.s.col != -1 && st.s.col >= scol) {
+            to = b.position() + st.s.col;
+            break;
+        }
+        scol = 0;
+        b = b.next();
+    }
+
+    QString all = editor->document()->toPlainText();
+    if(to < 0)
+        to = all.length();
+    return all.mid(from,to);;
+}
 
 void QueryPanel::executeQuery() {
+    QTextCursor c = editor->textCursor();
+    QString stmt = getActiveStatement(c.blockNumber(), c.columnNumber());
     error->hide();
     status->hide();
-    model->setQuery(editor->document()->toPlainText());
+    model->setQuery(stmt);
+    model->select();
+}
+
+void QueryPanel::executeAll() {
+    error->hide();
+    status->hide();
+    model->setQuery(editor->toPlainText());
     model->select();
 }

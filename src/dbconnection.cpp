@@ -113,11 +113,16 @@ void DbConnection::queryTableIndices(QString tableName, QObject *callbackOwner, 
 }
 
 void DbConnection::queryTableContent(QString query, QObject* callbackOwner, const char* callbackName) {
+
     QSqlQuery q(*driver);
+    // TODO deal with strings, comments, and delimiter changes
+    for(QString querypart : query.split(';')) {
+        q.prepare(querypart);
+        execQuery(q);
+    }
+
     TableData data;
     data.reserve(q.size());
-    q.prepare(query);
-    execQuery(q);
     data.columnNames.resize(q.record().count());
     for(int i = 0; i < q.record().count(); ++i) {
         data.columnNames[i] = q.record().fieldName(i).trimmed();
