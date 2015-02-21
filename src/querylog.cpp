@@ -29,7 +29,7 @@ QueryLog::QueryLog(QWidget *parent) :
 
 
 void QueryLog::logQuery(QString query, QString statusString) {
-    QTableWidgetItem* item = new QTableWidgetItem(QDateTime::currentDateTime().toString(Qt::ISODate) + ": " + query);
+    QTableWidgetItem* item = new QTableWidgetItem(QDateTime::currentDateTime().toString(Qt::ISODate) + ": " + query.replace('\n', ' '));
     QTableWidgetItem* status = new QTableWidgetItem(statusString);
     int rows = rowCount();
     setRowCount(rows+2);
