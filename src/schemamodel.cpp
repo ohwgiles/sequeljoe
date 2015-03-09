@@ -74,16 +74,16 @@ QString SqlSchemaModel::schemaQuery(const QVector<QVariant> def) {
     ForeignKey fk = def[SCHEMA_FOREIGNKEY].value<ForeignKey>();
     if(!fk.column.isNull() || !fk.constraint.isNull()) {
         if(!fk.constraint.isNull())
-            QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, "ALTER TABLE " + tableName + " DROP FOREIGN KEY `" + fk.constraint + "`"), Q_ARG(QObject*, this));
+            QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, "ALTER TABLE " + tableName + " DROP FOREIGN KEY \"" + fk.constraint + "\""), Q_ARG(QObject*, this));
 
         fk.constraint = "FK_" + tableName.toUpper() + "_" + def[SCHEMA_NAME].toString().toUpper() + "_" + fk.table.toUpper() + "_" + fk.column.toUpper();
         setData(index(updatingRow, SCHEMA_FOREIGNKEY), QVariant::fromValue<ForeignKey>(fk), Qt::EditRole);
 
         if(!fk.column.isNull())
-            fkq += ", ADD CONSTRAINT `"+fk.constraint+"` FOREIGN KEY (`" + def[SCHEMA_NAME].toString() + "`) REFERENCES `" + fk.table + "` (`" + fk.column + "`)";
+            fkq += ", ADD CONSTRAINT \""+fk.constraint+"\" FOREIGN KEY (\"" + def[SCHEMA_NAME].toString() + "\") REFERENCES \"" + fk.table + "\" (\"" + fk.column + "\")";
     }
 
-    return "`" + def[SCHEMA_NAME].toString() + "` " +
+    return "\"" + def[SCHEMA_NAME].toString() + "\" " +
     (def[SCHEMA_TYPE].toString().isEmpty() ? "TEXT" : def[SCHEMA_TYPE].toString()) +
     (!def[SCHEMA_LENGTH].toString().isEmpty() ? "(" + def[SCHEMA_LENGTH].toString() + ")" : "") +
     (def[SCHEMA_UNSIGNED].toBool() ? " UNSIGNED" : "") +
@@ -111,7 +111,7 @@ bool SqlSchemaModel::submit() {
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it)
                 newColumn[it.key()] = it.value();
 
-            QString updateQuery = "ALTER TABLE `" + tableName + "` ADD COLUMN " + schemaQuery(newColumn);
+            QString updateQuery = "ALTER TABLE \"" + tableName + "\" ADD COLUMN " + schemaQuery(newColumn);
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, updateQuery), Q_ARG(QObject*, this));
 
         } else {
@@ -121,7 +121,7 @@ bool SqlSchemaModel::submit() {
                 newColumn[it.key()] = it.value();
 
             QString oldColumnName = originalColumnName.isEmpty() ? newColumn[SCHEMA_NAME].toString() : originalColumnName;
-            QString updateQuery = QString("ALTER TABLE ") + "`" + tableName + "` CHANGE " + "`" + oldColumnName + "` " + schemaQuery(newColumn);
+            QString updateQuery = QString("ALTER TABLE ") + "\"" + tableName + "\" CHANGE " + "\"" + oldColumnName + "\" " + schemaQuery(newColumn);
 
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, updateQuery), Q_ARG(QObject*, this));
             originalColumnName.clear(); //< actually should probably be done after this was successful
@@ -179,7 +179,7 @@ QVariant SqlSchemaModel::headerData(int section, Qt::Orientation orientation, in
 bool SqlSchemaModel::deleteRows(QSet<int> rows) {
     beginResetModel();
     for(int i : rows) {
-        QString query("ALTER TABLE `" + tableName + "` DROP COLUMN `" + content.at(i).at(SCHEMA_NAME).toString() + "`");
+        QString query("ALTER TABLE \"" + tableName + "\" DROP COLUMN \"" + content.at(i).at(SCHEMA_NAME).toString() + "\"");
         QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
         content.remove(i);
     }

@@ -161,20 +161,20 @@ void DbConnection::populateDatabases() {
 }
 QString DbConnection::queryCreateTable(QString tableName) {
     QSqlQuery query(*driver);
-    query.exec("SHOW CREATE TABLE `" + tableName + "`");
+    query.exec("SHOW CREATE TABLE \"" + tableName + "\"");
     query.next();
     return query.value(1).toString();
 }
 
 void DbConnection::createTable(QString tableName) {
     QSqlQuery query(*driver);
-    query.prepare("CREATE TABLE `" + tableName + "` (`id` INT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT)");
+    query.prepare("CREATE TABLE \"" + tableName + "\" (\"id\" INT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT)");
     execQuery(query);
 }
 
 void DbConnection::deleteTable(QString tableName) {
     QSqlQuery query(*driver);
-    query.prepare("DROP TABLE `" + tableName + "`");
+    query.prepare("DROP TABLE \"" + tableName + "\"");
     execQuery(query);
 }
 
@@ -217,7 +217,7 @@ void DbConnection::openDatabase(QString host, int port) {
 
 void DbConnection::useDatabase(QString dbName) {
     QSqlQuery query(*driver);
-    query.prepare("USE `" + dbName + "`");
+    query.prepare("USE \"" + dbName + "\"");
     execQuery(query);
     driver->setDatabaseName(dbName);
     populateTables();

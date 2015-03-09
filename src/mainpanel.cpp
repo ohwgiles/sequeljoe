@@ -179,7 +179,7 @@ void MainPanel::updateSchemaModel(QString tableName) {
         SqlModel* schema = new SqlSchemaModel(*db, tableName);
         connect(schema, SIGNAL(schemaModified(QString)), this, SLOT(deleteContentModel(QString)));
         SqlModel* index  = new SqlModel(*db);
-        index->setQuery("SHOW INDEX FROM " + tableName);
+        index->setQuery("SHOW INDEX FROM \"" + tableName + "\"");
         schemaModels[key] = {schema, index};
         schemaView->setModels(schema, index);
         schema->select();
@@ -367,7 +367,7 @@ void MainPanel::showCreateTable() {
         QString res;
         QMetaObject::invokeMethod(db, "queryCreateTable", Qt::BlockingQueuedConnection, Q_RETURN_ARG(QString, res), Q_ARG(QString, current));
         QDialog* dialog = new QDialog(this);
-        dialog->setWindowTitle("SHOW CREATE TABLE `" + current + "`");
+        dialog->setWindowTitle("SHOW CREATE TABLE \"" + current + "\"");
         dialog->setLayout(new QVBoxLayout(dialog));
         QPlainTextEdit* txt = new QPlainTextEdit(dialog);
         dialog->layout()->addWidget(txt);

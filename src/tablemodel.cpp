@@ -16,7 +16,7 @@ TableModel::TableModel(DbConnection &db, QString table, QObject *parent) :
     tableName(table),
     where(Filter{})
 {
-    setQuery("SELECT * FROM `" + table + "`");
+    setQuery("SELECT * FROM \"" + table + "\"");
      //todo move all row limiting into this class?
     rowsLimit = rowsPerPage();
 }
@@ -36,7 +36,7 @@ void TableModel::describeComplete(TableMetadata metadata) {
 
 QString TableModel::prepareQuery() const {
     if(!where.value.isEmpty()) {
-        return query + " WHERE `" + where.column + "` " + where.operation + " " + db.sqlDriver()->quote(where.value);
+        return query + " WHERE \"" + where.column + "\" " + where.operation + " " + db.sqlDriver()->quote(where.value);
     } else
         return query;
 }
@@ -91,21 +91,21 @@ bool TableModel::submit() {
                 columns << content.columnNames[it.key()];
                 values << db.sqlDriver()->quote(it.value());
             }
-            QString query = "INSERT INTO `" + tableName + "` (`" + columns.join("`,`") + "`) VALUES(" + values.join(",") + ")";
+            QString query = "INSERT INTO \"" + tableName + "\" (\"" + columns.join("\",\"") + "\") VALUES(" + values.join(",") + ")";
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
         } else {
             QStringList updates;
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it) {
-                updates << "`" + content.columnNames[it.key()] + "` = " + db.sqlDriver()->quote(it.value());
+                updates << "\"" + content.columnNames[it.key()] + "\" = " + db.sqlDriver()->quote(it.value());
             }
-            QString query = "UPDATE `" + tableName + "` SET " + updates.join(", ");
+            QString query = "UPDATE \"" + tableName + "\" SET " + updates.join(", ");
             if(metadata.primaryKeyColumn != -1) {
-                query += " WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) +"` = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
+                query += " WHERE \"" + metadata.columnNames.at(metadata.primaryKeyColumn) +"\" = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
             } else {
                 QString sep = "";
                 query += " WHERE ";
                 for(int j = 0; j < metadata.count(); ++j) {
-                    query += sep + "`" + metadata.columnNames.at(j) + "` ";
+                    query += sep + "\"" + metadata.columnNames.at(j) + "\" ";
                     QString value = content.at(updatingRow).at(j).toString();
                     query += value.isNull() ?
                         "IS NULL" :
@@ -133,16 +133,16 @@ bool TableModel::deleteRows(QSet<int> rows) {
             rowIds << db.sqlDriver()->quote(data(index(i, metadata.primaryKeyColumn)).toString());
             content.remove(i);
         }
-        QString query("DELETE FROM `" + tableName + "` WHERE `" + metadata.columnNames.at(metadata.primaryKeyColumn) + "` IN ("+rowIds.join(",")+")");
+        QString query("DELETE FROM \"" + tableName + "\" WHERE \"" + metadata.columnNames.at(metadata.primaryKeyColumn) + "\" IN ("+rowIds.join(",")+")");
 
         QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
     } else {
         for(int i : rows) {
             // otherwise we have to compare every column
-            QString query("DELETE FROM `" + tableName + "` WHERE ");
+            QString query("DELETE FROM \"" + tableName + "\" WHERE ");
             QString sep = "";
             for(int j = 0; j < metadata.count(); ++j) {
-                query += sep + "`" + metadata.columnNames.at(j) + "` ";
+                query += sep + "\"" + metadata.columnNames.at(j) + "\" ";
                 QString value = content.at(i).at(j).toString();
                 query += value.isNull() ?
                     "IS NULL" :

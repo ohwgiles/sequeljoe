@@ -133,7 +133,7 @@ QWidget* TableView::createChildTable(const QModelIndex& index) {
     fnt.setBold(true);
     label->setFont(fnt);
     ForeignKey fk = index.data(ForeignKeyRole).value<ForeignKey>();
-    label->setText("SELECT * FROM `" + fk.table + "` WHERE `" + fk.column + "` = '" + index.data().toString() + "'");
+    label->setText("SELECT * FROM \"" + fk.table + "\" WHERE \"" + fk.column + "\" = '" + index.data().toString() + "'");
     frame->layout()->addWidget(label);
 
     TableView* view = new TableView(frame);

@@ -175,6 +175,12 @@ public:
         return result;
     }
 
+    virtual bool open() {
+        bool ret = QSqlDatabase::open();
+        QSqlQuery q(*this);
+        return ret && q.exec("SET GLOBAL sql_mode = 'ANSI_QUOTES'");
+    }
+
 };
 
 class SqliteDriver : public Driver {
