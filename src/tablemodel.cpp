@@ -100,12 +100,12 @@ bool TableModel::submit() {
             }
             QString query = "UPDATE \"" + tableName + "\" SET " + updates.join(", ");
             if(metadata.primaryKeyColumn != -1) {
-                query += " WHERE \"" + metadata.columnNames.at(metadata.primaryKeyColumn) +"\" = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
+                query += " WHERE \"" + content.columnNames.at(metadata.primaryKeyColumn) +"\" = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
             } else {
                 QString sep = "";
                 query += " WHERE ";
                 for(int j = 0; j < metadata.count(); ++j) {
-                    query += sep + "\"" + metadata.columnNames.at(j) + "\" ";
+                    query += sep + "\"" + content.columnNames.at(j) + "\" ";
                     QString value = content.at(updatingRow).at(j).toString();
                     query += value.isNull() ?
                         "IS NULL" :
@@ -133,7 +133,7 @@ bool TableModel::deleteRows(QSet<int> rows) {
             rowIds << db.sqlDriver()->quote(data(index(i, metadata.primaryKeyColumn)).toString());
             content.remove(i);
         }
-        QString query("DELETE FROM \"" + tableName + "\" WHERE \"" + metadata.columnNames.at(metadata.primaryKeyColumn) + "\" IN ("+rowIds.join(",")+")");
+        QString query("DELETE FROM \"" + tableName + "\" WHERE \"" + content.columnNames.at(metadata.primaryKeyColumn) + "\" IN ("+rowIds.join(",")+")");
 
         QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
     } else {
@@ -142,7 +142,7 @@ bool TableModel::deleteRows(QSet<int> rows) {
             QString query("DELETE FROM \"" + tableName + "\" WHERE ");
             QString sep = "";
             for(int j = 0; j < metadata.count(); ++j) {
-                query += sep + "\"" + metadata.columnNames.at(j) + "\" ";
+                query += sep + "\"" + content.columnNames.at(j) + "\" ";
                 QString value = content.at(i).at(j).toString();
                 query += value.isNull() ?
                     "IS NULL" :

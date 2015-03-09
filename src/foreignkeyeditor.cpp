@@ -37,7 +37,7 @@ void ForeignKeyEditor::hasForeignKeyToggled(bool v) {
 
 void ForeignKeyEditor::foreignTableChanged(QString s) {
     foreignColumn->clear();
-    foreignColumn->addItems(QStringList::fromVector(driver->metadata(s).columnNames));
+    foreignColumn->addItems(QStringList::fromVector(driver->columns(s).columnNames));
 }
 
 void ForeignKeyEditor::setForeignKey(QVariant data) {
@@ -47,7 +47,7 @@ void ForeignKeyEditor::setForeignKey(QVariant data) {
     hasForeignKeyToggled(!fk.column.isNull());
     foreignTable->addItems(driver->tableNames());
     foreignTable->setCurrentText(fk.table);
-    foreignColumn->addItems(QStringList::fromVector(driver->metadata(foreignTable->currentText()).columnNames));
+    foreignColumn->addItems(QStringList::fromVector(driver->columns(foreignTable->currentText()).columnNames));
     foreignColumn->setCurrentText(fk.column);
     connect(foreignTable, SIGNAL(currentTextChanged(QString)), this, SLOT(foreignTableChanged(QString)));
 }

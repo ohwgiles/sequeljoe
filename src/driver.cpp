@@ -154,7 +154,6 @@ public:
             do {
                 if(q.value(2).toBool())
                     metadata.primaryKeyColumn = i;
-                metadata.columnNames[i] = q.value(0).toString();
                 metadata.columnTypes[i] = q.value(7).toString();
                 metadata.columnComments[i] = q.value(1).toString();
                 metadata.foreignKeys[i] = {q.value(4).toString(), q.value(5).toString(), q.value(3).toString() };
@@ -221,14 +220,14 @@ public:
 
         q.prepare("PRAGMA table_info('" + table + "')");
         q.exec();
-        if(q.size())
-            metadata.resize(q.record().count());
+
         int i = 0;
         while(q.next()) {
             if(q.value(5).toBool())
                 metadata.primaryKeyColumn = i;
             i++;
         }
+        metadata.resize(i);
 
         return metadata;
     }
