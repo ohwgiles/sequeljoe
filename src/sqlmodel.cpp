@@ -166,7 +166,7 @@ void SqlModel::select() {
 
     QString query = prepareQuery();
     if(rowsLimit)
-    query += " LIMIT " + QString::number(rowsFrom) + ", " + QString::number(rowsLimit);
+    query += " OFFSET " + QString::number(rowsFrom) + " LIMIT " + QString::number(rowsLimit);
 
     QMetaObject::invokeMethod(&db, "queryTableContent", Qt::QueuedConnection, Q_ARG(QString, query), Q_ARG(QObject*, this));
 }

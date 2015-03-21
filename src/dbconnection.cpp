@@ -151,14 +151,9 @@ void DbConnection::queryTableUpdate(QString query, QObject *callbackOwner, const
 }
 
 void DbConnection::populateDatabases() {
-    dbNames.clear();
-    QSqlQuery query(*driver);
-    query.prepare("SHOW DATABASES");
-    execQuery(query);
-    while(query.next()) {
-        dbNames << query.value(0).toString();
-    }
+    dbNames = driver->databases();
 }
+
 QString DbConnection::queryCreateTable(QString tableName) {
     QSqlQuery query(*driver);
     query.exec("SHOW CREATE TABLE \"" + tableName + "\"");

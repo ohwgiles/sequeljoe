@@ -15,7 +15,7 @@ public:
     SqlDriverList() : QAbstractListModel()
     {
         QSqlDatabase db;
-        drivers = db.drivers().toSet().intersect({"QSQLITE","QSQLCIPHER","QMYSQL"}).toList();
+        drivers = db.drivers().toSet().intersect({"QSQLITE","QSQLCIPHER","QMYSQL","QPSQL"}).toList();
     }
 
     int rowCount(const QModelIndex &parent) const {
@@ -26,6 +26,7 @@ public:
         if(driver == "QSQLITE") return "SQLite";
         if(driver == "QSQLCIPHER") return "SQLite/Cipher";
         if(driver == "QMYSQL") return "MySQL/MariaDB";
+        if(driver == "QPSQL") return "PostgreSQL";
         return "Unknown";
     }
 
@@ -64,6 +65,15 @@ private:
 
 class MySqlDriver : public Driver {
 public:
+    virtual QStringList databases() override {
+        QStringList dbnames;
+        QSqlQuery q("show databases", *this);
+        while(q.next()) {
+            dbnames << q.value(0).toString();
+        }
+        return dbnames;
+    }
+
     virtual TableData columns(QString table) override {
         TableData data;
         QSqlQuery q{*this};
@@ -174,7 +184,7 @@ public:
         return result;
     }
 
-    virtual bool open() {
+    virtual bool open() override {
         bool ret = QSqlDatabase::open();
         QSqlQuery q(*this);
         return ret && q.exec("SET GLOBAL sql_mode = 'ANSI_QUOTES'");
@@ -206,6 +216,10 @@ public:
         }
 
         return data;
+    }
+
+    virtual QStringList databases() override {
+        return QStringList{};
     }
 
     virtual Indices indices(QString table) override {
@@ -253,6 +267,101 @@ class SqlcipherDriver : public SqliteDriver
     }
 };
 
+class PostgresDriver : public Driver {
+public:
+    virtual QStringList databases() override {
+        QStringList dbnames;
+        // todo fix
+        QSqlQuery q("\\list", *this);
+        while(q.next()) {
+            dbnames << q.value(0).toString();
+        }
+        return dbnames;
+    }
+
+    virtual TableData columns(QString table) override {
+
+        TableData data;
+        QSqlQuery q{*this};
+
+        q.prepare("select c.column_name, c.data_type, c.is_nullable, c.column_default, u.table_name, u.column_name, u.constraint_name "
+                  "from information_schema.columns as c "
+                  "left join information_schema.key_column_usage as k "
+                  "on c.table_catalog = k.table_catalog and c.table_name = k.table_name and c.column_name = k.column_name "
+                  "left join information_schema.table_constraints as t "
+                  "on k.constraint_name = t.constraint_name and t.constraint_type = 'FOREIGN KEY' "
+                  "left join information_schema.constraint_column_usage as u "
+                  "on t.constraint_name = u.constraint_name "
+                  "where c.table_catalog = '"+databaseName()+"' and c.table_name = '"+table+"'");
+        q.exec();
+
+        data.reserve(q.size());
+
+        QRegExp typeRegexp("(\\w+)\\(([\\w,]+)\\)\\s*(\\w*)");
+        while(q.next()) {
+            QVector<QVariant> c;
+            c.resize(SCHEMA_NUM_FIELDS);
+            c[SCHEMA_NAME] = q.value(0).toString();
+            if(typeRegexp.exactMatch(q.value(1).toString())) {
+                c[SCHEMA_TYPE] = typeRegexp.cap(1).toUpper();
+                c[SCHEMA_LENGTH] = typeRegexp.cap(2);
+            } else
+                c[SCHEMA_TYPE] = q.value(1).toString().toUpper(); //e.g. TEXT has no length or unsigned
+            c[SCHEMA_NULL] = (q.value(2).toString() == "YES");
+            c[SCHEMA_DEFAULT] = q.value(3).toString();
+            c[SCHEMA_FOREIGNKEY] = QVariant::fromValue<ForeignKey>({q.value(4).toString(),q.value(5).toString(),q.value(6).toString()});
+            data.append(c);
+        }
+        return data;
+
+        return TableData{};
+    }
+
+    virtual Indices indices(QString table) override {
+        return Indices{};
+    }
+
+    virtual TableMetadata metadata(QString table) override {
+        QSqlQuery q{*this};
+        TableMetadata metadata;
+        q.prepare(
+            "select c.column_name, c.data_type, c.column_name = pu.column_name as is_primary, u.table_name, u.column_name, u.constraint_name "
+            "from information_schema.columns as c "
+            "left join information_schema.table_constraints as p "
+            "on c.table_catalog = p.table_catalog and c.table_name = p.table_name and p.constraint_type = 'PRIMARY KEY' "
+            "left join information_schema.constraint_column_usage as pu "
+            "on p.constraint_name = pu.constraint_name and c.column_name = pu.column_name "
+            "left join information_schema.key_column_usage as k "
+            "on c.table_catalog = k.table_catalog and c.table_name = k.table_name and c.column_name = k.column_name "
+            "left join information_schema.table_constraints as t "
+            "on k.constraint_name = t.constraint_name and t.constraint_type = 'FOREIGN KEY' "
+            "left join information_schema.constraint_column_usage as u "
+            "on t.constraint_name = u.constraint_name "
+            "where c.table_catalog = '"+databaseName()+"' and c.table_name = '"+table+"' "
+            "order by c.ordinal_position"
+        );
+        q.exec();
+
+        if(q.first()) {
+            int i = 0;
+            metadata.resize(q.size());
+            do {
+                if(q.value(2).toBool())
+                    metadata.primaryKeyColumn = i;
+                metadata.columnTypes[i] = q.value(1).toString();
+                metadata.foreignKeys[i] = {q.value(3).toString(), q.value(4).toString(), q.value(5).toString() };
+                i++;
+
+            } while(q.next());
+        }
+        return metadata;
+    }
+
+    virtual QStringList tableNames() override {
+        return this->tables();
+    }
+};
+
 QAbstractListModel* Driver::driverListModel() {
     return new SqlDriverList();
 }
@@ -264,6 +373,8 @@ Driver* Driver::createDriver(QString type) {
         return new SqliteDriver();
     else if(type == "QSQLCIPHER")
         return new SqlcipherDriver();
+    else if(type == "QPSQL")
+        return new PostgresDriver();
     return nullptr;
 }
 

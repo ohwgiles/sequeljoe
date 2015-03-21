@@ -32,6 +32,7 @@ public:
     // fix non-virtualness of QSqlDatabase::open
     virtual bool open() { return QSqlDatabase::open(); }
 
+    virtual QStringList databases() = 0;
     virtual TableData columns(QString table) = 0;
     virtual Indices indices(QString table) = 0;
     virtual TableMetadata metadata(QString table) = 0;
