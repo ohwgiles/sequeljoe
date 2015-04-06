@@ -370,7 +370,7 @@ public:
     }
 
     virtual QString createTableQuery(QString table) override {
-        return "CREATE TABLE \"" + table + "\" (\"id\" SERIAL)";
+        return "CREATE TABLE \"" + table + "\" (\"id\" SERIAL NOT NULL PRIMARY KEY)";
     }
 };
 
