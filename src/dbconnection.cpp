@@ -163,7 +163,7 @@ QString DbConnection::queryCreateTable(QString tableName) {
 
 void DbConnection::createTable(QString tableName) {
     QSqlQuery query(*driver);
-    query.prepare("CREATE TABLE \"" + tableName + "\" (\"id\" INT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT)");
+    query.prepare(driver->createTableQuery(tableName));
     execQuery(query);
 }
 

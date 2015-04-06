@@ -190,6 +190,10 @@ public:
         return ret && q.exec("SET GLOBAL sql_mode = 'ANSI_QUOTES'");
     }
 
+    virtual QString createTableQuery(QString table) override {
+        return "CREATE TABLE \"" + table + "\" (\"id\" INT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT)";
+    }
+
 };
 
 class SqliteDriver : public Driver {
@@ -254,6 +258,10 @@ public:
         while(query.next())
             result << query.value(0).toString();
         return result;
+    }
+
+    virtual QString createTableQuery(QString table) override {
+        return "CREATE TABLE \"" + table + "\" (\"id\" INT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT)";
     }
 
 };
@@ -359,6 +367,10 @@ public:
 
     virtual QStringList tableNames() override {
         return this->tables();
+    }
+
+    virtual QString createTableQuery(QString table) override {
+        return "CREATE TABLE \"" + table + "\" (\"id\" SERIAL)";
     }
 };
 

@@ -37,6 +37,7 @@ public:
     virtual Indices indices(QString table) = 0;
     virtual TableMetadata metadata(QString table) = 0;
     virtual QStringList tableNames() = 0;
+    virtual QString createTableQuery(QString table) = 0;
 };
 
 #endif // SQLDRIVER_H

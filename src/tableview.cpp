@@ -60,6 +60,7 @@ void TableView::closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint 
 
     // don't allow custom editors to be popped up during tabbing,
     // it's more trouble than it's worth
+    // todo somehow make this work, omitting it is annoying on pgsql
     auto canEditThroughTabbing = [&](QModelIndex i) {
         return (model()->flags(i) & Qt::ItemIsEditable) && model()->data(i, EditorTypeRole) == SJCellEditDefault;
     };
