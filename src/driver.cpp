@@ -74,8 +74,8 @@ public:
         return dbnames;
     }
 
-    virtual TableData columns(QString table) override {
-        TableData data;
+    virtual void columns(TableData& data, QString table) override {
+        data.clear();
         QSqlQuery q{*this};
 
         q.prepare("select c.column_name, c.column_type, c.is_nullable, c.column_key, c.column_default, c.extra, c.column_comment, k.referenced_table_name, k.referenced_column_name, k.constraint_name "
@@ -112,7 +112,6 @@ public:
             c[SCHEMA_FOREIGNKEY] = QVariant::fromValue<ForeignKey>({q.value(7).toString(),q.value(8).toString(),q.value(9).toString()});
             data.append(c);
         }
-        return data;
     }
 
     virtual Indices indices(QString table) override {
@@ -187,6 +186,7 @@ public:
     virtual bool open() override {
         bool ret = QSqlDatabase::open();
         QSqlQuery q(*this);
+        setConnectOptions("MYSQL_OPT_RECONNECT=1");
         return ret && q.exec("SET GLOBAL sql_mode = 'ANSI_QUOTES'");
     }
 
@@ -198,8 +198,8 @@ public:
 
 class SqliteDriver : public Driver {
 public:
-    virtual TableData columns(QString table) override {
-        TableData data;
+    virtual void columns(TableData& data, QString table) override {
+        data.clear();
         QSqlQuery q{*this};
         q.prepare("PRAGMA table_info(" + table + ")");
         q.exec();
@@ -218,8 +218,6 @@ public:
             c[SCHEMA_FOREIGNKEY] = "";
             data.append(c);
         }
-
-        return data;
     }
 
     virtual QStringList databases() override {
@@ -287,9 +285,8 @@ public:
         return dbnames;
     }
 
-    virtual TableData columns(QString table) override {
-
-        TableData data;
+    virtual void columns(TableData& data, QString table) override {
+data.clear();
         QSqlQuery q{*this};
 
         q.prepare("select c.column_name, c.data_type, c.is_nullable, c.column_default, u.table_name, u.column_name, u.constraint_name "
@@ -320,9 +317,6 @@ public:
             c[SCHEMA_FOREIGNKEY] = QVariant::fromValue<ForeignKey>({q.value(4).toString(),q.value(5).toString(),q.value(6).toString()});
             data.append(c);
         }
-        return data;
-
-        return TableData{};
     }
 
     virtual Indices indices(QString table) override {

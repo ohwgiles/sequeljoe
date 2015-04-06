@@ -112,35 +112,45 @@ void DbConnection::queryTableIndices(QString tableName, QObject *callbackOwner, 
     QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(Indices, driver->indices(tableName)));
 }
 
-void DbConnection::queryTableContent(QString query, QObject* callbackOwner, const char* callbackName) {
+void DbConnection::queryTableContent(QSqlQuery* query, QObject* callbackOwner, const char* callbackName) {
 
-    QSqlQuery q(*driver);
+
+    QSqlQuery& q = *query;
+
     // TODO deal with strings, comments, and delimiter changes
-    for(QString querypart : query.split(';')) {
-        q.prepare(querypart);
-        execQuery(q);
-    }
+//    for(QString querypart : query.split(';')) {
+//        q.prepare(querypart);
+//        execQuery(q);
+//    }
+    execQuery(q);
 
-    TableData data;
-    data.reserve(q.size());
-    data.columnNames.resize(q.record().count());
-    for(int i = 0; i < q.record().count(); ++i) {
-        data.columnNames[i] = q.record().fieldName(i).trimmed();
-    }
-    if(q.first()) {
-        do {
-            QVector<QVariant> row;
-            row.resize(q.record().count());
-            for(int i = 0; i < q.record().count(); ++i)
-                row[i] = q.value(i);
-            data.append(row);
-        } while(q.next());
-    }
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(TableData, data));
+//    TableData data;
+//    data.reserve(q.size());
+//    data.columnNames.resize(q.record().count());
+//    for(int i = 0; i < q.record().count(); ++i) {
+//        data.columnNames[i] = q.record().fieldName(i).trimmed();
+//    }
+//    if(q.first()) {
+//        do {
+//            QVector<QVariant> row;
+//            row.resize(q.record().count());
+//            for(int i = 0; i < q.record().count(); ++i)
+//                row[i] = q.value(i);
+//            data.append(row);
+//        } while(q.next());
+//    }
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection);
 }
-
-void DbConnection::queryTableColumns(QString tableName, QObject* callbackOwner, const char* callbackName) {
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(TableData, driver->columns(tableName)));
+QStringList DbConnection::columnNames(QString table) const {
+    QStringList names;
+    QSqlRecord record = driver->record(table);
+    for(int i = 0; i < record.count(); ++i)
+        names << record.fieldName(i);
+    return names;
+}
+void DbConnection::queryTableColumns(TableData* res, QString tableName, QObject* callbackOwner, const char* callbackName) {
+    driver->columns(*res, tableName);
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection);
 }
 
 void DbConnection::queryTableUpdate(QString query, QObject *callbackOwner, const char *callbackName) {

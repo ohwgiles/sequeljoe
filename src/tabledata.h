@@ -26,7 +26,7 @@ struct Index {
 typedef QVector<Index> Indices;
 
 struct TableData : public QVector<QVector<QVariant>> {
-    QVector<QString> columnNames;
+//    QVector<QString> columnNames;
 };
 
 struct TableMetadata {

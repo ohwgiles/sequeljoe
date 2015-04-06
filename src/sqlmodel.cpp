@@ -14,18 +14,18 @@
 #include <QStringList>
 #include <QSqlError>
 #include <QPushButton>
+#include <QSqlRecord>
 
 SqlModel::SqlModel(DbConnection &db, QObject *parent) :
     QAbstractItemModel(parent),
     db(db),
     dataSafe(false),
+    res(*db.sqlDriver()),
     updatingRow(-1),
     totalRecords(-1),
     rowsFrom(0),
     rowsLimit(0)
 {
-    content.clear();
-    content.columnNames.clear();
 }
 
 int SqlModel::columnCount(const QModelIndex &parent) const {
@@ -35,7 +35,7 @@ int SqlModel::columnCount(const QModelIndex &parent) const {
     if(parent.isValid())
         return 1;
 
-    return content.columnNames.count();
+    return res.record().count();
 }
 
 bool SqlModel::columnIsBoolType(int col) const {
@@ -55,7 +55,9 @@ int SqlModel::rowCount(const QModelIndex &parent) const {
     if(parent.isValid())
         return 1;
 
-    return content.count() + (updatingRow == content.count() ? 1 : 0);
+    int c = res.size();
+    if(c < 0) return 0;
+    return c + (updatingRow == c ? 1 : 0);
 }
 
 QVariant SqlModel::data(const QModelIndex &index, int role) const {
@@ -83,16 +85,16 @@ QVariant SqlModel::data(const QModelIndex &index, int role) const {
         if(role == Qt::CheckStateRole) {
             if(index.row() == updatingRow && !currentRowModifications[index.column()].isNull())
                 return currentRowModifications[index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
-            if(index.row() < content.count())
-                return content.at(index.row()).at(index.column()).toBool() ? Qt::Checked : Qt::Unchecked;
+            if(index.row() < res.size() && res.seek(index.row()))
+                return res.value(index.column()).toBool() ? Qt::Checked : Qt::Unchecked;
         }
     } else {
         if(index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) && index.row() < rowCount() && index.column() < columnCount()) {
             QVariant d;
             if(index.row() == updatingRow && currentRowModifications.contains(index.column()))
                 d = currentRowModifications[index.column()];
-            else if(index.row() < content.count())
-                d = content.at(index.row()).at(index.column());
+            else if(index.row() < res.size() && res.seek(index.row()))
+                d = res.value(index.column());
 
             if(role == Qt::EditRole)
                 return d;
@@ -130,8 +132,7 @@ QModelIndex SqlModel::index(int row, int column, const QModelIndex &parent) cons
 
     if(parent.isValid()) {
         return createIndex(row, column, quintptr(parent.row()));
-    } else if(row >= 0 && column >= 0 && column < columnCount() &&
-          ((isAdding() && row <= content.count()) || (!isAdding() && row < content.count()))) {
+    } else if(row >= 0 && column >= 0 && column < columnCount() && row < rowCount()) {
         return createIndex(row, column, quintptr(-1));
     }
 
@@ -148,11 +149,12 @@ QModelIndex SqlModel::parent(const QModelIndex &child) const {
 }
 
 QVariant SqlModel::headerData(int section, Qt::Orientation orientation, int role) const {
+    if(!dataSafe) return QVariant();
     if(orientation == Qt::Horizontal && role == Qt::DisplayRole) {
-        if(section < content.columnNames.count()) {
+        if(section < res.record().count()) {
             switch(role) {
             case Qt::DisplayRole:
-                return content.columnNames.at(section);
+                return res.record().fieldName(section);
             case Qt::ToolTipRole: // move to tablemodel
                 return metadata.columnComments.at(section);
             }
@@ -168,11 +170,11 @@ void SqlModel::select() {
     if(rowsLimit)
     query += " LIMIT " + QString::number(rowsLimit) + " OFFSET " + QString::number(rowsFrom);
 
-    QMetaObject::invokeMethod(&db, "queryTableContent", Qt::QueuedConnection, Q_ARG(QString, query), Q_ARG(QObject*, this));
+    res.prepare(query);
+    QMetaObject::invokeMethod(&db, "queryTableContent", Qt::QueuedConnection, Q_ARG(QSqlQuery*, &res), Q_ARG(QObject*, this));
 }
 
-void SqlModel::selectComplete(TableData data) {
-    content = data;
+void SqlModel::selectComplete() {
     dataSafe = true;
     emit selectFinished();
     emit pagesChanged(rowsFrom, rowCount(), totalRecords);
@@ -228,8 +230,11 @@ bool SqlModel::setData(const QModelIndex &index, const QVariant &value, int role
 }
 
 void SqlModel::updateComplete(bool result, int insertId) {
+    currentRowModifications.clear();
+    updatingRow = -1;
+    return select();
     if(result) {
-        if(updatingRow == content.count()) {
+        if(updatingRow == res.size()) {
             QVector<QVariant> newRow;
             newRow.resize(columnCount());
             if(metadata.primaryKeyColumn != -1)
@@ -238,11 +243,13 @@ void SqlModel::updateComplete(bool result, int insertId) {
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); it++)
                 newRow[it.key()] = it.value();
 
-            content.append(newRow);
+            // todo what to do here?
+//            content.append(newRow);
             totalRecords++;
         } else {
-            for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); it++)
-                content[updatingRow][it.key()] = it.value();
+            // and here?
+//            for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); it++)
+//                content[updatingRow][it.key()] = it.value();
         }
     }
     for(int col: currentRowModifications.keys()) {
@@ -251,6 +258,11 @@ void SqlModel::updateComplete(bool result, int insertId) {
     }
     currentRowModifications.clear();
     updatingRow = -1;
+}
+
+void SqlModel::deleteComplete(bool result, int) {
+    if(result)
+    select();
 }
 
 bool SqlModel::event(QEvent * e) {

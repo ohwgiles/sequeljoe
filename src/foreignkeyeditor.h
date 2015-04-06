@@ -14,12 +14,12 @@ class QCheckBox;
 
 
 class QComboBox;
-class Driver;
+class DbConnection;
 
 class ForeignKeyEditor : public QDialog {
     Q_OBJECT
 public:
-    explicit ForeignKeyEditor(Driver *driver, QWidget* parent = 0);
+    explicit ForeignKeyEditor(DbConnection *driver, QWidget* parent = 0);
     void setForeignKey(QVariant data);
     QVariant foreignKey() const;
 private slots:
@@ -29,7 +29,7 @@ private:
     QCheckBox* hasForeignRel;
     QComboBox* foreignTable;
     QComboBox* foreignColumn;
-    Driver* driver;
+    DbConnection* driver;
     QString oldConstraint;
 };
 

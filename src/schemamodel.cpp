@@ -21,20 +21,29 @@ SqlSchemaModel::SqlSchemaModel(DbConnection& db, QString tableName, QObject *par
     SqlModel(db, parent),
     tableName(tableName)
 {
+    res.clear();
 }
 
 void SqlSchemaModel::select() {
     beginResetModel();
-    QMetaObject::invokeMethod(&db, "queryTableColumns", Qt::QueuedConnection, Q_ARG(QString, tableName), Q_ARG(QObject*, this));
+    QMetaObject::invokeMethod(&db, "queryTableColumns", Qt::QueuedConnection, Q_ARG(TableData*, &columnData), Q_ARG(QString, tableName), Q_ARG(QObject*, this));
 }
 
-void SqlSchemaModel::selectComplete(TableData data) {
-    data.columnNames.resize(columnCount());
-    SqlModel::selectComplete(data);
+void SqlSchemaModel::selectComplete() {
+    //data.columnNames.resize(columnCount());
+    SqlModel::selectComplete();
 }
 
 int SqlSchemaModel::columnCount(const QModelIndex &parent) const {
     return SCHEMA_NUM_FIELDS;
+}
+
+int SqlSchemaModel::rowCount(const QModelIndex &parent) const {
+    if(!dataSafe)
+        return 0;
+
+    int c = columnData.size();
+    return c + (updatingRow == c ? 1 : 0);
 }
 
 Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
@@ -96,7 +105,7 @@ QString SqlSchemaModel::schemaQuery(const QVector<QVariant> def) {
 
 bool SqlSchemaModel::submit() {
     if(updatingRow != -1 && currentRowModifications.count() > 0) {
-        if(updatingRow == content.size()) {
+        if(updatingRow == columnData.size()) {
             if(currentRowModifications[SCHEMA_NAME].isNull()) {
                 qDebug() << "Cannot create unnamed column";
                 return false;
@@ -115,7 +124,7 @@ bool SqlSchemaModel::submit() {
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, updateQuery), Q_ARG(QObject*, this));
 
         } else {
-            QVector<QVariant> newColumn = content[updatingRow];
+            QVector<QVariant> newColumn = columnData[updatingRow];
             newColumn[SCHEMA_FOREIGNKEY] = QVariant();
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it)
                 newColumn[it.key()] = it.value();
@@ -143,18 +152,41 @@ bool SqlSchemaModel::setData(const QModelIndex &index, const QVariant &value, in
 }
 
 QVariant SqlSchemaModel::data(const QModelIndex &index, int role) const {
-    if(index.isValid() && index.column() == SCHEMA_FOREIGNKEY) {
+
+    if(!dataSafe)
+        return QVariant();
+
+    if(!index.isValid())
+        return QVariant{};
+
+    if(index.column() == SCHEMA_FOREIGNKEY) {
         if(role == EditorTypeRole)
             return SJCellEditForeignKey;
         if(role == Qt::DisplayRole) {
-            ForeignKey fk = SqlModel::data(index).value<ForeignKey>();
+            ForeignKey fk = columnData[index.row()][index.column()].value<ForeignKey>();
             if(!fk.column.isNull())
                 return QString(fk.constraint + ":" +fk.table + "." + fk.column);
             else
                 return QString();
         }
     }
-    return SqlModel::data(index, role);
+
+    if(columnIsBoolType(index.column())) {
+        if(role == Qt::CheckStateRole) {
+            if(index.row() == updatingRow && !currentRowModifications[index.column()].isNull())
+                return currentRowModifications[index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
+            if(index.row() < columnData.size())
+                return columnData[index.row()][index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
+        }
+    } else {
+        if(index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) && index.row() < rowCount() && index.column() < columnCount()) {
+            if(index.row() == updatingRow && currentRowModifications.contains(index.column()))
+                return currentRowModifications[index.column()];
+            else if(index.row() < columnData.size())
+                return columnData[index.row()][index.column()];
+        }
+    }
+    return QVariant();
 }
 
 QVariant SqlSchemaModel::headerData(int section, Qt::Orientation orientation, int role) const {
@@ -179,9 +211,9 @@ QVariant SqlSchemaModel::headerData(int section, Qt::Orientation orientation, in
 bool SqlSchemaModel::deleteRows(QSet<int> rows) {
     beginResetModel();
     for(int i : rows) {
-        QString query("ALTER TABLE \"" + tableName + "\" DROP COLUMN \"" + content.at(i).at(SCHEMA_NAME).toString() + "\"");
+        QString query("ALTER TABLE \"" + tableName + "\" DROP COLUMN \"" + columnData.at(i).at(SCHEMA_NAME).toString() + "\"");
         QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
-        content.remove(i);
+        columnData.remove(i);
     }
     select(); // todo rowsremoved instead?
     return true;

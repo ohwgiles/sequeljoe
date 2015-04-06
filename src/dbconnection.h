@@ -17,6 +17,7 @@
 
 class Driver;
 class SshThread;
+class TableData;
 
 class QSqlDatabase;
 class QSettings;
@@ -60,13 +61,15 @@ public:
 
     QStringList tables() const;
 
+    QStringList columnNames(QString table) const;
+
 public slots:
     virtual bool execQuery(QSqlQuery &q) const;
 
-    void queryTableColumns(QString tableName, QObject* callbackOwner, const char* callbackName = "selectComplete");
+    void queryTableColumns(TableData *res, QString tableName, QObject* callbackOwner, const char* callbackName = "selectComplete");
     void queryTableIndices(QString tableName, QObject* callbackOwner, const char* callbackName = "describeComplete");
     void queryTableMetadata(QString tableName, QObject* callbackOwner, const char *callbackName = "describeComplete");
-    void queryTableContent(QString query, QObject* callbackOwner, const char* callbackName = "selectComplete");
+    void queryTableContent(QSqlQuery *query, QObject* callbackOwner, const char* callbackName = "selectComplete");
     void queryTableUpdate(QString query, QObject* callbackOwner, const char* callbackName = "updateComplete");
     QString queryCreateTable(QString tableName);
     void deleteTable(QString tableName);

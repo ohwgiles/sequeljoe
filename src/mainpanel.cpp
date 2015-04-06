@@ -183,7 +183,7 @@ void MainPanel::updateSchemaModel(QString tableName) {
         schemaModels[key] = {schema, index};
         schemaView->setModels(schema, index);
         schema->select();
-        index->select();
+        //index->select();
     } else {
         SchemaModels& models = schemaModels[key];
         schemaView->setModels(models.schema, models.index);

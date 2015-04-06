@@ -4,6 +4,7 @@
 #include <QSqlDatabase>
 #include "tabledata.h"
 
+class QSqlQuery;
 class QAbstractListModel;
 
 enum {
@@ -33,7 +34,7 @@ public:
     virtual bool open() { return QSqlDatabase::open(); }
 
     virtual QStringList databases() = 0;
-    virtual TableData columns(QString table) = 0;
+    virtual void columns(TableData& res, QString table) = 0;
     virtual Indices indices(QString table) = 0;
     virtual TableMetadata metadata(QString table) = 0;
     virtual QStringList tableNames() = 0;

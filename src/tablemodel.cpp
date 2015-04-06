@@ -10,6 +10,7 @@
 
 #include <QSqlDriver>
 #include <QSqlField>
+#include <QSqlRecord>
 
 TableModel::TableModel(DbConnection &db, QString table, QObject *parent) :
     SqlModel(db, parent),
@@ -84,14 +85,14 @@ bool TableModel::setData(const QModelIndex &index, const QVariant &value, int ro
 
 bool TableModel::submit() {
     if(updatingRow != -1 && currentRowModifications.count() > 0) {
-        if(updatingRow == content.size()) {
+        if(updatingRow == res.size()) {
             QStringList columns;
             QStringList values;
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it) {
                 // don't submit an empty string to a PGSQL integer or serial column. MySQL doesn't care
                 if(metadata.columnTypes[it.key()].toUpper().contains("INT") && it.value().toString().isEmpty())
                     continue;
-                columns << content.columnNames[it.key()];
+                columns << res.record().fieldName(it.key());// content.columnNames[it.key()];
                 values << db.sqlDriver()->quote(it.value());
             }
             QString query = "INSERT INTO \"" + tableName + "\" (\"" + columns.join("\",\"") + "\") VALUES(" + values.join(",") + ")";
@@ -99,20 +100,21 @@ bool TableModel::submit() {
         } else {
             QStringList updates;
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it) {
-                updates << "\"" + content.columnNames[it.key()] + "\" = " + db.sqlDriver()->quote(it.value());
+                updates << "\"" + res.record().fieldName(it.key()) + "\" = " + db.sqlDriver()->quote(it.value());
             }
             QString query = "UPDATE \"" + tableName + "\" SET " + updates.join(", ");
             if(metadata.primaryKeyColumn != -1) {
-                query += " WHERE \"" + content.columnNames.at(metadata.primaryKeyColumn) +"\" = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
+                query += " WHERE \"" + res.record().fieldName(metadata.primaryKeyColumn) +"\" = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
             } else {
                 QString sep = "";
                 query += " WHERE ";
                 for(int j = 0; j < metadata.count(); ++j) {
-                    query += sep + "\"" + content.columnNames.at(j) + "\" ";
-                    QString value = content.at(updatingRow).at(j).toString();
+                    query += sep + "\"" + res.record().fieldName(j) + "\" ";
+                    res.seek(updatingRow);
+                    QVariant value = res.value(j);
                     query += value.isNull() ?
                         "IS NULL" :
-                        "= " + db.sqlDriver()->quote(content.at(updatingRow).at(j).toString());
+                        "= " + db.sqlDriver()->quote(value);
                     sep = " AND ";
                 }
             }
@@ -134,9 +136,10 @@ bool TableModel::deleteRows(QSet<int> rows) {
         QStringList rowIds;
         for(int i : rows) {
             rowIds << db.sqlDriver()->quote(data(index(i, metadata.primaryKeyColumn)).toString());
-            content.remove(i);
+            // todo what here
+            //content.remove(i);
         }
-        QString query("DELETE FROM \"" + tableName + "\" WHERE \"" + content.columnNames.at(metadata.primaryKeyColumn) + "\" IN ("+rowIds.join(",")+")");
+        QString query("DELETE FROM \"" + tableName + "\" WHERE \"" + res.record().fieldName(metadata.primaryKeyColumn) + "\" IN ("+rowIds.join(",")+")");
 
         QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
     } else {
@@ -145,14 +148,16 @@ bool TableModel::deleteRows(QSet<int> rows) {
             QString query("DELETE FROM \"" + tableName + "\" WHERE ");
             QString sep = "";
             for(int j = 0; j < metadata.count(); ++j) {
-                query += sep + "\"" + content.columnNames.at(j) + "\" ";
-                QString value = content.at(i).at(j).toString();
+                query += sep + "\"" + res.record().fieldName(j) + "\" ";
+                res.seek(i);
+                QVariant value = res.value(j);
                 query += value.isNull() ?
                     "IS NULL" :
-                    "= " + db.sqlDriver()->quote(content.at(i).at(j).toString());
+                    "= " + db.sqlDriver()->quote(value);
                 sep = " AND ";
             }
-            content.remove(i);
+            // todo what here
+            //content.remove(i);
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this), Q_ARG(const char*,"deleteComplete"));
         }
     }

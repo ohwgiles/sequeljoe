@@ -7,13 +7,13 @@
  */
 #include "foreignkeyeditor.h"
 #include "foreignkey.h"
-#include "driver.h"
+#include "dbconnection.h"
 
 #include <QVBoxLayout>
 #include <QCheckBox>
 
 #include <QComboBox>
-ForeignKeyEditor::ForeignKeyEditor(Driver *driver, QWidget *parent) :
+ForeignKeyEditor::ForeignKeyEditor(DbConnection *driver, QWidget *parent) :
     QDialog(parent),
     driver(driver)
 {
@@ -37,7 +37,7 @@ void ForeignKeyEditor::hasForeignKeyToggled(bool v) {
 
 void ForeignKeyEditor::foreignTableChanged(QString s) {
     foreignColumn->clear();
-    foreignColumn->addItems(QStringList::fromVector(driver->columns(s).columnNames));
+    foreignColumn->addItems(driver->columnNames(s));
 }
 
 void ForeignKeyEditor::setForeignKey(QVariant data) {
@@ -45,9 +45,9 @@ void ForeignKeyEditor::setForeignKey(QVariant data) {
     oldConstraint = fk.constraint;
     hasForeignRel->setChecked(!fk.column.isNull());
     hasForeignKeyToggled(!fk.column.isNull());
-    foreignTable->addItems(driver->tableNames());
+    foreignTable->addItems(driver->tables());
     foreignTable->setCurrentText(fk.table);
-    foreignColumn->addItems(QStringList::fromVector(driver->columns(foreignTable->currentText()).columnNames));
+    foreignColumn->addItems(driver->columnNames(foreignTable->currentText()));
     foreignColumn->setCurrentText(fk.column);
     connect(foreignTable, SIGNAL(currentTextChanged(QString)), this, SLOT(foreignTableChanged(QString)));
 }

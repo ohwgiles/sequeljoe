@@ -16,6 +16,7 @@
 #include <QVector>
 #include <QEvent>
 #include <QSet>
+#include <QSqlQuery>
 
 class DbConnection;
 
@@ -49,7 +50,8 @@ public:
     virtual bool hasChildren(const QModelIndex &parent) const override;
 
     bool insertRows(int row, int count, const QModelIndex &parent) override;
-Driver* driver() const { return db.sqlDriver(); }
+    // hack to fetch for ForeignKeyEditor
+    DbConnection* driver() const { return &db; }
 
 signals:
     void pagesChanged(int,int,int);
@@ -62,9 +64,9 @@ public slots:
     void lastPage();
 
 protected slots:
-    virtual void selectComplete(TableData data);
+    virtual void selectComplete();
     void updateComplete(bool result, int insertId);
-
+    void deleteComplete(bool result, int);
 protected:
     virtual bool event(QEvent *) override;
     virtual QString prepareQuery() const { return query; }
@@ -77,9 +79,8 @@ protected:
     QString query;
 
     bool dataSafe;
-    TableData content;
+    mutable QSqlQuery res;
     TableMetadata metadata;
-    int primaryKeyColumn;
     QHash<int, int> expandedColumns;
 
     int updatingRow;
