@@ -88,6 +88,9 @@ bool TableModel::submit() {
             QStringList columns;
             QStringList values;
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it) {
+                // don't submit an empty string to a PGSQL integer or serial column. MySQL doesn't care
+                if(metadata.columnTypes[it.key()].toUpper().contains("INT") && it.value().toString().isEmpty())
+                    continue;
                 columns << content.columnNames[it.key()];
                 values << db.sqlDriver()->quote(it.value());
             }
