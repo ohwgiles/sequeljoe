@@ -7,21 +7,6 @@
 class QSqlQuery;
 class QAbstractListModel;
 
-enum {
-    SCHEMA_NAME = 0,
-    SCHEMA_TYPE,
-    SCHEMA_LENGTH,
-    SCHEMA_UNSIGNED,
-    SCHEMA_NULL,
-    SCHEMA_KEY,
-    SCHEMA_DEFAULT,
-    SCHEMA_EXTRA,
-    SCHEMA_FOREIGNKEY,
-    SCHEMA_COMMENT,
-
-    SCHEMA_NUM_FIELDS
-};
-
 class Driver : public QSqlDatabase {
 public:
     virtual ~Driver(){}
@@ -34,7 +19,7 @@ public:
     virtual bool open() { return QSqlDatabase::open(); }
 
     virtual QStringList databases() = 0;
-    virtual void columns(TableData& res, QString table) = 0;
+    virtual void columns(Schema& res, QString table) = 0;
     virtual Indices indices(QString table) = 0;
     virtual TableMetadata metadata(QString table) = 0;
     virtual QStringList tableNames() = 0;

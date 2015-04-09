@@ -74,23 +74,26 @@ public:
         return dbnames;
     }
 
-    virtual void columns(TableData& data, QString table) override {
+    virtual void columns(Schema& data, QString table) override {
         data.clear();
         QSqlQuery q{*this};
 
-        q.prepare("select c.column_name, c.column_type, c.is_nullable, c.column_key, c.column_default, c.extra, c.column_comment, k.referenced_table_name, k.referenced_column_name, k.constraint_name "
-                  "from information_schema.columns as c "
-                  "left join information_schema.key_column_usage as k "
-                  "on c.table_schema = k.table_schema and c.table_name = k.table_name and c.column_name = k.column_name and referenced_column_name is not null "
-                  "where c.table_schema = '"+databaseName()+"' and c.table_name = '"+table+"'");
+        q.prepare(
+"select c.column_name, c.column_type, c.is_nullable, c.column_key, c.column_default, c.extra, c.column_comment, group_concat(x.constraint_name),group_concat(t.constraint_type),group_concat(x.referenced_table_name), group_concat(x.referenced_column_name) "
+"from information_schema.columns as c "
+"left join information_schema.key_column_usage as x "
+"on c.table_schema = x.table_schema and c.table_name = x.table_name and c.column_name = x.column_name "
+"left join information_schema.table_constraints as t "
+"on x.constraint_name = t.constraint_name and x.table_schema = t.table_schema and x.table_name = t.table_name "
+"where c.table_schema = '"+databaseName()+"' and c.table_name = '"+table+"' group by c.column_name"
+                    );
         q.exec();
 
-        data.reserve(q.size());
+        data.columns.reserve(q.size());
 
         QRegExp typeRegexp("(\\w+)\\(([\\w,]+)\\)\\s*(\\w*)");
         while(q.next()) {
-            QVector<QVariant> c;
-            c.resize(SCHEMA_NUM_FIELDS);
+            std::array<QVariant,SCHEMA_NUM_FIELDS> c;
             c[SCHEMA_NAME] = q.value(0).toString();
             if(typeRegexp.exactMatch(q.value(1).toString())) {
                 c[SCHEMA_TYPE] = typeRegexp.cap(1).toUpper();
@@ -103,14 +106,35 @@ public:
             c[SCHEMA_DEFAULT] = q.value(4).toString();
             c[SCHEMA_EXTRA] = q.value(5).toString();
             c[SCHEMA_COMMENT] = q.value(6).toString();
+            if(!q.value(7).toString().isEmpty()) {
+                QStringList constraintNames = q.value(7).toString().split(",");
+                QStringList constraintTypes = q.value(8).toString().split(",");
+                for(int i = 0; i < constraintNames.length(); ++i) {
+                    if(data.constraints.contains(constraintNames[i]))
+                        data.constraints[constraintNames[i]].cols.insert(q.value(0).toString());
+                    else {
+                        ConstraintDetail c;
+                        c.type = constraintTypes[i] == "FOREIGN KEY" ? ConstraintDetail::CONSTRAINT_FOREIGNKEY : ConstraintDetail::CONSTRAINT_UNIQUE;
+                        if(c.type == ConstraintDetail::CONSTRAINT_FOREIGNKEY) {
+                            // todo ON UPDATE, ON DELETE
+                            c.fk = ForeignKey{ q.value(0).toString(), q.value(9).toString(), q.value(10).toString() };
+                        } else {
+                            c.cols.insert(q.value(0).toString());
+                        }
+                        c.sequence = data.constraints.count();
+                        data.constraints[constraintNames[i]] = c;
+                    }
+                }
+                c[SCHEMA_CONSTRAINTS] = constraintNames;
+            }
 //QVariant v;
 //ForeignKey fk;
 //fk.table = q.value(7).toString();
 //fk.column = q.value(8).toString();
 //v.setValue(fk);
 //c[SCHEMA_FOREIGNKEY] = v;
-            c[SCHEMA_FOREIGNKEY] = QVariant::fromValue<ForeignKey>({q.value(7).toString(),q.value(8).toString(),q.value(9).toString()});
-            data.append(c);
+            //c[SCHEMA_FOREIGNKEY] = QVariant::fromValue<ForeignKey>({q.value(7).toString(),q.value(8).toString(),q.value(9).toString()});
+            data.columns.append(c);
         }
     }
 
@@ -165,7 +189,7 @@ public:
                     metadata.primaryKeyColumn = i;
                 metadata.columnTypes[i] = q.value(7).toString();
                 metadata.columnComments[i] = q.value(1).toString();
-                metadata.foreignKeys[i] = {q.value(4).toString(), q.value(5).toString(), q.value(3).toString() };
+                metadata.foreignKeys[i] = {q.value(0).toString(), q.value(4).toString(), q.value(5).toString() };
                 i++;
 
             } while(q.next());
@@ -198,14 +222,13 @@ public:
 
 class SqliteDriver : public Driver {
 public:
-    virtual void columns(TableData& data, QString table) override {
+    virtual void columns(Schema& data, QString table) override {
         data.clear();
         QSqlQuery q{*this};
         q.prepare("PRAGMA table_info(" + table + ")");
         q.exec();
         while(q.next()) {
-            QVector<QVariant> c;
-            c.resize(SCHEMA_NUM_FIELDS);
+            std::array<QVariant,SCHEMA_NUM_FIELDS> c;
             c[SCHEMA_NAME] = q.value(1).toString();
             c[SCHEMA_TYPE] = q.value(2).toString().toUpper();
             c[SCHEMA_UNSIGNED] = (q.value(2).toString().contains("unsigned", Qt::CaseInsensitive));
@@ -215,8 +238,7 @@ public:
             c[SCHEMA_DEFAULT] = q.value(4).toString();
             c[SCHEMA_EXTRA] = "";
             c[SCHEMA_COMMENT] = "";
-            c[SCHEMA_FOREIGNKEY] = "";
-            data.append(c);
+            data.columns.append(c);
         }
     }
 
@@ -285,8 +307,8 @@ public:
         return dbnames;
     }
 
-    virtual void columns(TableData& data, QString table) override {
-data.clear();
+    virtual void columns(Schema& data, QString table) override {
+        data.clear();
         QSqlQuery q{*this};
 
         q.prepare("select c.column_name, c.data_type, c.is_nullable, c.column_default, u.table_name, u.column_name, u.constraint_name "
@@ -300,12 +322,11 @@ data.clear();
                   "where c.table_catalog = '"+databaseName()+"' and c.table_name = '"+table+"'");
         q.exec();
 
-        data.reserve(q.size());
+        data.columns.reserve(q.size());
 
         QRegExp typeRegexp("(\\w+)\\(([\\w,]+)\\)\\s*(\\w*)");
         while(q.next()) {
-            QVector<QVariant> c;
-            c.resize(SCHEMA_NUM_FIELDS);
+            std::array<QVariant,SCHEMA_NUM_FIELDS> c;
             c[SCHEMA_NAME] = q.value(0).toString();
             if(typeRegexp.exactMatch(q.value(1).toString())) {
                 c[SCHEMA_TYPE] = typeRegexp.cap(1).toUpper();
@@ -314,8 +335,7 @@ data.clear();
                 c[SCHEMA_TYPE] = q.value(1).toString().toUpper(); //e.g. TEXT has no length or unsigned
             c[SCHEMA_NULL] = (q.value(2).toString() == "YES");
             c[SCHEMA_DEFAULT] = q.value(3).toString();
-            c[SCHEMA_FOREIGNKEY] = QVariant::fromValue<ForeignKey>({q.value(4).toString(),q.value(5).toString(),q.value(6).toString()});
-            data.append(c);
+            data.columns.append(c);
         }
     }
 

@@ -9,7 +9,7 @@
 #include "sqlmodel.h"
 #include "tableview.h"
 #include "textcelleditor.h"
-#include "foreignkeyeditor.h"
+#include "constrainteditor.h"
 
 #include <QPainter>
 #include <QApplication>
@@ -29,9 +29,6 @@ QWidget* TableCell::createEditor(QWidget *parent, const QStyleOptionViewItem &op
     switch(index.data(EditorTypeRole).toInt()) {
     case SJCellEditLongText:
         return new TextCellEditor(parent);
-    case SJCellEditForeignKey:
-        // todo fix this horrible hack
-        return new ForeignKeyEditor(qobject_cast<SqlModel*>(qobject_cast<TableView*>(this->parent())->model())->driver(), parent);
     default:
         return QStyledItemDelegate::createEditor(parent, option, index);
     }
@@ -40,8 +37,6 @@ QWidget* TableCell::createEditor(QWidget *parent, const QStyleOptionViewItem &op
 void TableCell::setEditorData(QWidget *editor, const QModelIndex &index) const {
     if(TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor))
         tce->setContent(index.data(Qt::EditRole).toString());
-    else if(ForeignKeyEditor* fke = qobject_cast<ForeignKeyEditor*>(editor))
-        fke->setForeignKey(index.data(Qt::EditRole));
     else
         QStyledItemDelegate::setEditorData(editor, index);
 }
@@ -49,8 +44,6 @@ void TableCell::setEditorData(QWidget *editor, const QModelIndex &index) const {
 void TableCell::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const {
     if(TextCellEditor* tce = qobject_cast<TextCellEditor*>(editor))
         model->setData(index, tce->content());
-    else if(ForeignKeyEditor* fke = qobject_cast<ForeignKeyEditor*>(editor))
-        model->setData(index, fke->foreignKey());
     else
         QStyledItemDelegate::setModelData(editor, model, index);
 
@@ -60,7 +53,7 @@ void TableCell::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem
     QRect g = qobject_cast<QWidget*>(parent())->window()->geometry();
     if(qobject_cast<TextCellEditor*>(editor))
         editor->setGeometry(g.x()+g.width()/8, g.y()+g.height()/8,g.width()*3/4,g.height()*3/4);
-    else if(qobject_cast<ForeignKeyEditor*>(editor))
+    else if(qobject_cast<ConstraintEditor*>(editor))
         editor->setGeometry(g.x()+(g.width()-editor->width())/2, g.y()+(g.height()-editor->height())/2,editor->width(),editor->height());
     else
         QStyledItemDelegate::updateEditorGeometry(editor, option, index);
@@ -101,11 +94,25 @@ void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, con
                 s->drawPrimitive(QStyle::PE_IndicatorBranch, &opt, painter);
             }
         } else {
-            if(index.data().isNull() && index.data(Qt::CheckStateRole).isNull()) {
-                opt.palette.setColor(QPalette::Text, Qt::lightGray);
-                opt.text = "null";
+            QVariant shades = index.data(Qt::TextColorRole);
+            if(shades.isValid()) {
+                QStyledItemDelegate::paint(painter, opt, index);
+
+                for(QVariant colour : shades.toList()) {
+                    QColor c = QColor::fromHsv(255 * colour.toDouble(),180,180);
+                    //c.setHsvF(c.hueF() * colour.toDouble(), c.saturationF(), c.valueF());
+                    painter->setPen(c);
+                    painter->drawText(opt.rect, "\u2666");
+                    opt.rect.moveLeft(opt.rect.left()+10);
+                }
+
+            } else {
+                if(index.data().isNull() && index.data(Qt::CheckStateRole).isNull()) {
+                    opt.palette.setColor(QPalette::Text, Qt::lightGray);
+                    opt.text = "null";
+                }
+                QStyledItemDelegate::paint(painter, opt, index);
             }
-            QStyledItemDelegate::paint(painter, opt, index);
         }
 
     }

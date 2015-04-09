@@ -13,6 +13,7 @@
 #include "foreignkey.h"
 
 class DbConnection;
+class SchemaConstraintsProxyModel;
 
 class SqlSchemaModel : public SqlModel
 {
@@ -30,21 +31,34 @@ public:
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     void select() override;
 
+    QAbstractItemModel* constraintsModel() const;
+
+//    struct ConstraintHelper {
+//        Constraint constraint;
+//        int sequence;
+//        QString sourceColumn;
+//    };
+
 signals:
     void schemaModified(QString);
 
+
 protected:
-    TableData columnData;
+    Schema schema;
     virtual bool columnIsBoolType(int col) const override;
 
+public slots:
+    void saveConstraint(Constraint c);
+    void removeConstraint(Constraint c);
 protected slots:
     bool submit() override;
     virtual void selectComplete();
 
 private:
-    QString schemaQuery(const QVector<QVariant> def);
+    QString schemaQuery(const std::array<QVariant, SCHEMA_NUM_FIELDS> &def);
     QString originalColumnName;
     QString tableName;
+    SchemaConstraintsProxyModel* constraintsProxy;
 };
 
 #endif // _SEQUELJOE_SQLSCHEMAMODEL_H_

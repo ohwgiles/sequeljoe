@@ -148,7 +148,7 @@ QStringList DbConnection::columnNames(QString table) const {
         names << record.fieldName(i);
     return names;
 }
-void DbConnection::queryTableColumns(TableData* res, QString tableName, QObject* callbackOwner, const char* callbackName) {
+void DbConnection::queryTableColumns(Schema* res, QString tableName, QObject* callbackOwner, const char* callbackName) {
     driver->columns(*res, tableName);
     QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection);
 }

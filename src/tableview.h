@@ -34,6 +34,7 @@ protected slots:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    QMenu* contextMenu;
 
 private slots:
     void toggleForeignTable(const QModelIndex&);
@@ -42,7 +43,6 @@ private slots:
 private:
     virtual QWidget* createChildTable(const QModelIndex& index);
 
-    QMenu* contextMenu;
     QAction* setNullAction;
     QAction* deleteRowAction;
     QAction* addRowAction;

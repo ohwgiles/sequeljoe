@@ -164,6 +164,8 @@ void ConnectionWidget::setupSqlTypeChanged(int type) {
     bool isFile = dbTypeIsFile(type);
     bool hasCipher = dbTypeHasCipher(type);
 
+    // QTBUG-6864
+
     for(QObject* obj: boxSetup->children()) {
         if(QWidget* w = qobject_cast<QWidget*>(obj))
             w->hide();

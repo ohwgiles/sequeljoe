@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     qRegisterMetaType<QSqlQuery*>("QSqlQuery*");
     qRegisterMetaType<const char*>("const char*");
     qRegisterMetaType<TableMetadata>("TableMetadata");
-    qRegisterMetaType<TableData*>("TableData*");
+    qRegisterMetaType<Schema*>("Schema*");
     qRegisterMetaType<Indices>("Indices");
 
 #ifdef __APPLE__

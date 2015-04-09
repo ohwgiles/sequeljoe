@@ -121,7 +121,7 @@ bool SqlModel::hasChildren(const QModelIndex &parent) const {
         return true;
     if(parent.parent().isValid())
         return false;
-    if(dataSafe && parent.column() < metadata.foreignKeys.count() && metadata.foreignKeys[parent.column()].constraint.isNull())
+    if(dataSafe && metadata.foreignKeys.count())
         return true;
     return false;
 }

@@ -12,7 +12,9 @@
 
 class TableView;
 class QAbstractItemModel;
-
+class QListView;
+class ConstraintsView;
+class SchemaColumnView;
 class SchemaView : public QWidget
 {
     Q_OBJECT
@@ -21,8 +23,8 @@ public:
     void setModels(QAbstractItemModel* schema, QAbstractItemModel* index);
 
 private:
-    TableView* columns;
-    TableView* indexes;
+    SchemaColumnView* columns;
+    ConstraintsView* constraints;
     TableView* triggers;
 };
 

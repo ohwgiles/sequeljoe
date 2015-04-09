@@ -17,20 +17,81 @@
 #include <QDebug>
 #include <QSqlError>
 
+class SchemaConstraintsProxyModel : public QAbstractListModel {
+    Q_OBJECT
+public:
+    SchemaConstraintsProxyModel(QString currentTable,
+            const ConstraintMap& constraints, QObject *parent = 0) :
+        QAbstractListModel(parent),
+        tableName(currentTable),
+        constraints(constraints)
+    {
+    }
+    int rowCount(const QModelIndex&) const override {
+        return constraints.count();
+    }
+    QVariant data(const QModelIndex& idx, int role) const override {
+        if(idx.isValid()) {
+            // there isn't really a numerical index to the constraints,
+            // and order doesn't matter. So just loop through the map
+            // until the counter has had enough
+            int i = idx.row();
+            auto it = constraints.begin();
+            while(i--) it++;
+            if(role == Qt::DisplayRole)
+                return QString(it->type == ConstraintDetail::CONSTRAINT_FOREIGNKEY ? "Foreign Key" : "Unique") + " : " + it.key();
+            else if(role == Qt::TextColorRole)
+                return QColor::fromHsv(255.0 * it->sequence / (constraints.size()+1),180,180);
+            else if(role == Qt::EditRole)
+                return QVariant::fromValue(ConstraintMap::constraint(it));
+        } else if(role == TableNameRole)
+            return tableName;
+        return QVariant();
+    }
+    virtual bool setData(const QModelIndex &index, const QVariant &value, int role) override {
+        if(value.isNull())
+            emit removeConstraint(index.data(Qt::EditRole).value<Constraint>());
+        else {
+            if(index.isValid()) {
+                Constraint oldConstraint = index.data(Qt::EditRole).value<Constraint>();
+                emit removeConstraint(oldConstraint);
+            }
+            Constraint newConstraint = value.value<Constraint>();
+            emit saveConstraint(newConstraint);
+        }
+        return true;
+    }
+    void beginReset() { beginResetModel(); }
+    void resetDone() { endResetModel(); emit layoutChanged(); }
+signals:
+    void saveConstraint(Constraint c);
+    void removeConstraint(Constraint c);
+private:
+    QString tableName;
+    const ConstraintMap& constraints;
+};
+
+QAbstractItemModel* SqlSchemaModel::constraintsModel() const { return constraintsProxy; }
+
 SqlSchemaModel::SqlSchemaModel(DbConnection& db, QString tableName, QObject *parent) :
     SqlModel(db, parent),
-    tableName(tableName)
+    tableName(tableName),
+    constraintsProxy(new SchemaConstraintsProxyModel(tableName, schema.constraints, this))
 {
     res.clear();
+    connect(constraintsProxy, &SchemaConstraintsProxyModel::saveConstraint, this, &SqlSchemaModel::saveConstraint);
+    connect(constraintsProxy, &SchemaConstraintsProxyModel::removeConstraint, this, &SqlSchemaModel::removeConstraint);
 }
 
 void SqlSchemaModel::select() {
     beginResetModel();
-    QMetaObject::invokeMethod(&db, "queryTableColumns", Qt::QueuedConnection, Q_ARG(TableData*, &columnData), Q_ARG(QString, tableName), Q_ARG(QObject*, this));
+    constraintsProxy->beginReset();
+    QMetaObject::invokeMethod(&db, "queryTableColumns", Qt::QueuedConnection, Q_ARG(Schema*, &schema), Q_ARG(QString, tableName), Q_ARG(QObject*, this));
 }
 
 void SqlSchemaModel::selectComplete() {
     //data.columnNames.resize(columnCount());
+    constraintsProxy->resetDone();
     SqlModel::selectComplete();
 }
 
@@ -42,7 +103,7 @@ int SqlSchemaModel::rowCount(const QModelIndex &parent) const {
     if(!dataSafe)
         return 0;
 
-    int c = columnData.size();
+    int c = schema.columns.size();
     return c + (updatingRow == c ? 1 : 0);
 }
 
@@ -56,7 +117,6 @@ Qt::ItemFlags SqlSchemaModel::flags(const QModelIndex &index) const {
         case SCHEMA_DEFAULT:
         case SCHEMA_EXTRA:
         case SCHEMA_COMMENT:
-        case SCHEMA_FOREIGNKEY:
             flags |= Qt::ItemIsEditable;
             break;
         case SCHEMA_UNSIGNED:
@@ -78,19 +138,19 @@ bool SqlSchemaModel::columnIsBoolType(int col) const {
 }
 
 // todo clean up
-QString SqlSchemaModel::schemaQuery(const QVector<QVariant> def) {
+QString SqlSchemaModel::schemaQuery(const std::array<QVariant,SCHEMA_NUM_FIELDS>& def) {
     QString fkq = "";
-    ForeignKey fk = def[SCHEMA_FOREIGNKEY].value<ForeignKey>();
-    if(!fk.column.isNull() || !fk.constraint.isNull()) {
-        if(!fk.constraint.isNull())
-            QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, "ALTER TABLE " + tableName + " DROP FOREIGN KEY \"" + fk.constraint + "\""), Q_ARG(QObject*, this));
+//    ForeignKey fk = def[SCHEMA_FOREIGNKEY].value<ForeignKey>();
+//    if(!fk.column.isNull() || !fk.constraint.isNull()) {
+//        if(!fk.constraint.isNull())
+//            QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, "ALTER TABLE " + tableName + " DROP FOREIGN KEY \"" + fk.constraint + "\""), Q_ARG(QObject*, this));
 
-        fk.constraint = "FK_" + tableName.toUpper() + "_" + def[SCHEMA_NAME].toString().toUpper() + "_" + fk.table.toUpper() + "_" + fk.column.toUpper();
-        setData(index(updatingRow, SCHEMA_FOREIGNKEY), QVariant::fromValue<ForeignKey>(fk), Qt::EditRole);
+//        fk.constraint = "FK_" + tableName.toUpper() + "_" + def[SCHEMA_NAME].toString().toUpper() + "_" + fk.table.toUpper() + "_" + fk.column.toUpper();
+//        setData(index(updatingRow, SCHEMA_FOREIGNKEY), QVariant::fromValue<ForeignKey>(fk), Qt::EditRole);
 
-        if(!fk.column.isNull())
-            fkq += ", ADD CONSTRAINT \""+fk.constraint+"\" FOREIGN KEY (\"" + def[SCHEMA_NAME].toString() + "\") REFERENCES \"" + fk.table + "\" (\"" + fk.column + "\")";
-    }
+//        if(!fk.column.isNull())
+//            fkq += ", ADD CONSTRAINT \""+fk.constraint+"\" FOREIGN KEY (\"" + def[SCHEMA_NAME].toString() + "\") REFERENCES \"" + fk.table + "\" (\"" + fk.column + "\")";
+//    }
 
     return "\"" + def[SCHEMA_NAME].toString() + "\" " +
     (def[SCHEMA_TYPE].toString().isEmpty() ? "TEXT" : def[SCHEMA_TYPE].toString()) +
@@ -103,9 +163,27 @@ QString SqlSchemaModel::schemaQuery(const QVector<QVariant> def) {
     fkq;
 }
 
+void SqlSchemaModel::saveConstraint(Constraint c) {
+    Q_ASSERT(!c.name.isEmpty());
+    QString q;
+    if(c.detail.type == ConstraintDetail::CONSTRAINT_FOREIGNKEY) {
+        q = "ALTER TABLE \"" + tableName + "\" "
+        "ADD CONSTRAINT \"" + c.name + "\" FOREIGN KEY (\"" + c.detail.fk.column + "\") "
+        "REFERENCES \"" + c.detail.fk.refTable + "\" (\"" + c.detail.fk.refColumn + "\")";
+    } else if(c.detail.type == ConstraintDetail::CONSTRAINT_UNIQUE) {
+        // todo
+    }
+    QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, q), Q_ARG(QObject*, this));
+}
+
+void SqlSchemaModel::removeConstraint(Constraint c) {
+    QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, "ALTER TABLE \"" + tableName + "\" DROP FOREIGN KEY \"" + c.name + "\""), Q_ARG(QObject*, this));
+}
+
+
 bool SqlSchemaModel::submit() {
     if(updatingRow != -1 && currentRowModifications.count() > 0) {
-        if(updatingRow == columnData.size()) {
+        if(updatingRow == schema.columns.size()) {
             if(currentRowModifications[SCHEMA_NAME].isNull()) {
                 qDebug() << "Cannot create unnamed column";
                 return false;
@@ -114,8 +192,7 @@ bool SqlSchemaModel::submit() {
             if(currentRowModifications[SCHEMA_TYPE].toString().isEmpty())
                 currentRowModifications[SCHEMA_TYPE] = "TEXT";
 
-            QVector<QVariant> newColumn;
-            newColumn.resize(columnCount());
+            std::array<QVariant,SCHEMA_NUM_FIELDS> newColumn;
 
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it)
                 newColumn[it.key()] = it.value();
@@ -124,8 +201,7 @@ bool SqlSchemaModel::submit() {
             QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, updateQuery), Q_ARG(QObject*, this));
 
         } else {
-            QVector<QVariant> newColumn = columnData[updatingRow];
-            newColumn[SCHEMA_FOREIGNKEY] = QVariant();
+            std::array<QVariant, SCHEMA_NUM_FIELDS> newColumn = schema.columns[updatingRow];
             for(auto it = currentRowModifications.cbegin(); it != currentRowModifications.cend(); ++it)
                 newColumn[it.key()] = it.value();
 
@@ -159,31 +235,41 @@ QVariant SqlSchemaModel::data(const QModelIndex &index, int role) const {
     if(!index.isValid())
         return QVariant{};
 
-    if(index.column() == SCHEMA_FOREIGNKEY) {
-        if(role == EditorTypeRole)
-            return SJCellEditForeignKey;
-        if(role == Qt::DisplayRole) {
-            ForeignKey fk = columnData[index.row()][index.column()].value<ForeignKey>();
-            if(!fk.column.isNull())
-                return QString(fk.constraint + ":" +fk.table + "." + fk.column);
-            else
-                return QString();
+//    if(index.column() == SCHEMA_FOREIGNKEY) {
+//        if(role == EditorTypeRole)
+//            return SJCellEditForeignKey;
+//        if(role == Qt::DisplayRole) {
+//            ForeignKey fk = columnData[index.row()][index.column()].value<ForeignKey>();
+//            if(!fk.column.isNull())
+//                return QString(fk.constraint + ":" +fk.table + "." + fk.column);
+//            else
+//                return QString();
+//        }
+//    }
+
+    if(index.column() == SCHEMA_CONSTRAINTS) {
+        if(role == Qt::TextColorRole) {
+            QVariantList shades;
+            for(QString name : schema.columns.at(index.row()).at(SCHEMA_CONSTRAINTS).toStringList())
+                shades << (double) schema.constraints[name].sequence / (schema.constraints.count() + 1);
+            return shades;
         }
+        return QVariant();
     }
 
     if(columnIsBoolType(index.column())) {
         if(role == Qt::CheckStateRole) {
             if(index.row() == updatingRow && !currentRowModifications[index.column()].isNull())
                 return currentRowModifications[index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
-            if(index.row() < columnData.size())
-                return columnData[index.row()][index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
+            if(index.row() < schema.columns.size())
+                return schema.columns[index.row()][index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
         }
     } else {
         if(index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) && index.row() < rowCount() && index.column() < columnCount()) {
             if(index.row() == updatingRow && currentRowModifications.contains(index.column()))
                 return currentRowModifications[index.column()];
-            else if(index.row() < columnData.size())
-                return columnData[index.row()][index.column()];
+            else if(index.row() < schema.columns.size())
+                return schema.columns[index.row()][index.column()];
         }
     }
     return QVariant();
@@ -201,7 +287,7 @@ QVariant SqlSchemaModel::headerData(int section, Qt::Orientation orientation, in
         case SCHEMA_DEFAULT: return "Default";
         case SCHEMA_EXTRA: return "Extra";
         case SCHEMA_COMMENT: return "Comment";
-        case SCHEMA_FOREIGNKEY: return "Foreign Key";
+        case SCHEMA_CONSTRAINTS: return "Constraints";
         default: break;
         }
     }
@@ -211,10 +297,11 @@ QVariant SqlSchemaModel::headerData(int section, Qt::Orientation orientation, in
 bool SqlSchemaModel::deleteRows(QSet<int> rows) {
     beginResetModel();
     for(int i : rows) {
-        QString query("ALTER TABLE \"" + tableName + "\" DROP COLUMN \"" + columnData.at(i).at(SCHEMA_NAME).toString() + "\"");
+        QString query("ALTER TABLE \"" + tableName + "\" DROP COLUMN \"" + schema.columns.at(i).at(SCHEMA_NAME).toString() + "\"");
         QMetaObject::invokeMethod(&db, "queryTableUpdate", Q_ARG(QString, query), Q_ARG(QObject*, this));
-        columnData.remove(i);
+        schema.columns.remove(i);
     }
     select(); // todo rowsremoved instead?
     return true;
 }
+#include "schemamodel.moc"

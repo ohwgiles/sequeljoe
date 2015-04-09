@@ -7,12 +7,14 @@ add_definitions("-std=c++11")
 
 set(SOURCES
     connectionwidget.cpp
+    constraintitemdelegate.cpp
+    constraintsview.cpp
     dbconnection.cpp
     dbfilewidget.cpp
     driver.cpp
     favourites.cpp
     filteredpagedtableview.cpp
-    foreignkeyeditor.cpp
+    constrainteditor.cpp
     loadingoverlay.cpp
     main.cpp
     mainpanel.cpp
@@ -20,6 +22,7 @@ set(SOURCES
     passkeywidget.cpp
     querylog.cpp
     querypanel.cpp
+    schemacolumnview.cpp
     schemamodel.cpp
     schemaview.cpp
     sqlhighlighter.cpp

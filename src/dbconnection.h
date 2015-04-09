@@ -17,7 +17,7 @@
 
 class Driver;
 class SshThread;
-class TableData;
+class Schema;
 
 class QSqlDatabase;
 class QSettings;
@@ -66,7 +66,7 @@ public:
 public slots:
     virtual bool execQuery(QSqlQuery &q) const;
 
-    void queryTableColumns(TableData *res, QString tableName, QObject* callbackOwner, const char* callbackName = "selectComplete");
+    void queryTableColumns(Schema *res, QString tableName, QObject* callbackOwner, const char* callbackName = "selectComplete");
     void queryTableIndices(QString tableName, QObject* callbackOwner, const char* callbackName = "describeComplete");
     void queryTableMetadata(QString tableName, QObject* callbackOwner, const char *callbackName = "describeComplete");
     void queryTableContent(QSqlQuery *query, QObject* callbackOwner, const char* callbackName = "selectComplete");

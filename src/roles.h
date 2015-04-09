@@ -5,8 +5,7 @@
 
 enum SequelJoeCellEditors {
     SJCellEditDefault = 0,
-    SJCellEditLongText,
-    SJCellEditForeignKey
+    SJCellEditLongText
 };
 
 enum SequelJoeCustomRoles {
@@ -16,6 +15,7 @@ enum SequelJoeCustomRoles {
     FilterOperationRole,
     FilterValueRole,
     ForeignKeyRole,
+    TableNameRole,
     ExpandedColumnIndexRole,
     HeightMultiple,
     EditorTypeRole

@@ -11,10 +11,13 @@
 #include <QString>
 
 struct ForeignKey {
-    QString table;
     QString column;
-    QString constraint;
-    bool isNull() const { return column.isNull(); }
+    QString refTable;
+    QString refColumn;
+    //QString constraint;
+    QString onDelete;
+    QString onUpdate;
+    bool isNull() const { return refColumn.isNull(); }
 };
 
 Q_DECLARE_METATYPE(ForeignKey)
