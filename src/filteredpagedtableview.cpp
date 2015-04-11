@@ -24,6 +24,7 @@
 #include <QAbstractProxyModel>
 #include <QIdentityProxyModel>
 #include <QMenu>
+#include <QInputDialog>
 
 class PivotProxy : public QAbstractProxyModel {
 public:
@@ -71,7 +72,8 @@ public:
 FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
     QWidget(parent),
     isPivot(false),
-    pivotModel(new PivotProxy(this))
+    pivotModel(new PivotProxy(this)),
+    rowsPerPage(100)
 {
     QBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
@@ -96,6 +98,7 @@ FilteredPagedTableView::FilteredPagedTableView(QWidget *parent) :
 
         QMenu* viewMenu = new QMenu(this);
         viewMenu->addAction("Pivot", this, SLOT(setPivotView(bool)))->setCheckable(true);
+        viewMenu->addAction("Set rows per page", this, SLOT(setRowsPerPage()));
         view = new QPushButton("View");
         qobject_cast<QPushButton*>(view)->setMenu(viewMenu);
 
@@ -158,6 +161,17 @@ void FilteredPagedTableView::setPivotView(bool v) {
     isPivot = v;
 }
 
+void FilteredPagedTableView::setRowsPerPage() {
+    bool ok;
+    int rows = QInputDialog::getInt(this, "Table View", "Rows per page", rowsPerPage, 1, 1000, 1, &ok);
+    if(ok) {
+        if(SqlModel* m = qobject_cast<SqlModel*>(model())) {
+            m->setRowsPerPage(rows);
+            rowsPerPage = rows;
+        }
+    }
+}
+
 void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
     if(m == table->model())
         return;
@@ -195,6 +209,10 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
         connect(next, SIGNAL(clicked()), m, SLOT(nextPage()));
         connect(last, SIGNAL(clicked()), m, SLOT(lastPage()));
         connect(m, SIGNAL(selectFinished()), this, SLOT(populateFilter()));
+        if(SqlModel* sm = qobject_cast<SqlModel*>(model())) {
+            sm->setRowsPerPage(rowsPerPage,false);
+            sm->signalPagination();
+        }
         populateFilter();
     }
 
@@ -208,10 +226,10 @@ QAbstractItemModel* FilteredPagedTableView::model() const {
 void FilteredPagedTableView::updatePagination(int firstRow, int rowsInPage, int totalRecords) {
     first->setDisabled(firstRow == 0);
     prev->setDisabled(firstRow == 0);
-    next->setDisabled(totalRecords != -1 && firstRow + rowsInPage >= totalRecords);
-    last->setDisabled(totalRecords == -1 || firstRow + rowsInPage >= totalRecords);
+    next->setDisabled(rowsInPage == 0 || (totalRecords != -1 && firstRow + rowsInPage >= totalRecords));
+    last->setDisabled(rowsInPage == 0 || totalRecords == -1 || firstRow + rowsInPage >= totalRecords);
     int last = firstRow + rowsInPage;
-    if(totalRecords == 0)
+    if(totalRecords == 0 || (firstRow == 0 && rowsInPage == 0))
         pageNum->setText("No Records");
     else if(totalRecords == -1)
         pageNum->setText("Rows " + QString::number(firstRow+1) + " to " + QString::number(last));

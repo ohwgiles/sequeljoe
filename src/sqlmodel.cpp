@@ -24,7 +24,7 @@ SqlModel::SqlModel(DbConnection &db, QObject *parent) :
     updatingRow(-1),
     totalRecords(-1),
     rowsFrom(0),
-    rowsLimit(0)
+    rowsLimit(100)
 {
 }
 
@@ -175,9 +175,18 @@ void SqlModel::select() {
 }
 
 void SqlModel::selectComplete() {
+    if(res.size() == 0 && rowsFrom > 0) {
+        // we "found" the end of the table by paging forward. Back up.
+        totalRecords = rowsFrom;
+        return prevPage();
+    }
+    if(res.size() < rowsPerPage()) {
+        // we found the end of the table
+        totalRecords = rowsFrom + res.size();
+    }
     dataSafe = true;
     emit selectFinished();
-    emit pagesChanged(rowsFrom, rowCount(), totalRecords);
+    signalPagination();
     endResetModel();
 }
 

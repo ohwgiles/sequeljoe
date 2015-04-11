@@ -19,7 +19,6 @@ TableModel::TableModel(DbConnection &db, QString table, QObject *parent) :
 {
     setQuery("SELECT * FROM \"" + table + "\"");
      //todo move all row limiting into this class?
-    rowsLimit = rowsPerPage();
 }
 
 void TableModel::describe(const Filter& f) {

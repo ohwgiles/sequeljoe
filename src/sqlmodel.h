@@ -33,8 +33,8 @@ public:
     explicit SqlModel(DbConnection &db, QObject *parent = 0);
     virtual ~SqlModel() {}
 
-    static constexpr unsigned rowsPerPage() { return 1000; }
-
+    int rowsPerPage() const { return rowsLimit; }
+    void signalPagination() const { emit pagesChanged(rowsFrom, rowCount(), totalRecords); }
     void setQuery(QString q) { query = q; }
     virtual void select();
     virtual bool deleteRows(QSet<int>) { return false; }
@@ -53,8 +53,9 @@ public:
     // hack to fetch for ForeignKeyEditor
     DbConnection* driver() const { return &db; }
 
+    void setRowsPerPage(int r, bool refresh = true) { rowsLimit = r; if(refresh) select(); }
 signals:
-    void pagesChanged(int,int,int);
+    void pagesChanged(int,int,int) const;
     void selectFinished();
 
 public slots:

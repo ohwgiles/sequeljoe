@@ -36,6 +36,7 @@ private slots:
     void runFilter();
     void refreshModel();
     void setPivotView(bool);
+    void setRowsPerPage();
 
 private:
     QStringList filterOperations() const;
@@ -54,6 +55,7 @@ private:
     QAbstractButton* last;
     QAbstractButton* view;
     QLabel* pageNum;
+    int rowsPerPage;
 };
 
 #endif // _SEQUELJOE_FILTEREDPAGEDTABLEVIEW_H_
