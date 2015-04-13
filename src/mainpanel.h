@@ -84,11 +84,7 @@ private:
     QWidget* loadingOverlay;
 
     QHash<QString, TableModel*> contentModels;
-    struct SchemaModels {
-        QAbstractItemModel* schema;
-        QAbstractItemModel* index;
-    };
-    QHash<QString, SchemaModels> schemaModels;
+    QHash<QString, SqlSchemaModel*> schemaModels;
 
     ConnectionWidget* settingsPanel;
     QSplitter* splitTableChooser;

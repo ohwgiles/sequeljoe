@@ -13,19 +13,6 @@
 #include "foreignkey.h"
 #include <QSet>
 
-struct Index {
-    QString name;
-    struct Member {
-        QString column;
-        int sequence;
-        bool unique;
-        int cardinality;
-    };
-    QVector<Member> members;
-};
-
-typedef QVector<Index> Indices;
-
 struct ConstraintDetail {
     enum {
         CONSTRAINT_FOREIGNKEY,

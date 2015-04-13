@@ -108,10 +108,6 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
     QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(TableMetadata, driver->metadata(tableName)));
 }
 
-void DbConnection::queryTableIndices(QString tableName, QObject *callbackOwner, const char *callbackName) {
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(Indices, driver->indices(tableName)));
-}
-
 void DbConnection::queryTableContent(QSqlQuery* query, QObject* callbackOwner, const char* callbackName) {
 
 

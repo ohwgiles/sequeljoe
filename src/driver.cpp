@@ -138,34 +138,6 @@ public:
         }
     }
 
-    virtual Indices indices(QString table) override {
-        QSqlQuery q{*this};
-
-        Indices indices;
-        q.prepare("show index from " + table);
-        q.exec();
-        Index currentIndex;
-        while(q.next()) {
-            if(currentIndex.name != q.value(2).toString()) {
-                if(!currentIndex.name.isNull()) {
-                    indices.append(currentIndex);
-                    currentIndex.members.clear();
-                }
-                currentIndex.name = q.value(2).toString();
-            }
-            currentIndex.members.append({
-                q.value(4).toString(),
-                q.value(3).toInt(),
-                !q.value(1).toBool(),
-                0
-            });
-        }
-        if(!currentIndex.name.isNull())
-            indices.append(currentIndex);
-
-        return indices;
-    }
-
     virtual TableMetadata metadata(QString table) override {
         QSqlQuery q{*this};
         TableMetadata metadata;
@@ -244,11 +216,6 @@ public:
 
     virtual QStringList databases() override {
         return QStringList{};
-    }
-
-    virtual Indices indices(QString table) override {
-        // not implemented
-        return Indices{};
     }
 
     virtual TableMetadata metadata(QString table) override {
@@ -337,10 +304,6 @@ public:
             c[SCHEMA_DEFAULT] = q.value(3).toString();
             data.columns.append(c);
         }
-    }
-
-    virtual Indices indices(QString table) override {
-        return Indices{};
     }
 
     virtual TableMetadata metadata(QString table) override {

@@ -37,7 +37,6 @@ int main(int argc, char *argv[]) {
     qRegisterMetaType<const char*>("const char*");
     qRegisterMetaType<TableMetadata>("TableMetadata");
     qRegisterMetaType<Schema*>("Schema*");
-    qRegisterMetaType<Indices>("Indices");
 
 #ifdef __APPLE__
     // prevents the font size from appearing overly large on OSX

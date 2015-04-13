@@ -67,7 +67,6 @@ public slots:
     virtual bool execQuery(QSqlQuery &q) const;
 
     void queryTableColumns(Schema *res, QString tableName, QObject* callbackOwner, const char* callbackName = "selectComplete");
-    void queryTableIndices(QString tableName, QObject* callbackOwner, const char* callbackName = "describeComplete");
     void queryTableMetadata(QString tableName, QObject* callbackOwner, const char *callbackName = "describeComplete");
     void queryTableContent(QSqlQuery *query, QObject* callbackOwner, const char* callbackName = "selectComplete");
     void queryTableUpdate(QString query, QObject* callbackOwner, const char* callbackName = "updateComplete");

@@ -176,17 +176,13 @@ void MainPanel::updateContentModel(QString tableName) {
 void MainPanel::updateSchemaModel(QString tableName) {
     QString key = db->databaseName() + tableName;
     if(!schemaModels.contains(key)) {
-        SqlModel* schema = new SqlSchemaModel(*db, tableName);
+        SqlSchemaModel* schema = new SqlSchemaModel(*db, tableName);
         connect(schema, SIGNAL(schemaModified(QString)), this, SLOT(deleteContentModel(QString)));
-        SqlModel* index  = new SqlModel(*db);
-        index->setQuery("SHOW INDEX FROM \"" + tableName + "\"");
-        schemaModels[key] = {schema, index};
-        schemaView->setModels(schema, index);
+        schemaModels[key] = schema;
+        schemaView->setModel(schema);
         schema->select();
-        //index->select();
     } else {
-        SchemaModels& models = schemaModels[key];
-        schemaView->setModels(models.schema, models.index);
+        schemaView->setModel(schemaModels[key]);
     }
 }
 
@@ -264,7 +260,7 @@ void MainPanel::tableListChanged() {
 void MainPanel::dbChanged(QString name) {
     if(db->databaseName() != name) {
         contentView->setModel(nullptr);
-        schemaView->setModels(nullptr, nullptr);
+        schemaView->setModel(nullptr);
         QMetaObject::invokeMethod(db, "useDatabase", Q_ARG(QString, name));
     }
 }
@@ -317,19 +313,15 @@ void MainPanel::toggleEditSettings(bool showSettings) {
 
 void MainPanel::disconnectDb() {
     contentView->setModel(nullptr);
-    schemaView->setModels(nullptr, nullptr);
+    schemaView->setModel(nullptr);
     queryLog->clear();
     queryLog->setRowCount(0);
     tableChooser->setTableNames(QStringList());
     toggleEditSettings(true);
     if(db) {
         disconnect(db);
-        for(SqlModel* m : contentModels)
-            delete m;
-        for(SchemaModels m : schemaModels) {
-            delete m.schema;
-            delete m.index;
-        }
+        qDeleteAll(contentModels);
+        qDeleteAll(schemaModels);
         contentModels.clear();
         schemaModels.clear();
 
@@ -356,7 +348,7 @@ void MainPanel::deleteTable() {
     if(!current.isNull() && QMessageBox::warning(this, QString("Delete Table"), "Are you sure? This action cannot be undone", QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
         QMetaObject::invokeMethod(db, "deleteTable", Qt::BlockingQueuedConnection, Q_ARG(QString, current));
         contentView->setModel(nullptr);
-        schemaView->setModels(nullptr,nullptr);
+        schemaView->setModel(nullptr);
         refreshTables();
     }
 }

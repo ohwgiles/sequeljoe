@@ -20,7 +20,6 @@ public:
 
     virtual QStringList databases() = 0;
     virtual void columns(Schema& res, QString table) = 0;
-    virtual Indices indices(QString table) = 0;
     virtual TableMetadata metadata(QString table) = 0;
     virtual QStringList tableNames() = 0;
     virtual QString createTableQuery(QString table) = 0;

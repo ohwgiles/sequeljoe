@@ -38,26 +38,20 @@ SchemaView::SchemaView(QWidget *parent) :
     layout->addWidget(constraints);
 }
 
-void SchemaView::setModels(QAbstractItemModel* schema, QAbstractItemModel* index) {
-
+void SchemaView::setModel(SqlSchemaModel* schema) {
     columns->setModel(schema);
-    // todo fix bad encapsulation
     disconnect(constraints->model());
     if(schema) {
-    constraints->db = qobject_cast<SqlSchemaModel*>(schema)->driver();
+        constraints->db = schema->driver();
 
-    constraints->setModel(qobject_cast<SqlSchemaModel*>(schema)->constraintsModel());
-    connect(constraints->model(), &QAbstractItemModel::layoutChanged, [&](){
-
-        //layout()->activate();
+        constraints->setModel(schema->constraintsModel());
+        connect(constraints->model(), &QAbstractItemModel::layoutChanged, [&](){
+            constraints->updateGeometry();
+        });
         constraints->updateGeometry();
-        //layout()->update();
-        //update();
-    });
-    constraints->updateGeometry();
     } else {
-        constraints->db = 0;
-        constraints->setModel(0);
+        constraints->db = nullptr;
+        constraints->setModel(nullptr);
     }
 }
 

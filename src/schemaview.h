@@ -15,12 +15,14 @@ class QAbstractItemModel;
 class QListView;
 class ConstraintsView;
 class SchemaColumnView;
+class SqlSchemaModel;
+
 class SchemaView : public QWidget
 {
     Q_OBJECT
 public:
     explicit SchemaView(QWidget *parent = 0);
-    void setModels(QAbstractItemModel* schema, QAbstractItemModel* index);
+    void setModel(SqlSchemaModel* model);
 
 private:
     SchemaColumnView* columns;
