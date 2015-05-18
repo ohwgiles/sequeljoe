@@ -85,7 +85,8 @@ public:
 "on c.table_schema = x.table_schema and c.table_name = x.table_name and c.column_name = x.column_name "
 "left join information_schema.table_constraints as t "
 "on x.constraint_name = t.constraint_name and x.table_schema = t.table_schema and x.table_name = t.table_name "
-"where c.table_schema = '"+databaseName()+"' and c.table_name = '"+table+"' group by c.column_name"
+"where c.table_schema = '"+databaseName()+"' and c.table_name = '"+table+"' group by c.column_name "
+"order by c.ordinal_position"
                     );
         q.exec();
 
