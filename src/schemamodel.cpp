@@ -235,6 +235,9 @@ QVariant SqlSchemaModel::data(const QModelIndex &index, int role) const {
     if(!index.isValid())
         return QVariant{};
 
+    if(role == EditorTypeRole)
+        return SJCellEditDefault;
+
 //    if(index.column() == SCHEMA_FOREIGNKEY) {
 //        if(role == EditorTypeRole)
 //            return SJCellEditForeignKey;
@@ -248,7 +251,7 @@ QVariant SqlSchemaModel::data(const QModelIndex &index, int role) const {
 //    }
 
     if(index.column() == SCHEMA_CONSTRAINTS) {
-        if(role == Qt::TextColorRole) {
+        if(role == Qt::TextColorRole && index.row() < schema.columns.length()) {
             QVariantList shades;
             for(QString name : schema.columns.at(index.row()).at(SCHEMA_CONSTRAINTS).toStringList())
                 shades << (double) schema.constraints[name].sequence / (schema.constraints.count() + 1);
