@@ -1,16 +1,19 @@
 SequelJoe
 =========
 
-Unfortunately, the excellent SequelPro (http://www.sequelpro.com/) is OS-X only.
+Inspired by the excellent, but unfortunately OS-X only [SequelPro](http://www.sequelpro.com)
 
-So!
+![SequelJoe](https://raw.github.com/ohwgiles/sequeljoe/master/src/res/sequeljoe.png)
 
-![SequelJoe](https://raw.github.com/ohwgiles/sequeljoe/master/src/res/joe.png)
+Simple Qt-based database administration tool. Supports MariaDB/Mysql, PostgreSQL, SQLite and (with some [trickery](https://github.com/ohwgiles/qt-sqlcipher) Sqlcipher.
 
-Here is something I slapped together for the 90% of the time I'm not on a Mac.
+SequelJoe is still pretty raw around the edges, and I don't have a lot of time for this project; so please do fork/contribute/steal
 
-It's still missing a lot of features, and I don't have a lot of time for this project; so please do fork/contribute/steal
-
-Qt
---
-SequelJoe is built against Qt5, but in theory doesn't use any Qt5-specific features, so some tweaks to the CMakeLists.txt should allow it to build and run with Qt4
+```
+$ # first install development libraries for qt5, libssh2, libmariadb, libsqlite
+$ git clone https://github.com/ohwgiles/sequeljoe.git
+$ mkdir -p path/to/build && cd path/to/build
+$ cmake path/to/source -DCMAKE_BUILD_TYPE=Release
+$ make
+$ sudo make install
+```
