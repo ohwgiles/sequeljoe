@@ -68,6 +68,7 @@ elseif(UNIX)
     set(SOURCES ${SOURCES} notify_libnotify.cpp)
     set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBNOTIFY_LIBRARIES})
     install(FILES res/sequeljoe.desktop DESTINATION share/applications)
+    install(FILES res/sequeljoe.svg DESTINATION share/icons/hicolor/scalable/apps)
 
 elseif(WIN32)
     set(exe "SequelJoe")
