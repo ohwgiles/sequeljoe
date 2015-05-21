@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=0.4
+Name=SequelJoe
+Comment=Database Browser
+Exec=sequeljoe
+Icon=sequeljoe
+Terminal=false
+Type=Application
+Categories=Development;Programming;Database
+MimeType=application/x-sqlite3;

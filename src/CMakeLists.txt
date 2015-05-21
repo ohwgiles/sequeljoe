@@ -67,6 +67,7 @@ elseif(UNIX)
     include_directories(${GLIB2_INCLUDE_DIRS} ${LIBNOTIFY_INCLUDE_DIRS})
     set(SOURCES ${SOURCES} notify_libnotify.cpp)
     set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBNOTIFY_LIBRARIES})
+    install(FILES res/sequeljoe.desktop DESTINATION share/applications)
 
 elseif(WIN32)
     set(exe "SequelJoe")
