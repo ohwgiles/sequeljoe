@@ -23,12 +23,12 @@
 <h1>*sequeljoe</h1>
 <h2>An administration tool for SQL databases</h2>
 <img src="win.png">
-<p>Current version: alpha 0.2. Lots of bugs still.</p>
+<p>Current version: alpha 0.4. Lots of bugs still.</p>
 <p>SequelJoe is inspired by the excellent <a href="http://www.sequelpro.com/">SequelPro</a>, but runs on Linux and Windows.</p>
-<p>SequelJoe is written in C++/Qt and currently supports MySQL/MariaDB and Sqlite, although adding support for other databases is trivial</p>
+<p>SequelJoe is written in C++/Qt and currently supports MySQL/MariaDB, PostgreSQL and Sqlite</p>
 <p>SequelJoe is GPLv3 licensed.</p>
 <p><strong>How do I get SequelJoe?</strong><br><br>
-Binaries for windows are packaged and attached to the github release:<br>
+Binaries for windows are packaged and attached to the github release but may be out of date:<br>
 <a href="https://github.com/ohwgiles/sequeljoe/releases">https://github.com/ohwgiles/sequeljoe/releases</a><br><br>
 For Arch Linux, SequelJoe is available <a href="https://aur.archlinux.org/packages/sequeljoe">from the AUR</a>:<br>
 <div class="code">$ yaourt -S sequeljoe</div>
@@ -38,7 +38,8 @@ $ # first install development libraries for qt5, libssh2, libmariadb, libsqlite<
 $ git clone https://github.com/ohwgiles/sequeljoe.git<br>
 $ mkdir -p path/to/build &amp;&amp; cd path/to/build<br>
 $ cmake path/to/source -DCMAKE_BUILD_TYPE=Release<br>
-$ make</div>
+$ make<br>
+$ sudo make install</div>
 <p><strong>I found a bug / I want to request a feature</strong><br>
 Contact me <a href="https://github.com/ohwgiles">through github</a>. Or, fork sequeljoe and send me a pull request</p>
 </div>
