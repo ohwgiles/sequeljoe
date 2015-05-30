@@ -337,7 +337,7 @@ public:
                 if(q.value(2).toBool())
                     metadata.primaryKeyColumn = i;
                 metadata.columnTypes[i] = q.value(1).toString();
-                metadata.foreignKeys[i] = {q.value(3).toString(), q.value(4).toString(), q.value(5).toString() };
+                metadata.foreignKeys[i] = {q.value(0).toString(), q.value(3).toString(), q.value(4).toString() };
                 i++;
 
             } while(q.next());
