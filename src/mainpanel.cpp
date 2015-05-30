@@ -144,11 +144,16 @@ void MainPanel::openPanel(ViewToolBar::Panel p, QString table) {
         schemaView->hide();
         switch(p) {
         case ViewToolBar::PANEL_CONTENT:
-            updateContentModel(table);
+            // table can be empty if we switch from query view
+            // to content/schema view without ever having selected
+            // a table before
+            if(!table.isEmpty())
+                updateContentModel(table);
             contentView->show();
             break;
         case ViewToolBar::PANEL_STRUCTURE:
-            updateSchemaModel(table);
+            if(!table.isEmpty())
+                updateSchemaModel(table);
             schemaView->show();
             break;
         default:

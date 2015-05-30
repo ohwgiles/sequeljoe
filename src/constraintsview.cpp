@@ -36,8 +36,10 @@ ConstraintsView::~ConstraintsView()
 }
 
 QSize ConstraintsView::sizeHint() const {
-    int rowCount = model()->rowCount();
-    return QSize(200, sizeHintForRow(0) * rowCount );
-    return viewport()->sizeHint();
+    if(model()) {
+        int rowCount = model()->rowCount();
+        return QSize(200, sizeHintForRow(0) * rowCount );
+    } else
+        return viewport()->sizeHint();
 }
 
