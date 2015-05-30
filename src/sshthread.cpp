@@ -317,6 +317,7 @@ void SshThread::routeTraffic() {
     struct timeval tv;
     fd_set fds;
     char buf[16384];
+    memset(buf, 0, sizeof(buf));
 
     while(true) {
         FD_ZERO(&fds);

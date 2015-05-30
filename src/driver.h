@@ -11,7 +11,7 @@ class Driver : public QSqlDatabase {
 public:
     virtual ~Driver(){}
 
-    static QAbstractListModel *driverListModel();
+    static QAbstractListModel *driverListModel(QObject* parent = 0);
     static Driver* createDriver(QString type);
 
     virtual QString quote(QVariant value);

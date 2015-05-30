@@ -12,7 +12,7 @@
 
 class SqlDriverList : public QAbstractListModel {
 public:
-    SqlDriverList() : QAbstractListModel()
+    SqlDriverList(QObject* parent = 0) : QAbstractListModel(parent)
     {
         QSqlDatabase db;
         drivers = db.drivers().toSet().intersect({"QSQLITE","QSQLCIPHER","QMYSQL","QPSQL"}).toList();
@@ -354,8 +354,8 @@ public:
     }
 };
 
-QAbstractListModel* Driver::driverListModel() {
-    return new SqlDriverList();
+QAbstractListModel* Driver::driverListModel(QObject *parent) {
+    return new SqlDriverList(parent);
 }
 
 Driver* Driver::createDriver(QString type) {

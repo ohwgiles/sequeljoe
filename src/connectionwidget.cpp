@@ -55,7 +55,7 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
         //name->hide();
 
         sqlType = new QComboBox(boxSetup);
-        sqlType->setModel(Driver::driverListModel());
+        sqlType->setModel(Driver::driverListModel(sqlType));
         sqlType->hide();
 
         host = new QLineEdit(boxSetup);
@@ -63,7 +63,7 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
 
         port = new QLineEdit(boxSetup);
         port->setPlaceholderText(QString::number(SavedConfig::DEFAULT_SQL_PORT));
-        port->setValidator(new QIntValidator);
+        port->setValidator(new QIntValidator(port));
         //port->hide();
 
         dbName = new DbFileWidget(boxSetup);
@@ -91,7 +91,7 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) :
 
             sshPort = new QLineEdit(boxSsh);
             sshPort->setPlaceholderText(QString::number(SavedConfig::DEFAULT_SSH_PORT));
-            sshPort->setValidator(new QIntValidator);
+            sshPort->setValidator(new QIntValidator(sshPort));
             sshForm->addRow("Port", sshPort);
 
             sshUsername = new QLineEdit(boxSsh);
