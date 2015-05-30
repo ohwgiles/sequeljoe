@@ -104,7 +104,9 @@ bool TableModel::submit() {
             }
             QString query = "UPDATE \"" + tableName + "\" SET " + updates.join(", ");
             if(metadata.primaryKeyColumn != -1) {
-                query += " WHERE \"" + res.record().fieldName(metadata.primaryKeyColumn) +"\" = " + db.sqlDriver()->quote(data(index(updatingRow, metadata.primaryKeyColumn), Qt::EditRole));
+                res.seek(updatingRow);
+                QVariant value = res.value(metadata.primaryKeyColumn);
+                query += " WHERE \"" + res.record().fieldName(metadata.primaryKeyColumn) +"\" = " + db.sqlDriver()->quote(value);
             } else {
                 QString sep = "";
                 query += " WHERE ";
