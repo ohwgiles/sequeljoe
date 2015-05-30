@@ -17,6 +17,7 @@ TableModel::TableModel(DbConnection &db, QString table, QObject *parent) :
     tableName(table),
     where(Filter{})
 {
+    rowsLimit = 100;
     setQuery("SELECT * FROM \"" + table + "\"");
      //todo move all row limiting into this class?
 }

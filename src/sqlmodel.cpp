@@ -24,7 +24,7 @@ SqlModel::SqlModel(DbConnection &db, QObject *parent) :
     updatingRow(-1),
     totalRecords(-1),
     rowsFrom(0),
-    rowsLimit(100)
+    rowsLimit(0)
 {
 }
 
