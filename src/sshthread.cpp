@@ -153,6 +153,7 @@ bool SshThread::createSession() {
     if(!dataDir.exists())
         dataDir.mkpath(dataDir.path());
     QByteArray knownHostsFile = dataDir.filePath("known_hosts").toLocal8Bit();
+    libssh2_knownhost_readfile(knownHosts, knownHostsFile.data(),LIBSSH2_KNOWNHOST_FILE_OPENSSH);
 
     int type;
     size_t len;
@@ -179,7 +180,7 @@ bool SshThread::createSession() {
         case LIBSSH2_KNOWNHOST_CHECK_NOTFOUND:
             emit confirmUnknownHost(readableFingerprint, &fingerprintOk);
             if(fingerprintOk) {
-                libssh2_knownhost_addc(knownHosts, params.sshHost.constData(), params.sshHost.constData(), fingerprint, len,
+                libssh2_knownhost_addc(knownHosts, params.sshHost.constData(), "", fingerprint, len,
                     nullptr, 0, LIBSSH2_KNOWNHOST_TYPE_PLAIN|LIBSSH2_KNOWNHOST_KEYENC_RAW|LIBSSH2_KNOWNHOST_KEY_SSHRSA, nullptr);
                 libssh2_knownhost_writefile(knownHosts, knownHostsFile.constData(), LIBSSH2_KNOWNHOST_FILE_OPENSSH);
             } else
