@@ -27,6 +27,7 @@ protected:
 
 private:
     static Spinner* spinner;
+    QTimeLine* fade;
     QTimeLine* timeline;
 };
 

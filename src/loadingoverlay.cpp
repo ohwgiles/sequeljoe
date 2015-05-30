@@ -61,6 +61,12 @@ LoadingOverlay::LoadingOverlay(QWidget *parent) :
     timeline->setCurveShape(QTimeLine::LinearCurve);
     connect(timeline, SIGNAL(frameChanged(int)), this, SLOT(repaint()));
     timeline->setLoopCount(0); // loop forever
+
+    fade = new QTimeLine(400);
+    fade->setFrameRange(0,255);
+    fade->setCurveShape(QTimeLine::EaseInCurve);
+    connect(fade, SIGNAL(frameChanged(int)), this, SLOT(repaint()));
+
 }
 
 LoadingOverlay::~LoadingOverlay() {
@@ -70,11 +76,13 @@ LoadingOverlay::~LoadingOverlay() {
 void LoadingOverlay::showEvent(QShowEvent *e) {
     QWidget::showEvent(e);
     timeline->start();
+    fade->start();
 }
 
 void LoadingOverlay::hideEvent(QHideEvent * e) {
     QWidget::hideEvent(e);
     timeline->stop();
+    fade->stop();
 }
 
 void LoadingOverlay::paintEvent(QPaintEvent * e) {
@@ -82,7 +90,9 @@ void LoadingOverlay::paintEvent(QPaintEvent * e) {
     QPainter painter(this);
     QRect r = e->rect();
 
-    painter.fillRect(r, QColor(0,0,0,128));
+    painter.setOpacity(fade->currentFrame()/255.);
+
+    painter.fillRect(r, QColor(255,255,255,96));
 
     const QPixmap& px = spinner->pixmap();
     painter.translate(r.width()/2,r.height()/2);
