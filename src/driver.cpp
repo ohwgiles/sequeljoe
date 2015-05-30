@@ -280,7 +280,6 @@ public:
     virtual void columns(Schema& data, QString table) override {
         data.clear();
         QSqlQuery q{*this};
-
         q.prepare("select c.column_name, c.data_type, c.is_nullable, c.column_default, u.table_name, u.column_name, u.constraint_name "
                   "from information_schema.columns as c "
                   "left join information_schema.key_column_usage as k "
@@ -289,7 +288,8 @@ public:
                   "on k.constraint_name = t.constraint_name and t.constraint_type = 'FOREIGN KEY' "
                   "left join information_schema.constraint_column_usage as u "
                   "on t.constraint_name = u.constraint_name "
-                  "where c.table_catalog = '"+databaseName()+"' and c.table_name = '"+table+"'");
+                  "where c.table_catalog = '"+databaseName()+"' and c.table_name = '"+table+"' "
+                  "order by c.ordinal_position");
         q.exec();
 
         data.columns.reserve(q.size());
