@@ -182,11 +182,7 @@ public:
 
     virtual bool open() override {
         QSqlQuery q(*this);
-        // yes, it's called twice. somehow doesn't work well otherwise
-        QSqlDatabase::open();
-        q.exec("SET GLOBAL sql_mode = 'ANSI_QUOTES'");
-        setConnectOptions("MYSQL_OPT_RECONNECT=1");
-        return QSqlDatabase::open();
+        return QSqlDatabase::open() && q.exec("SET SESSION sql_mode = 'ANSI_QUOTES'");
     }
 
     virtual QString createTableQuery(QString table) override {
