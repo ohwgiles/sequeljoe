@@ -89,10 +89,10 @@ void SqlSchemaModel::select() {
     QMetaObject::invokeMethod(&db, "queryTableColumns", Qt::QueuedConnection, Q_ARG(Schema*, &schema), Q_ARG(QString, tableName), Q_ARG(QObject*, this));
 }
 
-void SqlSchemaModel::selectComplete() {
+void SqlSchemaModel::selectComplete(int nRows) {
     //data.columnNames.resize(columnCount());
     constraintsProxy->resetDone();
-    SqlModel::selectComplete();
+    SqlModel::selectComplete(nRows);
 }
 
 int SqlSchemaModel::columnCount(const QModelIndex &parent) const {

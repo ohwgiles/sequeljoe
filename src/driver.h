@@ -23,6 +23,7 @@ public:
     virtual TableMetadata metadata(QString table) = 0;
     virtual QStringList tableNames() = 0;
     virtual QString createTableQuery(QString table) = 0;
+    virtual int countRows(QSqlQuery& q) const;
 };
 
 #endif // SQLDRIVER_H

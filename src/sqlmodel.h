@@ -65,9 +65,9 @@ public slots:
     void lastPage();
 
 protected slots:
-    virtual void selectComplete();
-    void updateComplete(bool result, int insertId);
-    void deleteComplete(bool result, int);
+    virtual void selectComplete(int nRows);
+    void updateComplete(int rowsAffected, int insertId);
+    void deleteComplete(int rowsAffected, int);
 protected:
     virtual bool event(QEvent *) override;
     virtual QString prepareQuery() const { return query; }
@@ -87,6 +87,7 @@ protected:
     int updatingRow;
     QHash<int, QVariant> currentRowModifications;
 
+    unsigned int numRows;
     unsigned int totalRecords;
     unsigned int rowsFrom;
     unsigned int rowsLimit;

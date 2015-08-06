@@ -22,6 +22,7 @@ SqlModel::SqlModel(DbConnection &db, QObject *parent) :
     dataSafe(false),
     res(*db.sqlDriver()),
     updatingRow(-1),
+    numRows(0),
     totalRecords(-1),
     rowsFrom(0),
     rowsLimit(0)
@@ -55,9 +56,7 @@ int SqlModel::rowCount(const QModelIndex &parent) const {
     if(parent.isValid())
         return 1;
 
-    int c = res.size();
-    if(c < 0) return 0;
-    return c + (updatingRow == c ? 1 : 0);
+    return updatingRow == numRows ? numRows + 1 : numRows;
 }
 
 QVariant SqlModel::data(const QModelIndex &index, int role) const {
@@ -83,7 +82,7 @@ QVariant SqlModel::data(const QModelIndex &index, int role) const {
         if(role == Qt::CheckStateRole) {
             if(index.row() == updatingRow && !currentRowModifications[index.column()].isNull())
                 return currentRowModifications[index.column()].toBool() ? Qt::Checked : Qt::Unchecked;
-            if(index.row() < res.size() && res.seek(index.row()))
+            if(index.row() < numRows && res.seek(index.row()))
                 return res.value(index.column()).toBool() ? Qt::Checked : Qt::Unchecked;
         }
     } else {
@@ -91,7 +90,7 @@ QVariant SqlModel::data(const QModelIndex &index, int role) const {
             QVariant d;
             if(index.row() == updatingRow && currentRowModifications.contains(index.column()))
                 d = currentRowModifications[index.column()];
-            else if(index.row() < res.size() && res.seek(index.row()))
+            else if(index.row() < numRows && res.seek(index.row()))
                 d = res.value(index.column());
 
             if(role == Qt::EditRole)
@@ -172,16 +171,17 @@ void SqlModel::select() {
     QMetaObject::invokeMethod(&db, "queryTableContent", Qt::QueuedConnection, Q_ARG(QSqlQuery*, &res), Q_ARG(QObject*, this));
 }
 
-void SqlModel::selectComplete() {
-    if(res.size() == 0 && rowsFrom > 0) {
+void SqlModel::selectComplete(int nRows) {
+    if(nRows == 0 && rowsFrom > 0) {
         // we "found" the end of the table by paging forward. Back up.
         totalRecords = rowsFrom;
         return prevPage();
     }
-    if(res.size() < rowsPerPage()) {
+    if(nRows < rowsPerPage()) {
         // we found the end of the table
-        totalRecords = rowsFrom + res.size();
+        totalRecords = rowsFrom + nRows;
     }
+    numRows = nRows;
     dataSafe = true;
     emit selectFinished();
     signalPagination();
@@ -236,12 +236,12 @@ bool SqlModel::setData(const QModelIndex &index, const QVariant &value, int role
     return false;
 }
 
-void SqlModel::updateComplete(bool result, int insertId) {
+void SqlModel::updateComplete(int rowsAffected, int insertId) {
     currentRowModifications.clear();
     updatingRow = -1;
     return select();
-    if(result) {
-        if(updatingRow == res.size()) {
+    if(rowsAffected > 0) {
+        if(updatingRow == numRows) {
             QVector<QVariant> newRow;
             newRow.resize(columnCount());
             if(metadata.primaryKeyColumn != -1)
@@ -267,9 +267,9 @@ void SqlModel::updateComplete(bool result, int insertId) {
     updatingRow = -1;
 }
 
-void SqlModel::deleteComplete(bool result, int) {
-    if(result)
-    select();
+void SqlModel::deleteComplete(int rowsAffected, int) {
+    if(rowsAffected)
+        select();
 }
 
 bool SqlModel::event(QEvent * e) {

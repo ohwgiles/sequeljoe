@@ -52,7 +52,7 @@ public slots:
     void removeConstraint(Constraint c);
 protected slots:
     bool submit() override;
-    virtual void selectComplete();
+    virtual void selectComplete(int nRows) override;
 
 private:
     QString schemaQuery(const std::array<QVariant, SCHEMA_NUM_FIELDS> &def);

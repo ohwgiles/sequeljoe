@@ -63,6 +63,11 @@ private:
     QStringList drivers;
 };
 
+
+int Driver::countRows(QSqlQuery& q) const {
+    return q.size(); 
+}
+
 class MySqlDriver : public Driver {
 public:
     virtual QStringList databases() override {
@@ -248,6 +253,16 @@ public:
 
     virtual QString createTableQuery(QString table) override {
         return "CREATE TABLE \"" + table + "\" (\"id\" INT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT)";
+    }
+    virtual int countRows(QSqlQuery& q) const { 
+        // sqlite doesn't support QSqlQuery::size
+        int rows = 0;
+        if(q.next()) {
+            q.last();
+            rows = q.at() + 1;
+            q.first();
+        }
+        return rows;
     }
 
 };

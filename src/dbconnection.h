@@ -64,7 +64,7 @@ public:
     QStringList columnNames(QString table) const;
 
 public slots:
-    virtual bool execQuery(QSqlQuery &q) const;
+    virtual int execQuery(QSqlQuery &q) const;
 
     void queryTableColumns(Schema *res, QString tableName, QObject* callbackOwner, const char* callbackName = "selectComplete");
     void queryTableMetadata(QString tableName, QObject* callbackOwner, const char *callbackName = "describeComplete");

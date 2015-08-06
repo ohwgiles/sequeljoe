@@ -86,22 +86,26 @@ QSqlQueryModel* DbConnection::query(QString q, QSqlQueryModel* update) {
     return update;
 }
 
-bool DbConnection::execQuery(QSqlQuery& q) const {
+int DbConnection::execQuery(QSqlQuery& q) const {
     bool result = q.exec();
+
+    int nRows = q.isSelect() ? driver->countRows(q) : q.numRowsAffected();
+    if(nRows < 0)
+        nRows = 0;
 
     QString msg;
     if(q.lastError().isValid())
         msg = "Error: " + q.lastError().text();
     else if(q.isSelect())
-        msg = QString::number(q.size()) + " rows retrieved";
+        msg = QString::number(nRows) + " rows retrieved";
     else
-        msg = QString::number(q.numRowsAffected()) + " rows affected";
+        msg = QString::number(nRows) + " rows affected";
 
     if(qApp->focusWindow() == 0) {
         Notifier::instance()->send("Query complete", msg.toLocal8Bit().constData());
     }
     emit queryExecuted(q.lastQuery(), msg);
-    return result;
+    return nRows;
 }
 
 void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner, const char* callbackName) {
@@ -109,34 +113,10 @@ void DbConnection::queryTableMetadata(QString tableName, QObject* callbackOwner,
 }
 
 void DbConnection::queryTableContent(QSqlQuery* query, QObject* callbackOwner, const char* callbackName) {
-
-
-    QSqlQuery& q = *query;
-
-    // TODO deal with strings, comments, and delimiter changes
-//    for(QString querypart : query.split(';')) {
-//        q.prepare(querypart);
-//        execQuery(q);
-//    }
-    execQuery(q);
-
-//    TableData data;
-//    data.reserve(q.size());
-//    data.columnNames.resize(q.record().count());
-//    for(int i = 0; i < q.record().count(); ++i) {
-//        data.columnNames[i] = q.record().fieldName(i).trimmed();
-//    }
-//    if(q.first()) {
-//        do {
-//            QVector<QVariant> row;
-//            row.resize(q.record().count());
-//            for(int i = 0; i < q.record().count(); ++i)
-//                row[i] = q.value(i);
-//            data.append(row);
-//        } while(q.next());
-//    }
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection);
+    int nRows = execQuery(*query);
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(int, nRows));
 }
+
 QStringList DbConnection::columnNames(QString table) const {
     QStringList names;
     QSqlRecord record = driver->record(table);
@@ -146,14 +126,14 @@ QStringList DbConnection::columnNames(QString table) const {
 }
 void DbConnection::queryTableColumns(Schema* res, QString tableName, QObject* callbackOwner, const char* callbackName) {
     driver->columns(*res, tableName);
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(int, /*unused:*/0));
 }
 
 void DbConnection::queryTableUpdate(QString query, QObject *callbackOwner, const char *callbackName) {
     QSqlQuery q(*driver);
     q.prepare(query);
-    bool result = execQuery(q);
-    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(bool, result), Q_ARG(int, q.lastInsertId().toInt()));
+    int rowsAffected = execQuery(q);
+    QMetaObject::invokeMethod(callbackOwner, callbackName, Qt::QueuedConnection, Q_ARG(int, rowsAffected), Q_ARG(int, q.lastInsertId().toInt()));
 }
 
 void DbConnection::populateDatabases() {
