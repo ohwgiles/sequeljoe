@@ -178,8 +178,10 @@ void FilteredPagedTableView::setModel(QAbstractItemModel *m) {
 
     disconnect(this, SLOT(updatePagination(int,int,int)));
     disconnect(this, SLOT(populateFilter()));
-    disconnect(prev, SIGNAL(clicked()));
-    disconnect(next, SIGNAL(clicked()));
+    disconnect(first, SIGNAL(clicked()), 0, 0);
+    disconnect(prev, SIGNAL(clicked()), 0, 0);
+    disconnect(next, SIGNAL(clicked()), 0, 0);
+    disconnect(last, SIGNAL(clicked()), 0, 0);
 
     filterColumns->clear();
     filterText->clear();

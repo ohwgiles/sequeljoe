@@ -87,20 +87,20 @@ QSqlQueryModel* DbConnection::query(QString q, QSqlQueryModel* update) {
 }
 
 int DbConnection::execQuery(QSqlQuery& q) const {
-    bool result = q.exec();
-
-    int nRows = q.isSelect() ? driver->countRows(q) : q.numRowsAffected();
-    if(nRows < 0)
-        nRows = 0;
-
+    q.exec();
     QString msg;
-    if(q.lastError().isValid())
+    int nRows = 0;
+    if(q.lastError().isValid()) {
         msg = "Error: " + q.lastError().text();
-    else if(q.isSelect())
-        msg = QString::number(nRows) + " rows retrieved";
-    else
-        msg = QString::number(nRows) + " rows affected";
-
+    } else {
+        if(q.isSelect()) {
+            nRows = driver->countRows(q);
+            msg = QString::number(nRows) + " rows retrieved";
+        } else {
+            nRows = q.numRowsAffected();
+            msg = QString::number(nRows) + " rows affected";
+        }
+    }
     if(qApp->focusWindow() == 0) {
         Notifier::instance()->send("Query complete", msg.toLocal8Bit().constData());
     }

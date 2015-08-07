@@ -87,9 +87,9 @@ protected:
     int updatingRow;
     QHash<int, QVariant> currentRowModifications;
 
-    unsigned int numRows;
+    int numRows;
     unsigned int totalRecords;
-    unsigned int rowsFrom;
+    int rowsFrom;
     unsigned int rowsLimit;
 };
 

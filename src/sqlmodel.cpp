@@ -199,12 +199,17 @@ void SqlModel::nextPage() {
 }
 
 void SqlModel::prevPage() {
-    rowsFrom -= rowsPerPage();
+    if(rowsPerPage() > rowsFrom)
+        rowsFrom = 0;
+    else
+        rowsFrom -= rowsPerPage();
+
     select();
 }
 
 void SqlModel::lastPage() {
-    rowsFrom = totalRecords - rowsPerPage();
+    unsigned rpp = rowsPerPage();
+    rowsFrom = rpp * (totalRecords / rpp);
     select();
 }
 
