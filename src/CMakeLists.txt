@@ -42,6 +42,7 @@ find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Sql REQUIRED)
 set(CMAKE_AUTOMOC TRUE)
 qt5_add_resources(SRC_RESOURCES icons.qrc)
+set_property(SOURCE ${SRC_RESOURCES} PROPERTY SKIP_AUTOMOC ON)
 
 # libssh2
 find_path(LIBSSH2_INCLUDE_DIR NAMES libssh2.h)

@@ -2,7 +2,7 @@
 
 
 void ConstraintItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const {
-    QStyleOptionViewItemV4 opt(option);
+    QStyleOptionViewItem opt(option);
     initStyleOption(&opt, index);
     painter->save();
     painter->setPen(index.data(Qt::TextColorRole).value<QColor>());
@@ -13,8 +13,8 @@ void ConstraintItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem
 }
 
 QSize ConstraintItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const {
-    QStyleOptionViewItemV4 opt(option);
-    opt.features |= QStyleOptionViewItemV4::HasCheckIndicator;
+    QStyleOptionViewItem opt(option);
+    opt.features |= QStyleOptionViewItem::HasCheckIndicator;
     return QStyledItemDelegate::sizeHint(opt, index);
 }
 

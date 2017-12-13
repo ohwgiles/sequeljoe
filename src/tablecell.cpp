@@ -61,7 +61,7 @@ void TableCell::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem
 }
 
 void TableCell::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const {
-    QStyleOptionViewItemV4 opt(option);
+    QStyleOptionViewItem opt(option);
     initStyleOption(&opt, index);
 
     if(index.parent().isValid()) {
